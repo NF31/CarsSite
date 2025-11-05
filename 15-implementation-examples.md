@@ -809,8 +809,8 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASSWORD,
   },
 });
 
@@ -821,7 +821,7 @@ export async function sendEmail(
   text?: string
 ) {
   await transporter.sendMail({
-    from: `"CarRental" <${process.env.SMTP_USER}>`,
+    from: `"CarRental" <${process.env.GMAIL_USER}>`,
     to,
     subject,
     html,

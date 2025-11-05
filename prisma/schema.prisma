@@ -347,3 +347,15 @@ model Setting {
   @@index([key])
   @@map("settings")
 }
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String   // Email ou userId
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([token])
+  @@index([identifier])
+  @@map("verification_tokens")
+}
