@@ -318,15 +318,15 @@ app/
 
 ## 🔐 Protection des Routes
 
-### Middleware
+### Proxy
 
 ```typescript
-// middleware.ts
-export function middleware(request: NextRequest) {
+// proxy.ts
+export default auth((req) => {
   // Vérifier authentification
   // Vérifier rôle admin
   // Rediriger si non autorisé
-}
+});
 ```
 
 ### Layout Admin
