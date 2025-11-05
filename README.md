@@ -160,8 +160,8 @@ PAYPAL_CLIENT_SECRET="votre-paypal-secret"
 # Email
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
-SMTP_USER="votre-email"
-SMTP_PASS="votre-password"
+GMAIL_USER="votre-email"
+GMAIL_PASSWORD="votre-password"
 
 # Google Maps
 GOOGLE_MAPS_API_KEY="votre-google-maps-key"
