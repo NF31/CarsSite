@@ -8,19 +8,20 @@ NextAuth v5 (beta) utilise une structure spécifique recommandée par la documen
 - NextAuth v5 recommande de mettre `auth.ts` et `auth.config.ts` à la **racine du projet**
 - C'est la structure standard pour faciliter les imports et la configuration
 
-### 2. **Middleware Next.js**
-- Le `middleware.ts` (qui doit être à la racine) importe directement `auth` depuis la racine
+### 2. **Proxy Next.js**
+- Le `proxy.ts` (qui doit être à la racine) importe directement `auth` depuis la racine
 - Cela simplifie les imports : `import { auth } from "@/auth"` au lieu de `import { auth } from "@/lib/auth"`
-- Le middleware Next.js s'exécute avant le routing, donc il a besoin d'un chemin simple
+- Le proxy Next.js s'exécute avant le routing, donc il a besoin d'un chemin simple
+- Note: Next.js a migré de `middleware.ts` vers `proxy.ts` pour clarifier le rôle de cette fonctionnalité
 
 ### 3. **Séparation des responsabilités**
 - `auth.config.ts` : Configuration (providers, callbacks, pages) - peut être importé partout
-- `auth.ts` : Instance NextAuth avec handlers exportés - utilisé par le middleware et les routes API
+- `auth.ts` : Instance NextAuth avec handlers exportés - utilisé par le proxy et les routes API
 
 ### 4. **Alternative : Déplacer dans `lib/`**
 Si vous préférez avoir tout dans `lib/`, c'est possible mais il faut :
 - Mettre à jour tous les imports
-- Mettre à jour le middleware
+- Mettre à jour le proxy
 - Mettre à jour les routes API
 
 **Recommandation** : Garder à la racine (convention NextAuth v5)
