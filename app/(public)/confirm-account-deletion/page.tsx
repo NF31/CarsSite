@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AlertCircle, CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { confirmDeleteAccountAction } from "@/actions/profile/delete/confirm";
 
 export default function ConfirmAccountDeletionPage() {
   const router = useRouter();
@@ -38,18 +39,10 @@ export default function ConfirmAccountDeletionPage() {
     setError(null);
 
     try {
-      const response = await fetch("/api/profile/delete/confirm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      });
+      const result = await confirmDeleteAccountAction(token);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la confirmation");
+      if (!result.success) {
+        throw new Error(result.error || "Erreur lors de la confirmation");
       }
 
       setSuccess(true);

@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
+import { verifyEmailAction } from "@/actions/auth/verify-email";
+import { resendVerificationAction } from "@/actions/auth/resend-verification";
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -56,19 +58,11 @@ export default function VerifyEmailPage() {
   async function verifyEmail(token: string) {
     setStatus("loading");
     try {
-      const response = await fetch("/api/auth/verify-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      });
+      const result = await verifyEmailAction(token);
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         setStatus("error");
-        setMessage(result.message || "Erreur lors de la vérification");
+        setMessage(result.message || result.error || "Erreur lors de la vérification");
         return;
       }
 
@@ -86,27 +80,18 @@ export default function VerifyEmailPage() {
     setIsResending(true);
     setError(null);
     try {
-      const response = await fetch("/api/auth/resend-verification", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: searchParams.get("email") || "",
-        }),
-      });
+      const email = searchParams.get("email") || "";
+      const result = await resendVerificationAction(email);
 
-      const result = await response.json();
-
-      if (response.ok) {
+      if (result.success) {
         setStatus("waiting");
         setMessage(result.message || "Email de vérification renvoyé");
       } else {
-        if (response.status === 429) {
+        if (result.status === 429) {
           // Rate limit dépassé
-          setError(result.message || "Trop de tentatives. Veuillez réessayer plus tard.");
+          setError(result.message || result.error || "Trop de tentatives. Veuillez réessayer plus tard.");
         } else {
-          setError(result.message || "Erreur lors de l'envoi");
+          setError(result.message || result.error || "Erreur lors de l'envoi");
         }
       }
     } catch (error) {

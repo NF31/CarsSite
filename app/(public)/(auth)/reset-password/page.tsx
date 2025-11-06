@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Car, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resetPasswordAction } from "@/actions/auth/reset-password";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -102,22 +103,14 @@ export default function ResetPasswordPage() {
     setError(null);
 
     try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          password: data.password,
-          confirmPassword: data.confirmPassword,
-        }),
+      const result = await resetPasswordAction({
+        token,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        setError(result.message || "Une erreur est survenue");
+      if (!result.success) {
+        setError(result.message || result.error || "Une erreur est survenue");
         if (result.error === "Token invalide ou expiré") {
           setTokenValid(false);
         }

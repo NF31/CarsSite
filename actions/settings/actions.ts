@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+"use server";
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -11,15 +12,16 @@ const preferencesSchema = z.object({
   language: z.string().optional(),
 });
 
-export async function GET() {
+export async function getSettingsAction() {
   try {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Non autorisé" },
-        { status: 401 }
-      );
+      return {
+        success: false,
+        error: "Non autorisé",
+        status: 401,
+      };
     }
 
     // Récupérer ou créer les préférences par défaut
@@ -41,29 +43,33 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ preferences });
+    return {
+      success: true,
+      preferences,
+    };
   } catch (error) {
     console.error("Settings GET error:", error);
-    return NextResponse.json(
-      { error: "Une erreur est survenue" },
-      { status: 500 }
-    );
+    return {
+      success: false,
+      error: "Une erreur est survenue",
+      status: 500,
+    };
   }
 }
 
-export async function PUT(request: NextRequest) {
+export async function updateSettingsAction(data: z.infer<typeof preferencesSchema>) {
   try {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Non autorisé" },
-        { status: 401 }
-      );
+      return {
+        success: false,
+        error: "Non autorisé",
+        status: 401,
+      };
     }
 
-    const body = await request.json();
-    const validated = preferencesSchema.parse(body);
+    const validated = preferencesSchema.parse(data);
 
     // Mettre à jour ou créer les préférences
     const preferences = await prisma.userPreferences.upsert({
@@ -85,24 +91,27 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return {
       success: true,
       message: "Paramètres enregistrés avec succès",
       preferences,
-    });
+    };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Données invalides", details: error.issues },
-        { status: 400 }
-      );
+      return {
+        success: false,
+        error: "Données invalides",
+        details: error.issues,
+        status: 400,
+      };
     }
 
     console.error("Settings PUT error:", error);
-    return NextResponse.json(
-      { error: "Une erreur est survenue" },
-      { status: 500 }
-    );
+    return {
+      success: false,
+      error: "Une erreur est survenue",
+      status: 500,
+    };
   }
 }
 
