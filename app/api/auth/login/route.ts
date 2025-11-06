@@ -55,9 +55,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier si l'utilisateur existe
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Vérifier si l'utilisateur existe (exclure les comptes supprimés)
+    const user = await prisma.user.findFirst({
+      where: {
+        email,
+        deletedAt: null, // Exclure les comptes supprimés
+      },
       select: {
         id: true,
         password: true,

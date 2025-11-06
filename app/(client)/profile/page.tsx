@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,8 +42,7 @@ type UserProfile = {
 };
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { data: session, update } = useSession();
+  const { update } = useSession();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -59,6 +57,8 @@ export default function ProfilePage() {
   const [showPhoneValid, setShowPhoneValid] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const profileForm = useForm<z.infer<typeof updateProfileSchema>>({
     resolver: zodResolver(updateProfileSchema),
@@ -76,6 +76,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Gérer l'affichage temporaire du message "Format valide" pour le téléphone
@@ -109,7 +110,7 @@ export default function ProfilePage() {
         image: data.user.image || "",
         driverLicense: data.user.driverLicense || "",
       });
-    } catch (err) {
+    } catch {
       setError("Erreur lors du chargement du profil");
     } finally {
       setIsLoading(false);
@@ -138,8 +139,8 @@ export default function ProfilePage() {
       setSuccess("Profil mis à jour avec succès");
       await update(); // Mettre à jour la session
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la mise à jour du profil");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la mise à jour du profil");
     } finally {
       setIsSaving(false);
     }
@@ -166,8 +167,8 @@ export default function ProfilePage() {
       setPasswordSuccess("Mot de passe modifié avec succès");
       passwordForm.reset();
       setTimeout(() => setPasswordSuccess(null), 3000);
-    } catch (err: any) {
-      setPasswordError(err.message || "Erreur lors du changement de mot de passe");
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : "Erreur lors du changement de mot de passe");
     } finally {
       setIsChangingPassword(false);
     }
@@ -175,7 +176,8 @@ export default function ProfilePage() {
 
   const onDeleteSubmit = async (data: z.infer<typeof deleteAccountSchema>) => {
     setIsDeleting(true);
-    setError(null);
+    setDeleteError(null);
+    setDeleteSuccess(null);
 
     try {
       const response = await fetch("/api/profile/delete", {
@@ -187,14 +189,20 @@ export default function ProfilePage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Erreur lors de la suppression");
+        throw new Error(result.error || "Erreur lors de la demande de suppression");
       }
 
-      // Rediriger vers la page d'accueil après suppression
-      router.push("/");
-      router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la suppression du compte");
+      // Afficher le message de succès
+      setDeleteSuccess(result.message || "Un email de confirmation a été envoyé. Veuillez cliquer sur le lien dans l'email pour confirmer la suppression.");
+      deleteForm.reset();
+      
+      // Masquer le message après 10 secondes
+      setTimeout(() => {
+        setDeleteSuccess(null);
+      }, 10000);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Erreur lors de la demande de suppression");
+    } finally {
       setIsDeleting(false);
     }
   };
@@ -271,7 +279,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  L'email ne peut pas être modifié
+                  L&apos;email ne peut pas être modifié
                 </p>
               </div>
 
@@ -544,6 +552,22 @@ export default function ProfilePage() {
             <CardDescription>Supprimer définitivement votre compte</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Message d'erreur pour la demande de suppression */}
+            {deleteError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2 mb-4">
+                <AlertCircle className="h-5 w-5" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            {/* Message de succès pour la demande de suppression */}
+            {deleteSuccess && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg flex items-center gap-2 mb-4">
+                <CheckCircle2 className="h-5 w-5" />
+                <span>{deleteSuccess}</span>
+              </div>
+            )}
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">Supprimer mon compte</Button>
