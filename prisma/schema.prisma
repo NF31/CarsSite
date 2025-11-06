@@ -110,17 +110,19 @@ enum SettingCategory {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  phone         String?
-  role          UserRole  @default(CLIENT)
-  password      String
-  emailVerified DateTime?
-  image         String?
-  driverLicense String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String
+  phone               String?
+  role                UserRole  @default(CLIENT)
+  password            String
+  emailVerified       DateTime?
+  image               String?
+  driverLicense       String?
+  lockedUntil         DateTime? // Verrouillage temporaire après échecs
+  failedLoginAttempts Int       @default(0) // Nombre d'échecs consécutifs
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   bookings      Booking[]
   reviews       Review[]
@@ -358,4 +360,15 @@ model VerificationToken {
   @@index([token])
   @@index([identifier])
   @@map("verification_tokens")
+}
+
+model RateLimitAttempt {
+  id         String   @id @default(cuid())
+  identifier String   // Email ou IP
+  type       String   // "email" ou "ip"
+  createdAt  DateTime @default(now())
+
+  @@index([identifier, type, createdAt])
+  @@index([createdAt])
+  @@map("rate_limit_attempts")
 }
