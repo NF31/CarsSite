@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +14,8 @@ import {
 import { MoreVertical, Eye, Edit, Trash2, XCircle, Image as ImageIcon, Gauge, Users, Fuel, Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { VehicleCategory, VehicleStatus } from "@prisma/client";
+import type { VehicleCategory, VehicleStatus, TransmissionType, FuelType } from "@prisma/client";
+import { DeleteVehicleDialog } from "./DeleteVehicleDialog";
 
 interface Vehicle {
   id: string;
@@ -24,8 +26,8 @@ interface Vehicle {
   mileage: number;
   category: VehicleCategory;
   seats: number;
-  transmission: string;
-  fuelType: string;
+  transmission: TransmissionType;
+  fuelType: FuelType;
   color: string;
   pricePerDay: number;
   pricePerWeek: number | null;
@@ -89,6 +91,14 @@ const fuelTypeLabels: Record<string, string> = {
 };
 
 export function VehiclesListView({ vehicles, startIndex = 0 }: VehiclesListViewProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+
+  const handleDeleteClick = (vehicle: Vehicle) => {
+    setVehicleToDelete(vehicle);
+    setDeleteDialogOpen(true);
+  };
+
   if (vehicles.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -141,7 +151,7 @@ export function VehiclesListView({ vehicles, startIndex = 0 }: VehiclesListViewP
                     <XCircle className="mr-2 h-4 w-4" />
                     Marquer indisponible
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-600">
+                  <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteClick(vehicle)}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Supprimer
                   </DropdownMenuItem>
@@ -386,7 +396,7 @@ export function VehiclesListView({ vehicles, startIndex = 0 }: VehiclesListViewP
                           <XCircle className="mr-2 h-4 w-4" />
                           Marquer indisponible
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteClick(vehicle)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Supprimer
                         </DropdownMenuItem>
@@ -567,7 +577,7 @@ export function VehiclesListView({ vehicles, startIndex = 0 }: VehiclesListViewP
                           <XCircle className="mr-2 h-4 w-4" />
                           Marquer indisponible
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteClick(vehicle)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Supprimer
                         </DropdownMenuItem>
@@ -579,6 +589,19 @@ export function VehiclesListView({ vehicles, startIndex = 0 }: VehiclesListViewP
             </tbody>
           </table>
       </div>
+      
+      {vehicleToDelete && (
+        <DeleteVehicleDialog
+          vehicle={vehicleToDelete}
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              setVehicleToDelete(null);
+            }
+          }}
+        />
+      )}
     </>
   );
 }

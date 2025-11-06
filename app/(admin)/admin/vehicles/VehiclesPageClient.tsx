@@ -62,7 +62,7 @@ export function VehiclesPageClient({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showSuccess, setShowSuccess] = useState(false);
-  const [successType, setSuccessType] = useState<"created" | "updated" | null>(null);
+  const [successType, setSuccessType] = useState<"created" | "updated" | "deleted" | null>(null);
 
   // Vérifier si un message de succès doit être affiché
   useEffect(() => {
@@ -85,6 +85,21 @@ export function VehiclesPageClient({
     } else if (success === "vehicle-updated") {
       setShowSuccess(true);
       setSuccessType("updated");
+      // Retirer le paramètre de l'URL après affichage
+      const newSearchParams = new URLSearchParams(searchParams.toString());
+      newSearchParams.delete("success");
+      const newUrl = newSearchParams.toString() 
+        ? `${window.location.pathname}?${newSearchParams.toString()}`
+        : window.location.pathname;
+      router.replace(newUrl);
+      // Masquer le message après 5 secondes
+      setTimeout(() => {
+        setShowSuccess(false);
+        setSuccessType(null);
+      }, 5000);
+    } else if (success === "vehicle-deleted") {
+      setShowSuccess(true);
+      setSuccessType("deleted");
       // Retirer le paramètre de l'URL après affichage
       const newSearchParams = new URLSearchParams(searchParams.toString());
       newSearchParams.delete("success");
@@ -152,6 +167,8 @@ export function VehiclesPageClient({
           <span>
             {successType === "updated" 
               ? "Véhicule modifié avec succès !" 
+              : successType === "deleted"
+              ? "Véhicule supprimé avec succès !"
               : "Véhicule créé avec succès !"}
           </span>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,8 @@ import {
 import { MoreVertical, Eye, Edit, Trash2, XCircle, Image as ImageIcon, Car, Gauge, Users, Fuel, Calendar, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { VehicleCategory, VehicleStatus } from "@prisma/client";
+import type { VehicleCategory, VehicleStatus, TransmissionType, FuelType } from "@prisma/client";
+import { DeleteVehicleDialog } from "./DeleteVehicleDialog";
 
 interface Vehicle {
   id: string;
@@ -25,8 +27,9 @@ interface Vehicle {
   mileage: number;
   category: VehicleCategory;
   seats: number;
-  transmission: string;
-  fuelType: string;
+  transmission: TransmissionType;
+  fuelType: FuelType;
+  color: string;
   status: VehicleStatus;
   pricePerDay: number;
   pricePerWeek: number | null;
@@ -37,7 +40,9 @@ interface Vehicle {
     name: string;
     city: string;
   };
+  features: string[];
   images: string[];
+  description: string | null;
   _count: {
     bookings: number;
     reviews: number;
@@ -87,6 +92,14 @@ const transmissionLabels: Record<string, string> = {
 };
 
 export function VehiclesGridView({ vehicles, startIndex = 0 }: VehiclesGridViewProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+
+  const handleDeleteClick = (vehicle: Vehicle) => {
+    setVehicleToDelete(vehicle);
+    setDeleteDialogOpen(true);
+  };
+
   if (vehicles.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -157,7 +170,7 @@ export function VehiclesGridView({ vehicles, startIndex = 0 }: VehiclesGridViewP
                     <XCircle className="mr-2 h-4 w-4" />
                     Marquer indisponible
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-600">
+                  <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteClick(vehicle)}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Supprimer
                   </DropdownMenuItem>
@@ -251,6 +264,19 @@ export function VehiclesGridView({ vehicles, startIndex = 0 }: VehiclesGridViewP
           </CardContent>
         </Card>
       ))}
+      
+      {vehicleToDelete && (
+        <DeleteVehicleDialog
+          vehicle={vehicleToDelete}
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              setVehicleToDelete(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

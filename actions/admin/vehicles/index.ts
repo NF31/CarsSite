@@ -7,4 +7,5 @@ export { getVehicleByIdAction, type GetVehicleByIdResult } from "./get-by-id";
 export { uploadImageAction, type UploadImageResult } from "./upload-image";
 export { deleteImageAction, deleteImagesAction, deleteImageByPublicIdAction, cleanupEmptyFolder, extractPublicIdFromUrl, type DeleteImageResult } from "./delete-image";
 export { moveImageAction, moveImagesAction, type MoveImageResult } from "./move-images";
+export { deleteVehicleAction, type DeleteVehicleResult } from "./delete-vehicle";
 
