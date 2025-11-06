@@ -34,7 +34,7 @@ export default async function AdminVehiclesLayout({
       <div className="flex flex-col flex-1 lg:pl-64">
         <AdminNavbar />
         <main className="flex-1 overflow-x-hidden">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="container mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 max-w-full">
             {children}
           </div>
         </main>
