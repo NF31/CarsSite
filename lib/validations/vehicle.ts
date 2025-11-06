@@ -129,6 +129,19 @@ export const createVehicleSchema = z.object({
       },
       "Les images ne doivent pas contenir de doublons"
     ),
+  imagePublicIds: z
+    .array(z.string().trim().min(1).max(200))
+    .max(20, "Maximum 20 publicIds autorisés")
+    .refine(
+      (publicIds) => {
+        // Vérifier qu'il n'y a pas de doublons
+        const unique = new Set(publicIds);
+        return unique.size === publicIds.length;
+      },
+      "Les publicIds ne doivent pas contenir de doublons"
+    )
+    .optional()
+    .default([]),
   description: z
     .string()
     .trim()
@@ -138,4 +151,15 @@ export const createVehicleSchema = z.object({
 });
 
 export type CreateVehicleInput = z.infer<typeof createVehicleSchema>;
+
+// Schéma pour la mise à jour d'un véhicule (identique à la création mais avec l'ID requis)
+export const updateVehicleSchema = createVehicleSchema.extend({
+  id: z
+    .string()
+    .trim()
+    .min(1, "L'ID du véhicule est requis")
+    .refine((val) => val.length > 0 && val.length <= 100, "ID de véhicule invalide"),
+});
+
+export type UpdateVehicleInput = z.infer<typeof updateVehicleSchema>;
 
