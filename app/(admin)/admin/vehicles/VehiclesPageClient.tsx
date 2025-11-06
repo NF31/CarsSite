@@ -62,12 +62,14 @@ export function VehiclesPageClient({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successType, setSuccessType] = useState<"created" | "updated" | null>(null);
 
   // Vérifier si un message de succès doit être affiché
   useEffect(() => {
     const success = searchParams.get("success");
     if (success === "vehicle-created") {
       setShowSuccess(true);
+      setSuccessType("created");
       // Retirer le paramètre de l'URL après affichage
       const newSearchParams = new URLSearchParams(searchParams.toString());
       newSearchParams.delete("success");
@@ -76,7 +78,25 @@ export function VehiclesPageClient({
         : window.location.pathname;
       router.replace(newUrl);
       // Masquer le message après 5 secondes
-      setTimeout(() => setShowSuccess(false), 5000);
+      setTimeout(() => {
+        setShowSuccess(false);
+        setSuccessType(null);
+      }, 5000);
+    } else if (success === "vehicle-updated") {
+      setShowSuccess(true);
+      setSuccessType("updated");
+      // Retirer le paramètre de l'URL après affichage
+      const newSearchParams = new URLSearchParams(searchParams.toString());
+      newSearchParams.delete("success");
+      const newUrl = newSearchParams.toString() 
+        ? `${window.location.pathname}?${newSearchParams.toString()}`
+        : window.location.pathname;
+      router.replace(newUrl);
+      // Masquer le message après 5 secondes
+      setTimeout(() => {
+        setShowSuccess(false);
+        setSuccessType(null);
+      }, 5000);
     }
   }, [searchParams, router]);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -129,7 +149,11 @@ export function VehiclesPageClient({
       {showSuccess && (
         <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
           <CheckCircle2 className="h-5 w-5" />
-          <span>Véhicule créé avec succès !</span>
+          <span>
+            {successType === "updated" 
+              ? "Véhicule modifié avec succès !" 
+              : "Véhicule créé avec succès !"}
+          </span>
         </div>
       )}
       

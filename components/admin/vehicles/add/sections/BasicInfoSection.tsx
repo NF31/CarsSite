@@ -26,7 +26,7 @@ export function BasicInfoSection({
   getSelectValidation,
   yearOptions,
 }: BasicInfoSectionProps) {
-  const { register, formState: { errors }, setValue, trigger } = form;
+  const { register, formState: { errors }, setValue, trigger, watch } = form;
 
   return (
     <Card>
@@ -72,6 +72,7 @@ export function BasicInfoSection({
             <Label htmlFor="year">Année *</Label>
             <div className="relative">
               <Select
+                value={watch("year")?.toString()}
                 onValueChange={(value) => {
                   setValue("year", parseInt(value), { shouldValidate: true, shouldDirty: true });
                   trigger("year");
