@@ -68,6 +68,23 @@ export async function sendPasswordResetEmail(
   name: string,
   token: string
 ) {
+  // Vérifier si les credentials sont configurés
+  if (!hasEmailCredentials) {
+    console.warn(
+      "⚠️  Email credentials non configurés. En mode développement, utilisez ce lien :"
+    );
+    console.log(
+      `🔗 ${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`
+    );
+    throw new Error(
+      "Configuration email manquante. Veuillez configurer GMAIL_USER et GMAIL_PASSWORD dans votre fichier .env"
+    );
+  }
+
+  if (!transporter) {
+    throw new Error("Transporter email non initialisé");
+  }
+
   const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`;
   
   // Utiliser le template depuis lib/templates
@@ -82,6 +99,7 @@ export async function sendPasswordResetEmail(
 
   try {
     const info = await transporter.sendMail(mailOptions);
+    console.log("Email de réinitialisation envoyé:", info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email:", error);
