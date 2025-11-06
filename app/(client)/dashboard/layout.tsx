@@ -1,7 +1,15 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tableau de bord - CarRental",
+  description: "Gérez vos réservations et votre profil",
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default async function DashboardLayout({
   children,
@@ -16,12 +24,6 @@ export default async function DashboardLayout({
 
   // Les admins peuvent accéder au dashboard client, pas de redirection
 
-  return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
-  );
+  return <>{children}</>;
 }
 
