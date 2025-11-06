@@ -205,7 +205,7 @@ export default async function AdminDashboardPage() {
             </Link>
           </Button>
           <Button asChild>
-            <Link href="/admin/vehicles/new">
+            <Link href="/admin/vehicles/add">
               <Car className="mr-2 h-4 w-4" />
               Ajouter un véhicule
             </Link>
