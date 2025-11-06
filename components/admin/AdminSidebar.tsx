@@ -35,7 +35,7 @@ const menuItems = [
     badge: null,
     submenu: [
       { title: "Tous les véhicules", href: "/admin/vehicles" },
-      { title: "Ajouter un véhicule", href: "/admin/vehicles/new" },
+      { title: "Ajouter un véhicule", href: "/admin/vehicles/add" },
       { title: "Disponibilités", href: "/admin/vehicles/availability" },
       { title: "Maintenance", href: "/admin/vehicles/maintenance" },
     ],
