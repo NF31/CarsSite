@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Grid3x3, List, Plus } from "lucide-react";
+import { Grid3x3, List, Plus, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { getVehiclesAction, type GetVehiclesFilters } from "@/actions/admin/vehicles";
 import { VehiclesFilters } from "@/components/admin/vehicles/VehiclesFilters";
@@ -58,6 +59,26 @@ export function VehiclesPageClient({
   initialLocations,
   initialBrands,
 }: VehiclesPageClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Vérifier si un message de succès doit être affiché
+  useEffect(() => {
+    const success = searchParams.get("success");
+    if (success === "vehicle-created") {
+      setShowSuccess(true);
+      // Retirer le paramètre de l'URL après affichage
+      const newSearchParams = new URLSearchParams(searchParams.toString());
+      newSearchParams.delete("success");
+      const newUrl = newSearchParams.toString() 
+        ? `${window.location.pathname}?${newSearchParams.toString()}`
+        : window.location.pathname;
+      router.replace(newUrl);
+      // Masquer le message après 5 secondes
+      setTimeout(() => setShowSuccess(false), 5000);
+    }
+  }, [searchParams, router]);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [filters, setFilters] = useState<GetVehiclesFilters>({
     page: 1,
@@ -104,6 +125,14 @@ export function VehiclesPageClient({
 
   return (
     <div className="space-y-6">
+      {/* Message de succès */}
+      {showSuccess && (
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5" />
+          <span>Véhicule créé avec succès !</span>
+        </div>
+      )}
+      
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -165,24 +194,47 @@ export function VehiclesPageClient({
       ) : (
         <>
           {viewMode === "grid" ? (
-            <VehiclesGridView vehicles={vehicles} />
-          ) : (
-            <VehiclesListView vehicles={vehicles} />
-          )}
-
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <Card>
-              <CardContent className="py-4">
+            <div className="space-y-6">
+              <VehiclesGridView 
+                vehicles={vehicles} 
+                startIndex={(pagination.page - 1) * pagination.limit}
+              />
+              
+              {/* Pagination pour la vue grid */}
+              {vehicles.length > 0 && (
                 <VehiclesPagination
                   currentPage={pagination.page}
                   totalPages={pagination.totalPages}
                   onPageChange={handlePageChange}
                   hasNext={pagination.hasNext}
                   hasPrev={pagination.hasPrev}
+                  startIndex={(pagination.page - 1) * pagination.limit}
+                  itemsPerPage={pagination.limit}
+                  totalItems={pagination.total}
                 />
-              </CardContent>
-            </Card>
+              )}
+            </div>
+          ) : (
+            <>
+              <VehiclesListView 
+                vehicles={vehicles} 
+                startIndex={(pagination.page - 1) * pagination.limit}
+              />
+
+              {/* Pagination pour la vue list */}
+              {vehicles.length > 0 && (
+                <VehiclesPagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={handlePageChange}
+                  hasNext={pagination.hasNext}
+                  hasPrev={pagination.hasPrev}
+                  startIndex={(pagination.page - 1) * pagination.limit}
+                  itemsPerPage={pagination.limit}
+                  totalItems={pagination.total}
+                />
+              )}
+            </>
           )}
         </>
       )}
