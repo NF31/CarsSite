@@ -74,7 +74,7 @@ export function VehicleForm({}: VehicleFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [images, setImages] = useState<Array<{ url: string; isMain?: boolean }>>([]);
+  const [images, setImages] = useState<Array<{ url: string; publicId?: string; isMain?: boolean }>>([]);
 
   const form = useForm<CreateVehicleInput>({
     // @ts-expect-error - Type incompatibility between zodResolver and useForm
@@ -83,6 +83,7 @@ export function VehicleForm({}: VehicleFormProps) {
     defaultValues: {
       features: [],
       images: [],
+      imagePublicIds: [],
       pricePerWeek: undefined,
       pricePerMonth: undefined,
       description: "",
@@ -105,17 +106,19 @@ export function VehicleForm({}: VehicleFormProps) {
     }
   }, [locationIdValue, setValue, trigger]);
 
-  const handleImagesChange = (newImages: Array<{ url: string; isMain?: boolean }>) => {
+  const handleImagesChange = (newImages: Array<{ url: string; publicId?: string; isMain?: boolean }>) => {
     setImages(newImages);
-    const imageUrls = [...newImages]
-      .sort((a, b) => {
-        if (a.isMain) return -1;
-        if (b.isMain) return 1;
-        return 0;
-      })
-      .map((img) => img.url);
+    const sortedImages = [...newImages].sort((a, b) => {
+      if (a.isMain) return -1;
+      if (b.isMain) return 1;
+      return 0;
+    });
+    const imageUrls = sortedImages.map((img) => img.url);
+    const imagePublicIds = sortedImages.map((img) => img.publicId || "").filter((id) => id !== "");
     setValue("images", imageUrls, { shouldValidate: true, shouldDirty: true });
+    setValue("imagePublicIds", imagePublicIds, { shouldValidate: true, shouldDirty: true });
     trigger("images");
+    trigger("imagePublicIds");
   };
 
   const onSubmit = async (data: CreateVehicleInput) => {

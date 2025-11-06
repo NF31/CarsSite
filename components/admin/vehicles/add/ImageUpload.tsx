@@ -9,8 +9,8 @@ import { ValidationMessages } from "./components/ValidationMessages";
 import { validateImageFile, validateImageCount } from "./utils/image-validation";
 
 interface ImageUploadProps {
-  images: Array<{ url: string; isMain?: boolean }>;
-  onImagesChange: (images: Array<{ url: string; isMain?: boolean }>) => void;
+  images: Array<{ url: string; publicId?: string; isMain?: boolean }>;
+  onImagesChange: (images: Array<{ url: string; publicId?: string; isMain?: boolean }>) => void;
   error?: string;
   minImages?: number;
   maxImages?: number;
@@ -89,16 +89,20 @@ export function ImageUpload({
           throw new Error("Aucune donnée retournée");
         }
 
-        return result.data.url;
+        return {
+          url: result.data.url,
+          publicId: result.data.publicId,
+        };
       });
 
-      const uploadedUrls = await Promise.all(uploadPromises);
+      const uploadedData = await Promise.all(uploadPromises);
       setUploadProgress(100);
 
       // Ajouter les nouvelles images (la première sera automatiquement principale si aucune n'existe)
       const hasMainImage = images.some((img) => img.isMain);
-      const newImages = uploadedUrls.map((url, index) => ({
-        url,
+      const newImages = uploadedData.map((data, index) => ({
+        url: data.url,
+        publicId: data.publicId,
         isMain: !hasMainImage && images.length === 0 && index === 0,
       }));
 
