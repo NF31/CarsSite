@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Settings, Bell, Shield, Globe, CheckCircle2, AlertCircle } from "lucide-react";
+import { getSettingsAction, updateSettingsAction } from "@/actions/settings";
 
 export default function SettingsPage() {
   const { data: session, update } = useSession();
@@ -34,17 +35,17 @@ export default function SettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch("/api/settings");
-      if (!response.ok) {
-        throw new Error("Erreur lors du chargement des paramètres");
-      }
-      const data = await response.json();
+      const result = await getSettingsAction();
       
-      if (data.preferences) {
-        setEmailNotifications(data.preferences.emailNotifications ?? true);
-        setBookingReminders(data.preferences.bookingReminders ?? true);
-        setPromotionalEmails(data.preferences.promotionalEmails ?? false);
-        setMarketingEmails(data.preferences.marketingEmails ?? false);
+      if (!result.success) {
+        throw new Error(result.error || "Erreur lors du chargement des paramètres");
+      }
+      
+      if (result.preferences) {
+        setEmailNotifications(result.preferences.emailNotifications ?? true);
+        setBookingReminders(result.preferences.bookingReminders ?? true);
+        setPromotionalEmails(result.preferences.promotionalEmails ?? false);
+        setMarketingEmails(result.preferences.marketingEmails ?? false);
       }
     } catch (err) {
       setError("Erreur lors du chargement des paramètres");
@@ -59,21 +60,15 @@ export default function SettingsPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          emailNotifications,
-          bookingReminders,
-          promotionalEmails,
-          marketingEmails,
-          language: "fr",
-        }),
+      const result = await updateSettingsAction({
+        emailNotifications,
+        bookingReminders,
+        promotionalEmails,
+        marketingEmails,
+        language: "fr",
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || "Erreur lors de l'enregistrement");
       }
 

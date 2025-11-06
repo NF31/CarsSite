@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { getProfileAction, updateProfileAction, deleteAccountAction } from "@/actions/profile";
+import { changePasswordAction } from "@/actions/profile/password";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -98,18 +100,19 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch("/api/profile");
-      if (!response.ok) {
-        throw new Error("Erreur lors du chargement du profil");
+      const result = await getProfileAction();
+      if (!result.success) {
+        throw new Error(result.error || "Erreur lors du chargement du profil");
       }
-      const data = await response.json();
-      setUser(data.user);
-      profileForm.reset({
-        name: data.user.name,
-        phone: data.user.phone || "",
-        image: data.user.image || "",
-        driverLicense: data.user.driverLicense || "",
-      });
+      if (result.user) {
+        setUser(result.user);
+        profileForm.reset({
+          name: result.user.name,
+          phone: result.user.phone || "",
+          image: result.user.image || "",
+          driverLicense: result.user.driverLicense || "",
+        });
+      }
     } catch {
       setError("Erreur lors du chargement du profil");
     } finally {
@@ -123,20 +126,16 @@ export default function ProfilePage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const result = await updateProfileAction(data);
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || "Erreur lors de la mise à jour");
       }
 
-      setUser(result.user);
-      setSuccess("Profil mis à jour avec succès");
+      if (result.user) {
+        setUser(result.user);
+      }
+      setSuccess(result.message || "Profil mis à jour avec succès");
       await update(); // Mettre à jour la session
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -152,19 +151,13 @@ export default function ProfilePage() {
     setPasswordSuccess(null);
 
     try {
-      const response = await fetch("/api/profile/password", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const result = await changePasswordAction(data);
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || "Erreur lors du changement de mot de passe");
       }
 
-      setPasswordSuccess("Mot de passe modifié avec succès");
+      setPasswordSuccess(result.message || "Mot de passe modifié avec succès");
       passwordForm.reset();
       setTimeout(() => setPasswordSuccess(null), 3000);
     } catch (err) {
@@ -180,15 +173,9 @@ export default function ProfilePage() {
     setDeleteSuccess(null);
 
     try {
-      const response = await fetch("/api/profile/delete", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const result = await deleteAccountAction(data);
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || "Erreur lors de la demande de suppression");
       }
 
