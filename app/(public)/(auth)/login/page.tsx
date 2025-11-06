@@ -41,11 +41,8 @@ export default function LoginPage() {
     // Gérer les erreurs passées via les paramètres d'URL
     const errorParam = searchParams.get("error");
     if (errorParam) {
-      if (errorParam === "CredentialsSignin") {
-        setError("Identifiants incorrects");
-      } else {
-        setError(errorParam);
-      }
+      // Message générique pour éviter la fuite d'information
+      setError("Identifiants incorrects");
     }
   }, [verified, searchParams]);
 
@@ -55,6 +52,36 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      // Utiliser la route API personnalisée pour le rate limiting et verrouillage
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          rememberMe,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Gérer les erreurs de rate limiting
+        if (response.status === 429) {
+          setError(data.error || "Trop de tentatives. Veuillez réessayer dans quelques instants.");
+        } else if (response.status === 423) {
+          // Compte verrouillé
+          setError(data.error || "Compte temporairement verrouillé. Veuillez réessayer plus tard.");
+        } else {
+          // Message d'erreur générique pour éviter la fuite d'information
+          setError(data.error || "Identifiants incorrects");
+        }
+        return;
+      }
+
+      // Si la connexion réussit via l'API, appeler signIn pour créer la session NextAuth
       const result = await signIn("credentials", {
         email,
         password,
@@ -63,12 +90,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        // Traduire les erreurs en français
-        if (result.error === "CredentialsSignin") {
-          setError("Identifiants incorrects");
-        } else {
-          setError(result.error);
-        }
+        setError("Identifiants incorrects");
         return;
       }
 
