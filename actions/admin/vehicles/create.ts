@@ -69,13 +69,14 @@ export async function createVehicleAction(
       };
     }
 
-    // Vérifier que le dépôt n'est pas supérieur à 10 fois le prix par jour
-    if (validatedData.deposit > validatedData.pricePerDay * 10) {
+    // Vérifier que le dépôt n'est pas supérieur à 100 fois le prix par jour
+    // (augmenté pour permettre des dépôts plus élevés pour les véhicules de luxe)
+    if (validatedData.deposit > validatedData.pricePerDay * 100) {
       return {
         success: false,
-        error: "Le dépôt ne peut pas être supérieur à 10 fois le prix par jour",
+        error: "Le dépôt ne peut pas être supérieur à 100 fois le prix par jour",
         fieldErrors: {
-          deposit: ["Le dépôt ne peut pas être supérieur à 10 fois le prix par jour"],
+          deposit: ["Le dépôt ne peut pas être supérieur à 100 fois le prix par jour"],
         },
       };
     }
@@ -239,6 +240,7 @@ export async function createVehicleAction(
         locationId: location.id, // Utiliser l'ID réel de la location (créée ou existante)
         features: validatedData.features || [],
         images: validatedData.images,
+        imagePublicIds: validatedData.imagePublicIds || [],
         description: validatedData.description,
         status: "AVAILABLE", // Par défaut, le véhicule est disponible
       },

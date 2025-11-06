@@ -31,7 +31,7 @@ export function CharacteristicsSection({
   transmissionOptions,
   fuelTypeOptions,
 }: CharacteristicsSectionProps) {
-  const { register, formState: { errors }, setValue, trigger } = form;
+  const { register, formState: { errors }, setValue, trigger, watch } = form;
 
   return (
     <Card>
@@ -45,6 +45,7 @@ export function CharacteristicsSection({
             <Label htmlFor="category">Catégorie *</Label>
             <div className="relative">
               <Select
+                value={watch("category")}
                 onValueChange={(value) => {
                   setValue("category", value as VehicleCategory, { shouldValidate: true, shouldDirty: true });
                   trigger("category");
@@ -94,6 +95,7 @@ export function CharacteristicsSection({
             <Label htmlFor="transmission">Transmission *</Label>
             <div className="relative">
               <Select
+                value={watch("transmission")}
                 onValueChange={(value) => {
                   setValue("transmission", value as TransmissionType, { shouldValidate: true, shouldDirty: true });
                   trigger("transmission");
@@ -121,6 +123,7 @@ export function CharacteristicsSection({
             <Label htmlFor="fuelType">Carburant *</Label>
             <div className="relative">
               <Select
+                value={watch("fuelType")}
                 onValueChange={(value) => {
                   setValue("fuelType", value as FuelType, { shouldValidate: true, shouldDirty: true });
                   trigger("fuelType");

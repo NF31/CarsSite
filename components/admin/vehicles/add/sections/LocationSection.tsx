@@ -23,7 +23,7 @@ export function LocationSection({
   getSelectValidation,
   locationOptions,
 }: LocationSectionProps) {
-  const { formState: { errors }, setValue, trigger } = form;
+  const { formState: { errors }, setValue, trigger, watch } = form;
 
   return (
     <Card>
@@ -36,6 +36,7 @@ export function LocationSection({
           <Label htmlFor="locationId">Agence *</Label>
           <div className="relative">
             <Select
+              value={watch("locationId")}
               onValueChange={(value) => {
                 setValue("locationId", value, { shouldValidate: true, shouldDirty: true });
                 trigger("locationId");
