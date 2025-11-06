@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useState } from "react";
 
 const menuItems = [
@@ -308,6 +308,7 @@ export function AdminSidebarMobile() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0 sm:w-80">
+        <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
         <SidebarContent />
       </SheetContent>
     </Sheet>
