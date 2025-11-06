@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
+import { forgotPasswordAction } from "@/actions/auth/forgot-password";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -27,28 +28,22 @@ export default function ForgotPasswordPage() {
     setSuccess(false);
 
     try {
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+      const result = await forgotPasswordAction({ email });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
+      if (!result.success) {
+        if (result.status === 429) {
           setError(
-            `Trop de tentatives. Veuillez réessayer après ${new Date(data.resetAt).toLocaleTimeString("fr-FR")}`
+            result.resetAt
+              ? `Trop de tentatives. Veuillez réessayer après ${new Date(result.resetAt).toLocaleTimeString("fr-FR")}`
+              : result.error || "Trop de tentatives. Veuillez réessayer plus tard."
           );
         } else {
-          setError(data.message || "Une erreur est survenue");
+          setError(result.message || result.error || "Une erreur est survenue");
         }
         return;
       }
 
-      if (data.success) {
+      if (result.success) {
         setSuccess(true);
         setEmail("");
       }
