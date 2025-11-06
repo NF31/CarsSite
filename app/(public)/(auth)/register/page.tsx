@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Car, CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { registerAction } from "@/actions/auth/register";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -110,25 +111,17 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      const result = await registerAction(data);
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        setError(result.message || "Une erreur est survenue");
+      if (!result.success) {
+        setError(result.message || result.error || "Une erreur est survenue");
         return;
       }
 
       // Rediriger vers la page de vérification d'email
       // Si l'email n'a pas été envoyé mais qu'on a un token dev, l'utiliser
-      if (!result.emailSent && result.devToken) {
-        router.push(`/verify-email?token=${result.devToken}&email=${encodeURIComponent(data.email)}&dev=true`);
+      if (!result.emailSent && (result as any).devToken) {
+        router.push(`/verify-email?token=${(result as any).devToken}&email=${encodeURIComponent(data.email)}&dev=true`);
       } else if (result.emailSent) {
         router.push(`/verify-email?email=${encodeURIComponent(data.email)}&sent=true`);
       } else {

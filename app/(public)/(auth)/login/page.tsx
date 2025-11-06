@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Car, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { loginAction } from "@/actions/auth/login";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,64 +53,41 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // Utiliser la route API personnalisée pour le rate limiting et verrouillage
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          rememberMe,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Gérer les erreurs de rate limiting
-        if (response.status === 429) {
-          setError(data.error || "Trop de tentatives. Veuillez réessayer dans quelques instants.");
-        } else if (response.status === 423) {
-          // Compte verrouillé
-          setError(data.error || "Compte temporairement verrouillé. Veuillez réessayer plus tard.");
-        } else {
-          // Message d'erreur générique pour éviter la fuite d'information
-          setError(data.error || "Identifiants incorrects");
-        }
-        return;
-      }
-
-      // Si la connexion réussit via l'API, appeler signIn pour créer la session NextAuth
-      const result = await signIn("credentials", {
+      // Utiliser la Server Action pour le rate limiting et verrouillage
+      const result = await loginAction({
         email,
         password,
         rememberMe,
-        redirect: false,
       });
 
-      if (result?.error) {
-        setError("Identifiants incorrects");
+      if (!result.success) {
+        // Gérer les erreurs de rate limiting
+        if (result.status === 429) {
+          setError(result.error || "Trop de tentatives. Veuillez réessayer dans quelques instants.");
+        } else if (result.status === 423) {
+          // Compte verrouillé
+          setError(result.error || "Compte temporairement verrouillé. Veuillez réessayer plus tard.");
+        } else {
+          // Message d'erreur générique pour éviter la fuite d'information
+          setError(result.error || "Identifiants incorrects");
+        }
         return;
       }
 
-      if (result?.ok) {
-        // Attendre un peu pour que la session soit mise à jour
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        
-        // Récupérer le rôle depuis la session pour rediriger correctement
-        const sessionResponse = await fetch("/api/auth/session");
-        const session = await sessionResponse.json();
-        const role = session?.user?.role;
-        
-        if (role === "ADMIN") {
-          router.push("/admin/dashboard");
-        } else {
-          router.push("/dashboard");
-        }
-        router.refresh();
+      // Si la connexion réussit, attendre un peu pour que la session soit mise à jour
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      
+      // Récupérer le rôle depuis la session pour rediriger correctement
+      const sessionResponse = await fetch("/api/auth/session");
+      const session = await sessionResponse.json();
+      const role = session?.user?.role;
+      
+      if (role === "ADMIN") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/dashboard");
       }
+      router.refresh();
     } catch (err) {
       setError("Une erreur est survenue. Veuillez réessayer.");
     } finally {
@@ -250,4 +228,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
