@@ -121,6 +121,8 @@ model User {
   driverLicense       String?
   lockedUntil         DateTime? // Verrouillage temporaire après échecs
   failedLoginAttempts Int       @default(0) // Nombre d'échecs consécutifs
+  deletedAt           DateTime? // Soft delete pour conformité RGPD
+  originalEmailHash   String?   // Hash de l'email original pour traçabilité légale (SHA-256)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -130,6 +132,7 @@ model User {
   payments      Payment[]
 
   @@index([email])
+  @@index([deletedAt])
   @@map("users")
 }
 

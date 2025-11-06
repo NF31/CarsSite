@@ -15,8 +15,11 @@ export async function GET() {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const user = await prisma.user.findFirst({
+      where: {
+        id: session.user.id,
+        deletedAt: null, // Vérifier que le compte n'est pas supprimé
+      },
       select: {
         id: true,
         email: true,
@@ -32,7 +35,7 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Utilisateur non trouvé" },
+        { error: "Utilisateur non trouvé ou compte supprimé" },
         { status: 404 }
       );
     }
