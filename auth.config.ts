@@ -2,6 +2,7 @@ import type { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import type { UserRole } from "@prisma/client";
 
 export const authConfig = {
   providers: [
@@ -35,14 +36,15 @@ export const authConfig = {
         }
 
         // Vérifier si l'email est vérifié
+        // Ne pas révéler cette information pour éviter l'énumération d'emails
+        // Retourner null comme pour des identifiants incorrects
         if (!user.emailVerified) {
-          throw new Error(
-            "Votre email n'a pas été vérifié. Veuillez vérifier votre boîte mail."
-          );
+          return null;
         }
 
         // Récupérer rememberMe depuis les credentials
-        const rememberMe = (credentials as any)?.rememberMe === true || (credentials as any)?.rememberMe === "true";
+        const rememberMe = (credentials as { rememberMe?: boolean | string })?.rememberMe === true || 
+                          (credentials as { rememberMe?: boolean | string })?.rememberMe === "true";
 
         return {
           id: user.id,
@@ -64,9 +66,9 @@ export const authConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
+        token.role = (user as { role: UserRole }).role;
         // Gérer rememberMe depuis les credentials
-        if ((user as any).rememberMe) {
+        if ((user as { rememberMe?: boolean }).rememberMe) {
           token.rememberMe = true;
           // Pour rememberMe : session de 90 jours
           token.exp = Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60;
@@ -80,7 +82,7 @@ export const authConfig = {
     async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        session.user.role = (token.role as UserRole);
       }
       return session;
     },
