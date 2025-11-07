@@ -6,6 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   CalendarDays,
   Clock,
   ClipboardList,
@@ -24,6 +34,7 @@ interface MaintenanceTableProps {
   onEdit: (maintenance: MaintenanceRecord) => void;
   onViewDetails: (maintenance: MaintenanceRecord) => void;
   onStatusChange: (maintenance: MaintenanceRecord, status: MaintenanceStatus) => void;
+  onRequestCancel: (maintenance: MaintenanceRecord) => void;
   isLoading?: boolean;
   actionLoadingId?: string | null;
 }
@@ -59,6 +70,7 @@ export function MaintenanceTable({
   onEdit,
   onViewDetails,
   onStatusChange,
+  onRequestCancel,
   isLoading,
   actionLoadingId,
 }: MaintenanceTableProps) {
@@ -71,6 +83,7 @@ export function MaintenanceTable({
     const end = new Date(maintenance.endDate);
     const periodEnded = end < now;
     const periodStarted = start <= now;
+    const beforeStart = start > now;
 
     const canStart =
       maintenance.status === MaintenanceStatus.SCHEDULED &&
@@ -78,14 +91,14 @@ export function MaintenanceTable({
       periodStarted &&
       !periodEnded;
     const canReplan =
-      maintenance.status === MaintenanceStatus.CANCELLED && !periodEnded;
+      maintenance.status === MaintenanceStatus.CANCELLED && beforeStart;
     const canComplete =
       maintenance.status === MaintenanceStatus.IN_PROGRESS && !periodEnded;
     const canCancel =
       maintenance.status !== MaintenanceStatus.COMPLETED &&
       maintenance.status !== MaintenanceStatus.CANCELLED &&
-      !periodEnded;
-    const canEdit = !periodEnded;
+      beforeStart;
+    const canEdit = beforeStart;
 
     return (
       <div
@@ -145,9 +158,7 @@ export function MaintenanceTable({
             size="sm"
             variant="outline"
             disabled={disabled || !canCancel}
-            onClick={() =>
-              onStatusChange(maintenance, MaintenanceStatus.CANCELLED)
-            }
+            onClick={() => onRequestCancel(maintenance)}
             className="h-8"
           >
             <RotateCcw className="h-3.5 w-3.5 mr-1" />
@@ -374,6 +385,39 @@ export function MaintenanceTable({
         </div>
       </div>
     </div>
+  );
+}
+
+export function MaintenanceCancelDialog({
+  maintenance,
+  onConfirm,
+  onDismiss,
+}: {
+  maintenance: MaintenanceRecord | null;
+  onConfirm: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <AlertDialog open={Boolean(maintenance)} onOpenChange={(open) => !open && onDismiss()}>
+      <AlertDialogContent className="w-[min(92vw,480px)] max-h-[90vh] overflow-y-auto">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+            Confirmer l'annulation de la maintenance ?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-sm text-muted-foreground">
+            {maintenance
+              ? `Vous êtes sur le point d'annuler l'intervention "${typeLabels[maintenance.type]}" programmée pour le véhicule ${maintenance.vehicle.brand} ${maintenance.vehicle.model}.`
+              : "Annulation de la maintenance sélectionnée."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <AlertDialogCancel className="w-full sm:w-auto">Revenir en arrière</AlertDialogCancel>
+          <AlertDialogAction className="w-full sm:w-auto" onClick={onConfirm}>
+            Oui, annuler
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
