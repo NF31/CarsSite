@@ -63,6 +63,10 @@ const menuItems = [
     icon: Gift,
     href: "/admin/services",
     badge: null,
+    submenu: [
+      { title: "Catalogue", href: "/admin/services" },
+      { title: "Ajouter un service", href: "/admin/services/add" },
+    ],
   },
   {
     title: "Maintenance",
