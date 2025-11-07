@@ -15,7 +15,10 @@ import type { MaintenanceVehicleOption } from "@/actions/admin/vehicles/get-main
 import { getMaintenanceVehicleOptionsAction } from "@/actions/admin/vehicles/get-maintenance-vehicles";
 import { MaintenanceFilters, type MaintenanceFiltersState } from "@/components/admin/vehicles/maintenance/MaintenanceFilters";
 import { MaintenanceSummaryCards } from "@/components/admin/vehicles/maintenance/MaintenanceSummaryCards";
-import { MaintenanceTable } from "@/components/admin/vehicles/maintenance/MaintenanceTable";
+import {
+  MaintenanceTable,
+  MaintenanceCancelDialog,
+} from "@/components/admin/vehicles/maintenance/MaintenanceTable";
 import { ScheduleMaintenanceDialog } from "@/components/admin/vehicles/maintenance/ScheduleMaintenanceDialog";
 import { VehiclesPagination } from "@/components/admin/vehicles/VehiclesPagination";
 import { Button } from "@/components/ui/button";
@@ -97,6 +100,7 @@ export function MaintenancePageClient({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState<MaintenanceRecord | null>(null);
   const firstLoadRef = useRef<boolean>(true);
+  const [cancelDialogMaintenance, setCancelDialogMaintenance] = useState<MaintenanceRecord | null>(null);
 
   const fetchData = useCallback(
     (state: MaintenanceFiltersState, skipLoadingState = false) => {
@@ -247,6 +251,7 @@ export function MaintenancePageClient({
           const result = await updateMaintenanceAction({
             id: maintenance.id,
             status,
+            type: maintenance.type,
           });
 
           if (result.success && result.data) {
@@ -387,8 +392,15 @@ export function MaintenancePageClient({
       <MaintenanceTable
         maintenances={maintenances}
         onEdit={handleEdit}
-        onStatusChange={handleStatusChange}
+        onStatusChange={(maintenance, status) => {
+          if (status === MaintenanceStatus.CANCELLED) {
+            setCancelDialogMaintenance(maintenance);
+          } else {
+            handleStatusChange(maintenance, status);
+          }
+        }}
         onViewDetails={handleViewDetails}
+        onRequestCancel={(maintenance) => setCancelDialogMaintenance(maintenance)}
         isLoading={isLoading && maintenances.length === 0}
         actionLoadingId={actionLoadingId}
       />
@@ -413,6 +425,16 @@ export function MaintenancePageClient({
         vehicles={vehicles}
         maintenance={editingMaintenance}
         onSuccess={handleDialogSuccess}
+      />
+      <MaintenanceCancelDialog
+        maintenance={cancelDialogMaintenance}
+        onDismiss={() => setCancelDialogMaintenance(null)}
+        onConfirm={() => {
+          if (cancelDialogMaintenance) {
+            handleStatusChange(cancelDialogMaintenance, MaintenanceStatus.CANCELLED);
+          }
+          setCancelDialogMaintenance(null);
+        }}
       />
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
