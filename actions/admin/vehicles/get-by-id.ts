@@ -23,13 +23,23 @@ export interface GetVehicleByIdResult {
     pricePerMonth: number | null;
     deposit: number;
     status: string;
-          locationId: string;
-          features: string[];
-          images: string[];
-          imagePublicIds: string[];
-          description: string | null;
+    locationId: string;
+    location: {
+      id: string;
+      name: string;
+      city: string;
+      address?: string;
+    };
+    features: string[];
+    images: string[];
+    imagePublicIds: string[];
+    description: string | null;
     createdAt: Date;
     updatedAt: Date;
+    _count: {
+      bookings: number;
+      reviews: number;
+    };
   };
   error?: string;
 }
@@ -51,7 +61,7 @@ export async function getVehicleByIdAction(
       };
     }
 
-    // Récupérer le véhicule
+    // Récupérer le véhicule avec toutes les relations nécessaires
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: vehicleId },
       include: {
@@ -60,6 +70,13 @@ export async function getVehicleByIdAction(
             id: true,
             name: true,
             city: true,
+            address: true,
+          },
+        },
+        _count: {
+          select: {
+            bookings: true,
+            reviews: true,
           },
         },
       },
@@ -92,12 +109,22 @@ export async function getVehicleByIdAction(
         deposit: vehicle.deposit,
         status: vehicle.status,
         locationId: vehicle.locationId,
+        location: {
+          id: vehicle.location.id,
+          name: vehicle.location.name,
+          city: vehicle.location.city,
+          address: vehicle.location.address || undefined,
+        },
         features: vehicle.features,
         images: vehicle.images,
         imagePublicIds: vehicle.imagePublicIds || [],
         description: vehicle.description,
         createdAt: vehicle.createdAt,
         updatedAt: vehicle.updatedAt,
+        _count: {
+          bookings: vehicle._count.bookings,
+          reviews: vehicle._count.reviews,
+        },
       },
     };
   } catch (error) {

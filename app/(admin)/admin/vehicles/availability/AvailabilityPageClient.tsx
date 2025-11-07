@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, ArrowLeft, Car } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { getVehiclesAction, type GetVehiclesFilters } from "@/actions/admin/vehicles";
+import { getVehiclesAction, getVehicleByIdAction, type GetVehiclesFilters } from "@/actions/admin/vehicles";
 import { VehiclesFilters } from "@/components/admin/vehicles/VehiclesFilters";
 import type { VehicleCategory, VehicleStatus } from "@prisma/client";
 import { AvailabilityCalendar } from "@/components/admin/vehicles/AvailabilityCalendar";
@@ -56,6 +57,7 @@ export function AvailabilityPageClient({
   initialLocations,
   initialBrands,
 }: AvailabilityPageClientProps) {
+  const searchParams = useSearchParams();
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [filters, setFilters] = useState<GetVehiclesFilters>({
     page: 1,
@@ -72,6 +74,55 @@ export function AvailabilityPageClient({
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+
+  // Charger le véhicule depuis l'URL si présent
+  useEffect(() => {
+    const vehicleIdFromUrl = searchParams.get("vehicleId");
+    if (vehicleIdFromUrl && !selectedVehicle) {
+      startTransition(async () => {
+        try {
+          const vehicleResult = await getVehicleByIdAction(vehicleIdFromUrl);
+          if (vehicleResult.success && vehicleResult.data) {
+            // Convertir les données en format Vehicle
+            const vehicle: Vehicle = {
+              id: vehicleResult.data.id,
+              brand: vehicleResult.data.brand,
+              model: vehicleResult.data.model,
+              year: vehicleResult.data.year,
+              licensePlate: vehicleResult.data.licensePlate,
+              mileage: vehicleResult.data.mileage,
+              category: vehicleResult.data.category as VehicleCategory,
+              seats: vehicleResult.data.seats,
+              transmission: vehicleResult.data.transmission,
+              fuelType: vehicleResult.data.fuelType,
+              color: vehicleResult.data.color,
+              pricePerDay: vehicleResult.data.pricePerDay,
+              pricePerWeek: vehicleResult.data.pricePerWeek,
+              pricePerMonth: vehicleResult.data.pricePerMonth,
+              deposit: vehicleResult.data.deposit,
+              status: vehicleResult.data.status as VehicleStatus,
+              locationId: vehicleResult.data.locationId,
+              location: {
+                id: vehicleResult.data.location.id,
+                name: vehicleResult.data.location.name,
+                city: vehicleResult.data.location.city,
+                address: vehicleResult.data.location.address || undefined,
+              },
+              features: vehicleResult.data.features,
+              images: vehicleResult.data.images,
+              description: vehicleResult.data.description,
+              createdAt: new Date(vehicleResult.data.createdAt),
+              updatedAt: new Date(vehicleResult.data.updatedAt),
+              _count: vehicleResult.data._count,
+            };
+            setSelectedVehicle(vehicle);
+          }
+        } catch (error) {
+          console.error("Error loading vehicle from URL:", error);
+        }
+      });
+    }
+  }, [searchParams, selectedVehicle]);
 
   // Charger les véhicules
   useEffect(() => {
