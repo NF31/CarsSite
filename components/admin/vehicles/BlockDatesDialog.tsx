@@ -58,6 +58,11 @@ export function BlockDatesDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const now = new Date();
+  const todayIso = now.toISOString().split("T")[0];
+  const hasStarted =
+    selectedStartDate && selectedStartDate < now ? true : false;
+  const hasEnded = selectedEndDate && selectedEndDate < now ? true : false;
 
   // Mettre à jour les dates quand elles changent depuis l'extérieur ou quand le dialog s'ouvre
   useEffect(() => {
@@ -186,7 +191,7 @@ export function BlockDatesDialog({
           Bloquer des dates
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="w-[min(92vw,420px)] sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Bloquer des dates</DialogTitle>
           <DialogDescription>
@@ -195,7 +200,7 @@ export function BlockDatesDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate">Date de début</Label>
                 <Input
@@ -203,8 +208,10 @@ export function BlockDatesDialog({
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]} // Minimum : aujourd'hui
+                  min={todayIso}
                   required
+                  disabled={hasStarted || isSubmitting}
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -215,10 +222,15 @@ export function BlockDatesDialog({
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   required
+                  min={
+                    startDate === todayIso ? now.toISOString().slice(11, 16) : undefined
+                  }
+                  disabled={hasStarted || isSubmitting}
+                  className="w-full"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="endDate">Date de fin</Label>
                 <Input
@@ -227,7 +239,9 @@ export function BlockDatesDialog({
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   required
-                  min={startDate || new Date().toISOString().split('T')[0]} // Minimum : date de début ou aujourd'hui
+                  min={startDate || todayIso}
+                  disabled={hasEnded || isSubmitting}
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -238,6 +252,9 @@ export function BlockDatesDialog({
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
                   required
+                  min={startDate === endDate ? startTime : undefined}
+                  disabled={hasEnded || isSubmitting}
+                  className="w-full"
                 />
               </div>
             </div>
@@ -249,6 +266,7 @@ export function BlockDatesDialog({
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Ex: Réparation, événement spécial, etc."
                 rows={3}
+                className="w-full"
               />
             </div>
             {warning && (
@@ -261,6 +279,11 @@ export function BlockDatesDialog({
                 {error}
               </div>
             )}
+            {hasEnded && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                Ce blocage est terminé, les dates ne peuvent plus être modifiées.
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -271,7 +294,11 @@ export function BlockDatesDialog({
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting || hasEnded}
+              className="w-full sm:w-auto"
+            >
               {isSubmitting ? "Blocage..." : "Bloquer les dates"}
             </Button>
           </DialogFooter>
