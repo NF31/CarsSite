@@ -386,7 +386,7 @@ export function VehiclesListView({ vehicles, startIndex = 0 }: VehiclesListViewP
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/vehicles/${vehicle.id}/edit`}>
+                          <Link href={`/admin/vehicles/edit/${vehicle.id}`}>
                             <Edit className="mr-2 h-4 w-4" />
                             Modifier
                           </Link>
@@ -567,7 +567,7 @@ export function VehiclesListView({ vehicles, startIndex = 0 }: VehiclesListViewP
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/vehicles/${vehicle.id}/edit`}>
+                          <Link href={`/admin/vehicles/edit/${vehicle.id}`}>
                             <Edit className="mr-2 h-4 w-4" />
                             Modifier
                           </Link>
