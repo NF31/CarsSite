@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -8,7 +8,8 @@ import interactionPlugin from "@fullcalendar/interaction";
 // Les styles CSS de FullCalendar doivent être importés via un CDN ou un fichier CSS local
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, AlertCircle, Calendar as CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, AlertCircle, Calendar as CalendarIcon, Unlock } from "lucide-react";
 import { getVehicleAvailabilityAction, unblockVehicleDatesAction } from "@/actions/admin/vehicles";
 import { BlockDatesDialog } from "./BlockDatesDialog";
 import { UnblockDatesDialog } from "./UnblockDatesDialog";
@@ -53,6 +54,16 @@ export function AvailabilityCalendar({ vehicleId }: AvailabilityCalendarProps) {
   const [currentViewEnd, setCurrentViewEnd] = useState<Date | null>(null);
   const isRefreshingRef = useRef(false);
   const lastDatesRef = useRef<{ start: string | null; end: string | null }>({ start: null, end: null });
+  const activeBlocks = useMemo(
+    () =>
+      availability?.maintenances
+        ? availability.maintenances.filter(
+            (maintenance: any) =>
+              maintenance.type === "BLOCKED" && maintenance.status !== "CANCELLED"
+          )
+        : [],
+    [availability]
+  );
 
   const refreshAvailability = useCallback(async (startDate: Date, endDate: Date) => {
     // Éviter les appels multiples simultanés
@@ -551,6 +562,8 @@ export function AvailabilityCalendar({ vehicleId }: AvailabilityCalendarProps) {
       if (currentViewStart && currentViewEnd) {
         refreshAvailability(currentViewStart, currentViewEnd);
       }
+      setSelectedMaintenance(null);
+      setIsUnblockDialogOpen(false);
     } else {
       // Afficher une erreur (vous pouvez utiliser toast ici)
       console.error(result.error || "Erreur lors du déblocage");
@@ -661,7 +674,12 @@ export function AvailabilityCalendar({ vehicleId }: AvailabilityCalendarProps) {
               <>
                 <UnblockDatesDialog
                   open={isUnblockDialogOpen}
-                  onOpenChange={setIsUnblockDialogOpen}
+                  onOpenChange={(open) => {
+                    setIsUnblockDialogOpen(open);
+                    if (!open) {
+                      setSelectedMaintenance(null);
+                    }
+                  }}
                   maintenanceId={selectedMaintenance.id}
                   startDate={selectedMaintenance.startDate}
                   endDate={selectedMaintenance.endDate}
@@ -710,6 +728,54 @@ export function AvailabilityCalendar({ vehicleId }: AvailabilityCalendarProps) {
         
         {/* Instructions et Légende */}
         <div className="mt-4 pt-4 border-t space-y-4">
+          {activeBlocks.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-3">
+              <p className="text-sm font-medium text-amber-800">
+                Dates actuellement bloquées ({activeBlocks.length}) :
+              </p>
+              <div className="space-y-2">
+                {activeBlocks.map((block: any) => (
+                  <div
+                    key={block.id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2"
+                  >
+                    <div className="text-sm text-amber-900 space-y-1">
+                      <p>
+                        <span className="font-semibold">Du :</span>{" "}
+                        {format(new Date(block.startDate), "dd/MM/yyyy HH:mm")}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Au :</span>{" "}
+                        {format(new Date(block.endDate), "dd/MM/yyyy HH:mm")}
+                      </p>
+                      {block.description && (
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-semibold">Raison :</span> {block.description}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => {
+                        setSelectedMaintenance({
+                          id: block.id,
+                          startDate: new Date(block.startDate),
+                          endDate: new Date(block.endDate),
+                          reason: block.description || null,
+                        });
+                        setIsUnblockDialogOpen(true);
+                      }}
+                    >
+                      <Unlock className="mr-2 h-4 w-4" />
+                      Débloquer
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
               <strong>💡 Comment utiliser :</strong> Cliquez et glissez sur le calendrier pour sélectionner une période à bloquer, ou cliquez sur un événement &quot;Dates bloquées&quot; pour le débloquer ou le modifier.
