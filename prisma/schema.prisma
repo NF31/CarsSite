@@ -63,6 +63,7 @@ enum MaintenanceType {
   SERVICE
   REPAIR
   INSPECTION
+  BLOCKED
 }
 
 enum MaintenanceStatus {
