@@ -1,5 +1,5 @@
 import { ServicesPageClient } from "./ServicesPageClient";
-import { getServicesAction } from "@/actions/admin/services/get-services";
+import { getServicesAction } from "@/actions/admin/services";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
