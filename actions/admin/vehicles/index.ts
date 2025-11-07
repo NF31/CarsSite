@@ -10,4 +10,18 @@ export { moveImageAction, moveImagesAction, type MoveImageResult } from "./move-
 export { deleteVehicleAction, type DeleteVehicleResult } from "./delete-vehicle";
 export { getVehicleAvailabilityAction, type GetVehicleAvailabilityResult, type VehicleAvailabilityItem } from "./get-availability";
 export { blockVehicleDatesAction, unblockVehicleDatesAction, updateBlockedDatesAction, type BlockDatesResult } from "./block-dates";
+export {
+  getMaintenanceDashboardAction,
+  type GetMaintenanceFilters,
+  type GetMaintenanceDashboardResult,
+  type MaintenanceSummary,
+} from "./get-maintenance";
+export {
+  serializeMaintenanceRecord,
+  type MaintenanceRecord,
+  type MaintenanceVehicleInfo,
+} from "@/lib/maintenance/serialization";
+export { getMaintenanceVehicleOptionsAction, type GetMaintenanceVehicleOptionsResult, type MaintenanceVehicleOption } from "./get-maintenance-vehicles";
+export { createMaintenanceAction, type CreateMaintenanceResult } from "./create-maintenance";
+export { updateMaintenanceAction, type UpdateMaintenanceResult } from "./update-maintenance";
 
