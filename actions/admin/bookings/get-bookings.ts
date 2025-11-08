@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import type { BookingStatus, Prisma } from "@prisma/client";
+import { BookingStatus, Prisma } from "@prisma/client";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -79,6 +79,7 @@ export async function getBookingsAction(
   filters: GetBookingsFilters = {}
 ): Promise<GetBookingsResult> {
   try {
+    const currentDate = new Date();
     const {
       status,
       pickupLocationId,
@@ -97,8 +98,84 @@ export async function getBookingsAction(
 
     const where: Prisma.BookingWhereInput = {};
 
+    const normalizeDateFilter = (
+      existing?: Prisma.DateTimeFilter | Date | string
+    ): Prisma.DateTimeFilter => {
+      if (!existing) return {};
+      if (existing instanceof Date) {
+        return { equals: existing };
+      }
+      if (typeof existing === "string") {
+        const parsed = new Date(existing);
+        return Number.isNaN(parsed.getTime()) ? {} : { equals: parsed };
+      }
+      return { ...existing };
+    };
+
     if (status) {
-      where.status = status;
+      if (status === BookingStatus.CONFIRMED) {
+        where.status = BookingStatus.CONFIRMED;
+        const startFilter = normalizeDateFilter(
+          where.startDate as Prisma.DateTimeFilter | Date | string | undefined
+        );
+        const endFilter = normalizeDateFilter(
+          where.endDate as Prisma.DateTimeFilter | Date | string | undefined
+        );
+        where.startDate = {
+          ...startFilter,
+          gt: currentDate,
+        };
+        where.endDate = {
+          ...endFilter,
+          gt: currentDate,
+        };
+      } else if (status === BookingStatus.IN_PROGRESS) {
+        where.status = {
+          in: [BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
+        };
+        const startFilter = normalizeDateFilter(
+          where.startDate as Prisma.DateTimeFilter | Date | string | undefined
+        );
+        const endFilter = normalizeDateFilter(
+          where.endDate as Prisma.DateTimeFilter | Date | string | undefined
+        );
+        where.startDate = {
+          ...startFilter,
+          lte: currentDate,
+        };
+        where.endDate = {
+          ...endFilter,
+          gt: currentDate,
+        };
+      } else if (status === BookingStatus.COMPLETED) {
+        const allowedStatuses = [
+          BookingStatus.PENDING,
+          BookingStatus.CONFIRMED,
+          BookingStatus.IN_PROGRESS,
+          BookingStatus.COMPLETED,
+        ];
+
+        const existingAnd = Array.isArray(where.AND)
+          ? where.AND
+          : where.AND
+          ? [where.AND]
+          : [];
+
+        where.AND = [
+          ...existingAnd,
+          {
+            OR: [
+              { status: BookingStatus.COMPLETED },
+              {
+                status: { in: allowedStatuses },
+                endDate: { lte: currentDate },
+              },
+            ],
+          },
+        ];
+      } else {
+        where.status = status;
+      }
     }
 
     if (pickupLocationId) {
@@ -246,13 +323,31 @@ export async function getBookingsAction(
         { locale: fr }
       )}`;
 
+    const normalizeStatus = (booking: (typeof bookings)[number]): BookingStatus => {
+      const { status, startDate, endDate } = booking;
+
+      if (status === BookingStatus.CANCELLED) {
+        return BookingStatus.CANCELLED;
+      }
+
+      if (endDate <= currentDate) {
+        return BookingStatus.COMPLETED;
+      }
+
+      if (startDate <= currentDate && currentDate < endDate) {
+        return BookingStatus.IN_PROGRESS;
+      }
+
+      return status;
+    };
+
     return {
       success: true,
       data: {
         bookings: bookings.map((booking) => ({
           id: booking.id,
           reference: booking.reference,
-          status: booking.status,
+          status: normalizeStatus(booking),
           startDate: booking.startDate.toISOString(),
           endDate: booking.endDate.toISOString(),
           period: periodFormatter(booking.startDate, booking.endDate),
