@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,9 +18,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Bell, User, Settings, LogOut, LayoutDashboard, Shield, Search } from "lucide-react";
 import { AdminSidebarMobile } from "./AdminSidebar";
+import type { Session } from "next-auth";
 
-export function AdminNavbar() {
-  const { data: session } = useSession();
+interface AdminNavbarProps {
+  session: Session;
+}
+
+export function AdminNavbar({ session }: AdminNavbarProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 

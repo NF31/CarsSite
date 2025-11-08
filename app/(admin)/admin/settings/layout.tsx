@@ -33,7 +33,7 @@ export default async function AdminSettingsLayout({
     <div className="flex min-h-screen flex-col">
       <AdminSidebar />
       <div className="flex flex-col flex-1 lg:pl-64">
-        <AdminNavbar />
+        <AdminNavbar session={session} />
         <main className="flex-1 overflow-x-hidden">
           <div className="w-full px-2 py-4 sm:px-4 sm:py-6 lg:px-6 xl:px-8">
             {children}
