@@ -352,7 +352,7 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
                       <DropdownMenuItem asChild>
                         <Link href={`/admin/bookings/${booking.id}`} className="cursor-pointer">
                           <Eye className="mr-2 h-4 w-4" />
-                          Voir
+                          Voir détails
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem
