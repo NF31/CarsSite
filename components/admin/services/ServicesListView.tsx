@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Gift, MoreVertical } from "lucide-react";
+import { ServiceToggleButton } from "./ServiceToggleButton";
 
 const pricingTypeLabels: Record<ServicePricingType, string> = {
   PER_DAY: "Par jour",
@@ -114,13 +115,14 @@ export function ServicesListView({ services, startIndex = 0 }: ServicesListViewP
               <Button variant="outline" size="sm" className="flex-1" asChild>
                 <Link href={`/admin/services/${service.id}/edit`}>Modifier</Link>
               </Button>
-              <Button
+              <ServiceToggleButton
+                serviceId={service.id}
+                serviceName={service.name}
+                active={service.active}
                 variant={service.active ? "ghost" : "secondary"}
                 size="sm"
                 className="flex-1"
-              >
-                {service.active ? "Désactiver" : "Activer"}
-              </Button>
+              />
             </div>
           </div>
         ))}
@@ -190,9 +192,22 @@ export function ServicesListView({ services, startIndex = 0 }: ServicesListViewP
                         <DropdownMenuItem asChild>
                           <Link href={`/admin/services/${service.id}/edit`}>Modifier</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          {service.active ? "Désactiver" : "Activer"}
-                        </DropdownMenuItem>
+                        <ServiceToggleButton
+                          serviceId={service.id}
+                          serviceName={service.name}
+                          active={service.active}
+                          trigger={({ onClick, isPending }) => (
+                            <DropdownMenuItem
+                              onSelect={(event) => {
+                                event.preventDefault();
+                                onClick();
+                              }}
+                              disabled={isPending}
+                            >
+                              {service.active ? "Désactiver" : "Activer"}
+                            </DropdownMenuItem>
+                          )}
+                        />
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -274,9 +289,14 @@ export function ServicesListView({ services, startIndex = 0 }: ServicesListViewP
                       <Button size="sm" variant="outline" className="h-9 px-4" asChild>
                         <Link href={`/admin/services/${service.id}/edit`}>Modifier</Link>
                       </Button>
-                      <Button size="sm" variant={service.active ? "ghost" : "secondary"} className="h-9 px-4">
-                        {service.active ? "Désactiver" : "Activer"}
-                      </Button>
+                      <ServiceToggleButton
+                        serviceId={service.id}
+                        serviceName={service.name}
+                        active={service.active}
+                        variant={service.active ? "ghost" : "secondary"}
+                        size="sm"
+                        className="h-9 px-4"
+                      />
                     </div>
                   </td>
                 </tr>
