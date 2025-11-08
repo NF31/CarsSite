@@ -98,6 +98,7 @@ const menuItems = [
     href: "/admin/settings",
     badge: null,
     submenu: [
+      { title: "Vue d'ensemble", href: "/admin/settings" },
       { title: "Informations agence", href: "/admin/settings/agency" },
       { title: "Configuration", href: "/admin/settings/config" },
       { title: "Emails", href: "/admin/settings/emails" },
