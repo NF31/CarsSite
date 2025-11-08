@@ -74,6 +74,8 @@ export function ServicesPageClient({ services, summary }: ServicesPageClientProp
     const messages: Record<string, string> = {
       "service-created": "Service créé avec succès.",
       "service-updated": "Service mis à jour avec succès.",
+      "service-disabled": "Service désactivé avec succès.",
+      "service-activated": "Service activé avec succès.",
     };
 
     const message = messages[successParam];
@@ -112,6 +114,7 @@ export function ServicesPageClient({ services, summary }: ServicesPageClientProp
 
     const messages: Record<string, string> = {
       "invalid-service": "Le service demandé est introuvable ou invalide.",
+      "toggle-failed": "Impossible de modifier le statut du service.",
     };
 
     const message = messages[errorParam];

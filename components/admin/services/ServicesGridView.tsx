@@ -10,6 +10,7 @@ import type { ServicePricingType, VehicleCategory } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { ServiceToggleButton } from "./ServiceToggleButton";
 
 const pricingTypeLabels: Record<ServicePricingType, string> = {
   PER_DAY: "Par jour",
@@ -128,9 +129,13 @@ export function ServicesGridView({ services }: ServicesGridViewProps) {
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/admin/services/${service.id}/edit`}>Modifier</Link>
               </Button>
-              <Button variant={service.active ? "ghost" : "secondary"} size="sm">
-                {service.active ? "Désactiver" : "Activer"}
-              </Button>
+              <ServiceToggleButton
+                serviceId={service.id}
+                serviceName={service.name}
+                active={service.active}
+                variant={service.active ? "ghost" : "secondary"}
+                size="sm"
+              />
             </div>
           </CardFooter>
         </Card>
