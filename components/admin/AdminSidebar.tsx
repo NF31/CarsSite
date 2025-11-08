@@ -47,7 +47,7 @@ const menuItems = [
     badge: null,
     submenu: [
       { title: "Toutes les réservations", href: "/admin/bookings" },
-      { title: "Nouvelle réservation", href: "/admin/bookings/new" },
+      { title: "Nouvelle réservation", href: "/admin/bookings/add" },
       { title: "Calendrier", href: "/admin/bookings/calendar" },
       { title: "En attente", href: "/admin/bookings?status=pending" },
     ],
