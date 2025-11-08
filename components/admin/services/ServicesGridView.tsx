@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -124,8 +125,8 @@ export function ServicesGridView({ services }: ServicesGridViewProps) {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                Modifier
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/admin/services/${service.id}/edit`}>Modifier</Link>
               </Button>
               <Button variant={service.active ? "ghost" : "secondary"} size="sm">
                 {service.active ? "Désactiver" : "Activer"}

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ServiceRecord } from "@/actions/admin/services";
 import type { ServicePricingType, VehicleCategory } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
@@ -110,8 +111,8 @@ export function ServicesListView({ services, startIndex = 0 }: ServicesListViewP
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="flex-1">
-                Modifier
+              <Button variant="outline" size="sm" className="flex-1" asChild>
+                <Link href={`/admin/services/${service.id}/edit`}>Modifier</Link>
               </Button>
               <Button
                 variant={service.active ? "ghost" : "secondary"}
@@ -186,7 +187,9 @@ export function ServicesListView({ services, startIndex = 0 }: ServicesListViewP
                       <DropdownMenuContent align="end" className="w-40">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>Modifier</DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/admin/services/${service.id}/edit`}>Modifier</Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem>
                           {service.active ? "Désactiver" : "Activer"}
                         </DropdownMenuItem>
@@ -268,8 +271,8 @@ export function ServicesListView({ services, startIndex = 0 }: ServicesListViewP
                   </td>
                   <td className="px-6 py-4 align-top">
                     <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                      <Button size="sm" variant="outline" className="h-9 px-4">
-                        Modifier
+                      <Button size="sm" variant="outline" className="h-9 px-4" asChild>
+                        <Link href={`/admin/services/${service.id}/edit`}>Modifier</Link>
                       </Button>
                       <Button size="sm" variant={service.active ? "ghost" : "secondary"} className="h-9 px-4">
                         {service.active ? "Désactiver" : "Activer"}
