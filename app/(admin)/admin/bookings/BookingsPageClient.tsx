@@ -43,6 +43,8 @@ export function BookingsPageClient({ initialLocations }: BookingsPageClientProps
   const [isPending, startTransition] = useTransition();
   const [showSuccess, setShowSuccess] = useState(false);
   const [successType, setSuccessType] = useState<"created" | "updated" | "cancelled" | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
     const success = searchParams.get("success");
@@ -74,6 +76,42 @@ export function BookingsPageClient({ initialLocations }: BookingsPageClientProps
     }
     return undefined;
   }, [searchParams, router]);
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (!error) {
+      return undefined;
+    }
+
+    const messages: Record<string, string> = {
+      "booking-invalid": "La réservation demandée est introuvable ou invalide.",
+      "booking-locked": "Cette réservation ne peut plus être modifiée car sa période est déjà passée.",
+      "booking-update-failed": "Impossible de mettre à jour la réservation. Veuillez réessayer.",
+    };
+
+    const message = messages[error];
+
+    if (!message) {
+      return undefined;
+    }
+
+    setErrorMessage(message);
+    setShowError(true);
+
+    const paramsCopy = new URLSearchParams(searchParams.toString());
+    paramsCopy.delete("error");
+    const newUrl = paramsCopy.toString()
+      ? `${window.location.pathname}?${paramsCopy.toString()}`
+      : window.location.pathname;
+    router.replace(newUrl);
+
+    const timeout = window.setTimeout(() => {
+      setShowError(false);
+      setErrorMessage(null);
+    }, 6000);
+
+    return () => window.clearTimeout(timeout);
+  }, [router, searchParams]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -112,6 +150,23 @@ export function BookingsPageClient({ initialLocations }: BookingsPageClientProps
 
   return (
     <div className="space-y-6">
+      {showError && errorMessage && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center justify-between gap-3">
+          <span>{errorMessage}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setShowError(false);
+              setErrorMessage(null);
+            }}
+            className="text-red-700 hover:text-red-900 transition-colors"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Fermer la notification d'erreur</span>
+          </button>
+        </div>
+      )}
+
       {showSuccess && successType && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-lg flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
