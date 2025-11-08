@@ -77,16 +77,22 @@ interface BookingsListViewProps {
 }
 
 export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewProps) {
-  const formattedRows = useMemo(
-    () =>
-      bookings.map((booking, index) => {
-        return {
-          booking,
-          index: startIndex + index + 1,
-        };
-      }),
-    [bookings, startIndex],
-  );
+  const formattedRows = useMemo(() => {
+    const now = new Date();
+    return bookings.map((booking, index) => {
+      const start = new Date(booking.startDate);
+      const end = new Date(booking.endDate);
+      const canEdit = start > now && end > now;
+
+      return {
+        booking,
+        index: startIndex + index + 1,
+        canEdit,
+        start,
+        end,
+      };
+    });
+  }, [bookings, startIndex]);
 
   if (bookings.length === 0) {
     return (
@@ -101,7 +107,7 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
   return (
     <>
       <div className="space-y-4 xl:hidden">
-        {formattedRows.map(({ booking, index }) => (
+        {formattedRows.map(({ booking, index, canEdit }) => (
           <div key={booking.id} className="border rounded-lg p-4 bg-white shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -112,6 +118,14 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
                 {BOOKING_STATUS_LABELS[booking.status]}
               </Badge>
             </div>
+            {!canEdit && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-2 py-0.5 bg-amber-50 text-amber-700 border-amber-200 w-fit"
+              >
+                Modification indisponible (dates passées)
+              </Badge>
+            )}
 
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2 text-gray-700">
@@ -208,12 +222,22 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
                       Voir
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/admin/bookings/edit/${booking.id}`} className="cursor-pointer">
+                  {canEdit ? (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/admin/bookings/edit/${booking.id}`} className="cursor-pointer">
+                        <Edit className="mr-2 h-4 w-4" />
+                        Modifier
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onSelect={(event) => event.preventDefault()}
+                      className="cursor-not-allowed text-muted-foreground"
+                    >
                       <Edit className="mr-2 h-4 w-4" />
-                      Modifier
-                    </Link>
-                  </DropdownMenuItem>
+                      Modifier indisponible
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-amber-600"
@@ -261,7 +285,7 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-            {formattedRows.map(({ booking, index }) => (
+            {formattedRows.map(({ booking, index, canEdit }) => (
               <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3 font-medium text-gray-500 whitespace-nowrap">{index}</td>
                 <td className="px-4 py-3 align-top">
@@ -308,6 +332,11 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
                   <Badge className={`${BOOKING_STATUS_COLORS[booking.status]} text-[11px] px-2 py-0.5`}>
                     {BOOKING_STATUS_LABELS[booking.status]}
                   </Badge>
+                  {!canEdit && (
+                    <div className="mt-1 text-[11px] text-amber-700 font-medium">
+                      Modification indisponible
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right align-top whitespace-nowrap">
                   <DropdownMenu>
@@ -326,11 +355,26 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
                           Voir
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/admin/bookings/edit/${booking.id}`} className="cursor-pointer">
-                          <Edit className="mr-2 h-4 w-4" />
-                          Modifier
-                        </Link>
+                      <DropdownMenuItem
+                        disabled={!canEdit}
+                        onSelect={(event) => {
+                          if (!canEdit) {
+                            event.preventDefault();
+                          }
+                        }}
+                        className={!canEdit ? "cursor-not-allowed text-muted-foreground" : undefined}
+                      >
+                        {canEdit ? (
+                          <Link href={`/admin/bookings/edit/${booking.id}`} className="flex items-center">
+                            <Edit className="mr-2 h-4 w-4" />
+                            Modifier
+                          </Link>
+                        ) : (
+                          <>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Modifier indisponible
+                          </>
+                        )}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
