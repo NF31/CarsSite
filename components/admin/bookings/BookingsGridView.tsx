@@ -91,6 +91,10 @@ export function BookingsGridView({ bookings, startIndex = 0 }: BookingsGridViewP
     <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {bookings.map((booking, index) => {
         const hasDriverLicense = booking.user.hasDriverLicense;
+        const now = new Date();
+        const startDateObj = new Date(booking.startDate);
+        const endDateObj = new Date(booking.endDate);
+        const canEdit = startDateObj > now && endDateObj > now;
 
         return (
           <Card key={booking.id} className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -107,6 +111,14 @@ export function BookingsGridView({ bookings, startIndex = 0 }: BookingsGridViewP
                 <Badge className={`${BOOKING_STATUS_COLORS[booking.status]} text-[11px] px-2 py-0.5`}>
                   {BOOKING_STATUS_LABELS[booking.status]}
                   </Badge>
+                  {!canEdit && (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] px-2 py-0.5 bg-amber-50 text-amber-700 border-amber-200"
+                    >
+                      Modification indisponible
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -226,11 +238,26 @@ export function BookingsGridView({ bookings, startIndex = 0 }: BookingsGridViewP
                       Voir
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/admin/bookings/edit/${booking.id}`} className="cursor-pointer">
-                      <Edit className="mr-2 h-4 w-4" />
-                      Modifier
-                    </Link>
+                  <DropdownMenuItem
+                    disabled={!canEdit}
+                    onSelect={(event) => {
+                      if (!canEdit) {
+                        event.preventDefault();
+                      }
+                    }}
+                    className={!canEdit ? "cursor-not-allowed text-muted-foreground" : undefined}
+                  >
+                    {canEdit ? (
+                      <Link href={`/admin/bookings/edit/${booking.id}`} className="flex items-center">
+                        <Edit className="mr-2 h-4 w-4" />
+                        Modifier
+                      </Link>
+                    ) : (
+                      <>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Modifier indisponible
+                      </>
+                    )}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
