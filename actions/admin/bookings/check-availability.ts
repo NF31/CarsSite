@@ -18,6 +18,10 @@ const checkAvailabilitySchema = z.object({
     .min(1)
     .refine((value) => !Number.isNaN(Date.parse(value)), "Date invalide")
     .transform((value) => new Date(value)),
+  bookingId: z
+    .string()
+    .min(1)
+    .optional(),
 });
 
 export type VehicleAvailabilityResponse =
@@ -76,7 +80,7 @@ export async function checkVehicleAvailabilityAction(
       };
     }
 
-    const { vehicleId, startDate, endDate } = parsed.data;
+    const { vehicleId, startDate, endDate, bookingId } = parsed.data;
 
     if (endDate <= startDate) {
       return {
@@ -96,6 +100,13 @@ export async function checkVehicleAvailabilityAction(
     const bookingConflict = await prisma.booking.findFirst({
       where: {
         vehicleId,
+        ...(bookingId
+          ? {
+              id: {
+                not: bookingId,
+              },
+            }
+          : {}),
         status: {
           in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
         },

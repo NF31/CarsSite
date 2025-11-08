@@ -227,7 +227,7 @@ export function BookingsGridView({ bookings, startIndex = 0 }: BookingsGridViewP
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href={`/admin/bookings/${booking.id}/edit`} className="cursor-pointer">
+                    <Link href={`/admin/bookings/edit/${booking.id}`} className="cursor-pointer">
                       <Edit className="mr-2 h-4 w-4" />
                       Modifier
                     </Link>

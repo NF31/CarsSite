@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BookingStatus, ServicePricingType, VehicleStatus } from "@prisma/client";
 import type {
@@ -15,6 +15,7 @@ import {
   createBookingAction,
   checkVehicleAvailabilityAction,
   createQuickClientAction,
+  updateBookingAction,
 } from "@/actions/admin/bookings";
 import {
   Form,
@@ -46,7 +47,6 @@ import {
 import {
   AlertCircle,
   CalendarDays,
-  CheckCircle2,
   Euro,
   FileWarning,
   ShieldCheck,
@@ -88,7 +88,7 @@ const bookingFormSchema = z.object({
   startDate: z.string().min(1, "Date de début requise"),
   endDate: z.string().min(1, "Date de fin requise"),
   status: z.nativeEnum(BookingStatus),
-  serviceIds: z.array(z.string()).optional(),
+  serviceIds: z.array(z.string()).default([]),
   totalPrice: z.coerce.number().min(0, "Montant total invalide"),
   depositPaid: z.coerce.number().min(0, "Acompte invalide"),
   notes: z
@@ -96,16 +96,34 @@ const bookingFormSchema = z.object({
     .max(1000, "1 000 caractères maximum")
     .optional()
     .transform((value) => (value && value.trim().length > 0 ? value.trim() : undefined)),
-  sendConfirmation: z.boolean().optional().default(true),
+  sendConfirmation: z.boolean().default(true),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
+
+export interface BookingFormInitialValues {
+  id: string;
+  reference: string;
+  userId: string;
+  vehicleId: string;
+  pickupLocationId: string;
+  returnLocationId: string;
+  startDate: string;
+  endDate: string;
+  status: BookingStatus;
+  serviceIds: string[];
+  totalPrice: number;
+  depositPaid: number;
+  notes: string | null;
+}
 
 interface BookingFormProps {
   users: BookingUserOption[];
   vehicles: BookingVehicleOption[];
   locations: BookingLocationOption[];
   services: BookingServiceOption[];
+  mode?: "create" | "edit";
+  booking?: BookingFormInitialValues;
 }
 
 const toDate = (value: string) => {
@@ -123,11 +141,20 @@ const DRIVER_LICENSE_MAX_REPLACEMENTS = 3;
 const DRIVER_LICENSE_COOLDOWN_DAYS = 21;
 const DATE_FORMATTER = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
 
-export function BookingForm({ users, vehicles, locations, services }: BookingFormProps) {
+export function BookingForm({
+  users,
+  vehicles,
+  locations,
+  services,
+  mode = "create",
+  booking,
+}: BookingFormProps) {
   const router = useRouter();
+  const isEditMode = mode === "edit";
+  const [mountTimestamp] = useState(() => Date.now());
   const [userOptions, setUserOptions] = useState(users);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [autoPricing, setAutoPricing] = useState(true);
+  const [autoPricing, setAutoPricing] = useState(!isEditMode);
   const [isPending, startTransition] = useTransition();
   const [isCheckingAvailability, startAvailabilityTransition] = useTransition();
   const [availability, setAvailability] = useState<
@@ -143,27 +170,70 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
   const [isCreatingClient, startCreateClient] = useTransition();
   const [isLicenseDialogOpen, setIsLicenseDialogOpen] = useState(false);
 
-  const form = useForm<BookingFormValues>({
-    resolver: zodResolver(bookingFormSchema),
-    mode: "onChange",
-    defaultValues: {
-      userId: "",
-      vehicleId: "",
-      pickupLocationId: "",
-      returnLocationId: "",
-      startDate: "",
-      endDate: "",
-      status: BookingStatus.CONFIRMED,
-      serviceIds: [],
-      totalPrice: 0,
-      depositPaid: 0,
-      notes: "",
-      sendConfirmation: true,
+  const scheduleAvailabilityUpdate = useCallback(
+    (nextState: typeof availability) => {
+      startAvailabilityTransition(() => {
+        setAvailability(nextState);
+      });
     },
+    [startAvailabilityTransition]
+  );
+
+  const defaultValues = useMemo<BookingFormValues>(
+    () =>
+      isEditMode && booking
+        ? {
+            userId: booking.userId,
+            vehicleId: booking.vehicleId,
+            pickupLocationId: booking.pickupLocationId,
+            returnLocationId: booking.returnLocationId,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            status: BookingStatus.CONFIRMED,
+      serviceIds: booking.serviceIds ?? [],
+            totalPrice: booking.totalPrice,
+            depositPaid: booking.depositPaid,
+            notes: booking.notes ?? "",
+            sendConfirmation: false,
+          }
+        : {
+            userId: "",
+            vehicleId: "",
+            pickupLocationId: "",
+            returnLocationId: "",
+            startDate: "",
+            endDate: "",
+            status: BookingStatus.CONFIRMED,
+      serviceIds: [],
+            totalPrice: 0,
+            depositPaid: 0,
+            notes: "",
+            sendConfirmation: true,
+          },
+    [isEditMode, booking]
+  );
+
+  const form = useForm<BookingFormValues>({
+    resolver: zodResolver(bookingFormSchema) as Resolver<
+      BookingFormValues,
+      Record<string, never>,
+      BookingFormValues
+    >,
+    mode: "onChange",
+    defaultValues,
   });
+  useEffect(() => {
+    if (isEditMode) {
+      form.setValue("status", BookingStatus.CONFIRMED, { shouldDirty: false });
+    }
+  }, [form, isEditMode]);
 
   const quickClientForm = useForm<QuickClientInput>({
-    resolver: zodResolver(quickClientSchema),
+    resolver: zodResolver(quickClientSchema) as Resolver<
+      QuickClientInput,
+      Record<string, never>,
+      QuickClientInput
+    >,
     defaultValues: {
       name: "",
       email: "",
@@ -171,14 +241,19 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
       sendInvitation: false,
     },
   });
+  const quickClientSendInvitation = useWatch({
+    control: quickClientForm.control,
+    name: "sendInvitation",
+  });
 
-  const watchUserId = form.watch("userId");
-  const watchVehicleId = form.watch("vehicleId");
-  const watchStartDate = form.watch("startDate");
-  const watchEndDate = form.watch("endDate");
-  const watchServiceIds = form.watch("serviceIds") ?? [];
-  const watchTotalPrice = form.watch("totalPrice");
-  const watchDepositPaid = form.watch("depositPaid");
+  const watchUserId = useWatch({ control: form.control, name: "userId" });
+  const watchVehicleId = useWatch({ control: form.control, name: "vehicleId" });
+  const watchStartDate = useWatch({ control: form.control, name: "startDate" });
+  const watchEndDate = useWatch({ control: form.control, name: "endDate" });
+  const watchServiceIdsValue = useWatch({ control: form.control, name: "serviceIds" });
+  const watchServiceIds = useMemo(() => watchServiceIdsValue ?? [], [watchServiceIdsValue]);
+  const watchTotalPrice = useWatch({ control: form.control, name: "totalPrice" });
+  const watchDepositPaid = useWatch({ control: form.control, name: "depositPaid" });
 
   const selectedUser = useMemo(
     () => userOptions.find((user) => user.id === watchUserId) ?? null,
@@ -194,7 +269,7 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
     const lastUploadedAt = selectedUser.driverLicenseLastUploadedAt
       ? new Date(selectedUser.driverLicenseLastUploadedAt)
       : null;
-    const now = Date.now();
+    const now = mountTimestamp;
     const cooldownMs = DRIVER_LICENSE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
 
     let normalizedCount = rawCount;
@@ -217,11 +292,7 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
       nextAllowedAt,
       lastWithinWindow,
     };
-  }, [
-    selectedUser?.driverLicenseUploadCount,
-    selectedUser?.driverLicenseLastUploadedAt,
-    selectedUser?.id,
-  ]);
+  }, [selectedUser, mountTimestamp]);
 
   const isDriverLicenseUploadBlocked = Boolean(
     driverLicenseUploadInfo && driverLicenseUploadInfo.remaining === 0 && driverLicenseUploadInfo.nextAllowedAt
@@ -327,17 +398,17 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
     const end = toDate(watchEndDate);
 
     if (!watchVehicleId) {
-      setAvailability({ status: "idle" });
+      scheduleAvailabilityUpdate({ status: "idle" });
       return;
     }
 
     if (!start || !end) {
-      setAvailability({ status: "idle" });
+      scheduleAvailabilityUpdate({ status: "idle" });
       return;
     }
 
     if (end <= start) {
-      setAvailability({
+      scheduleAvailabilityUpdate({
         status: "error",
         message: "La date de fin doit être postérieure à la date de début.",
       });
@@ -346,33 +417,38 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
 
     const now = new Date();
     if (start < now || end < now) {
-      setAvailability({
+      scheduleAvailabilityUpdate({
         status: "error",
         message: "Les dates passées ne peuvent pas être sélectionnées.",
       });
       return;
     }
 
-    setAvailability({ status: "checking" });
+    scheduleAvailabilityUpdate({ status: "checking" });
     startAvailabilityTransition(async () => {
-      const result: VehicleAvailabilityResponse = await checkVehicleAvailabilityAction({
+      const availabilityPayload = {
         vehicleId: watchVehicleId,
         startDate: start.toISOString(),
         endDate: end.toISOString(),
-      });
+        ...(isEditMode && booking ? { bookingId: booking.id } : {}),
+      };
+
+      const result: VehicleAvailabilityResponse = await checkVehicleAvailabilityAction(
+        availabilityPayload
+      );
 
       if (!result.success) {
-        setAvailability({ status: "error", message: result.error });
+        scheduleAvailabilityUpdate({ status: "error", message: result.error });
         return;
       }
 
       if (result.status === "available") {
-        setAvailability({ status: "available" });
+        scheduleAvailabilityUpdate({ status: "available" });
         return;
       }
 
       if (result.status === "booking_conflict") {
-        setAvailability({
+        scheduleAvailabilityUpdate({
           status: "booking_conflict",
           message: `Réservation existante (${result.conflict.reference}) du ${format(
             new Date(result.conflict.startDate),
@@ -384,7 +460,7 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
       }
 
       if (result.status === "maintenance_conflict") {
-        setAvailability({
+        scheduleAvailabilityUpdate({
           status: "maintenance_conflict",
           message: `Maintenance planifiée (${result.maintenance.type.toLowerCase()}) du ${format(
             new Date(result.maintenance.startDate),
@@ -394,7 +470,15 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
         });
       }
     });
-  }, [watchVehicleId, watchStartDate, watchEndDate]);
+  }, [
+    booking,
+    booking?.id,
+    isEditMode,
+    scheduleAvailabilityUpdate,
+    watchEndDate,
+    watchStartDate,
+    watchVehicleId,
+  ]);
 
   const handleSubmit = form.handleSubmit((values) => {
     setServerError(null);
@@ -436,6 +520,11 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
       return;
     }
 
+    if (isEditMode && !booking) {
+      setServerError("Impossible de modifier cette réservation pour le moment.");
+      return;
+    }
+
     startTransition(async () => {
       const payload = {
         userId: values.userId,
@@ -445,14 +534,20 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
         startDate: values.startDate,
         endDate: values.endDate,
         status: values.status,
-        serviceIds: values.serviceIds ?? [],
+        serviceIds: values.serviceIds,
         totalPrice: Number(values.totalPrice),
         depositPaid: Number(values.depositPaid),
         notes: values.notes,
         sendConfirmation: values.sendConfirmation ?? true,
       };
 
-      const result = await createBookingAction(payload);
+      const result = isEditMode && booking
+        ? await updateBookingAction({
+            ...payload,
+            bookingId: booking.id,
+            sendConfirmation: values.sendConfirmation ?? false,
+          })
+        : await createBookingAction(payload);
 
       if (!result.success) {
         if (result.fieldErrors) {
@@ -469,7 +564,9 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
         return;
       }
 
-      router.push("/admin/bookings?success=booking-created");
+      router.push(
+        isEditMode ? "/admin/bookings?success=booking-updated" : "/admin/bookings?success=booking-created"
+      );
     });
   });
 
@@ -485,12 +582,25 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarDays className="h-4 w-4" />
-          Réservations • Création manuelle
+          {isEditMode ? "Réservations • Édition" : "Réservations • Création manuelle"}
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">Nouvelle réservation</h1>
-        <p className="text-sm text-muted-foreground">
-          Sélectionnez un client, un véhicule et définissez les conditions de location. Vous pouvez ajuster les tarifs si nécessaire.
-        </p>
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isEditMode ? "Modifier la réservation" : "Nouvelle réservation"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isEditMode
+                ? "Ajustez les informations de la réservation avant le départ du véhicule."
+                : "Sélectionnez un client, un véhicule et définissez les conditions de location. Vous pouvez ajuster les tarifs si nécessaire."}
+            </p>
+          </div>
+          {isEditMode && booking?.reference ? (
+            <Badge variant="outline" className="h-auto rounded-full px-3 py-1 text-sm">
+              Référence {booking.reference}
+            </Badge>
+          ) : null}
+        </div>
       </header>
 
       {serverError && (
@@ -711,8 +821,8 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Statut initial</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>{isEditMode ? "Statut de la réservation" : "Statut initial"}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isEditMode}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choisissez un statut" />
                       </SelectTrigger>
@@ -724,6 +834,11 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
                         ))}
                       </SelectContent>
                     </Select>
+                    {isEditMode ? (
+                      <p className="text-xs text-muted-foreground">
+                        Les modifications effectuées depuis l&apos;admin confirment automatiquement la réservation.
+                      </p>
+                    ) : null}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -885,44 +1000,61 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
                 </div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {services.map((service) => (
-                    <label
-                      key={service.id}
-                      className={cn(
-                        "flex cursor-pointer flex-col gap-1 rounded-lg border p-4 text-sm transition",
-                        watchServiceIds.includes(service.id)
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-muted/40 hover:border-primary/40"
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-gray-900">{service.name}</span>
-                        <Checkbox
-                          checked={watchServiceIds.includes(service.id)}
-                          onCheckedChange={(checked) => {
-                            const current = new Set(watchServiceIds);
-                            if (checked) {
-                              current.add(service.id);
-                            } else {
-                              current.delete(service.id);
-                            }
-                            form.setValue("serviceIds", Array.from(current), { shouldDirty: true });
-                          }}
-                        />
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {service.pricingType === ServicePricingType.FIXED && (
-                          <span>+ {FORMATTER.format(service.price)}</span>
+                  {services.map((service) => {
+                    const isSelected = watchServiceIds.includes(service.id);
+                    const isInactive = !service.active;
+                    const isDisabled = isInactive && !isSelected;
+
+                    return (
+                      <label
+                        key={service.id}
+                        className={cn(
+                          "flex cursor-pointer flex-col gap-1 rounded-lg border p-4 text-sm transition",
+                          isSelected
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-muted/40 hover:border-primary/40",
+                          isInactive
+                            ? "border-amber-200 bg-amber-50 text-amber-900 hover:border-amber-300"
+                            : "text-gray-900"
                         )}
-                        {service.pricingType === ServicePricingType.PER_DAY && (
-                          <span>+ {FORMATTER.format(service.price)} / jour</span>
-                        )}
-                        {service.pricingType === ServicePricingType.PERCENTAGE && (
-                          <span>+ {service.price}% du montant du véhicule</span>
-                        )}
-                      </div>
-                    </label>
-                  ))}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{service.name}</span>
+                            <div className="text-xs text-muted-foreground">
+                              {service.pricingType === ServicePricingType.FIXED && (
+                                <span>+ {FORMATTER.format(service.price)}</span>
+                              )}
+                              {service.pricingType === ServicePricingType.PER_DAY && (
+                                <span>+ {FORMATTER.format(service.price)} / jour</span>
+                              )}
+                              {service.pricingType === ServicePricingType.PERCENTAGE && (
+                                <span>+ {service.price}% du montant du véhicule</span>
+                              )}
+                            </div>
+                          </div>
+                          <Checkbox
+                            checked={isSelected}
+                            disabled={isDisabled}
+                            onCheckedChange={(checked) => {
+                              const current = new Set(watchServiceIds);
+                              if (checked) {
+                                current.add(service.id);
+                              } else {
+                                current.delete(service.id);
+                              }
+                              form.setValue("serviceIds", Array.from(current), { shouldDirty: true });
+                            }}
+                          />
+                        </div>
+                        {isInactive ? (
+                          <p className="text-xs font-medium text-amber-700">
+                            Service inactif (maintenu uniquement pour cette réservation).
+                          </p>
+                        ) : null}
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -1048,9 +1180,13 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-lg border px-4 py-3">
                     <div>
-                      <FormLabel>Envoyer un email de confirmation</FormLabel>
+                      <FormLabel>
+                        {isEditMode ? "Envoyer un email de mise à jour" : "Envoyer un email de confirmation"}
+                      </FormLabel>
                       <p className="text-xs text-muted-foreground">
-                        Un récapitulatif sera envoyé au client (fonctionnalité à finaliser).
+                        {isEditMode
+                          ? "Partagez un récapitulatif actualisé avec le client après vos modifications."
+                          : "Un récapitulatif sera envoyé au client pour confirmer la réservation."}
                       </p>
                     </div>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -1065,7 +1201,13 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
               <Link href="/admin/bookings">Annuler</Link>
             </Button>
             <Button type="submit" disabled={isSubmitDisabled}>
-              {isPending ? "Création en cours..." : "Créer la réservation"}
+              {isPending
+                ? isEditMode
+                  ? "Mise à jour en cours..."
+                  : "Création en cours..."
+                : isEditMode
+                ? "Enregistrer les modifications"
+                : "Créer la réservation"}
             </Button>
           </CardFooter>
         </form>
@@ -1215,7 +1357,7 @@ export function BookingForm({ users, vehicles, locations, services }: BookingFor
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox
-                  checked={quickClientForm.watch("sendInvitation")}
+                  checked={Boolean(quickClientSendInvitation)}
                   onCheckedChange={(checked) =>
                     quickClientForm.setValue("sendInvitation", Boolean(checked), {
                       shouldDirty: true,
