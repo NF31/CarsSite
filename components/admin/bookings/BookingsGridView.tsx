@@ -235,7 +235,7 @@ export function BookingsGridView({ bookings, startIndex = 0 }: BookingsGridViewP
                   <DropdownMenuItem asChild>
                     <Link href={`/admin/bookings/${booking.id}`} className="cursor-pointer">
                       <Eye className="mr-2 h-4 w-4" />
-                      Voir
+                      Voir détails
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem
