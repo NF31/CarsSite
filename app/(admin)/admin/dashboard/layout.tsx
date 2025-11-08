@@ -33,7 +33,7 @@ export default async function AdminDashboardLayout({
     <div className="flex min-h-screen flex-col">
       <AdminSidebar />
       <div className="flex flex-col flex-1 lg:pl-64">
-        <AdminNavbar />
+        <AdminNavbar session={session} />
         <main className="flex-1 overflow-x-hidden">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             {children}
