@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm, useWatch } from "react-hook-form";
@@ -9,7 +9,11 @@ import {
   createServiceSchema,
   type CreateServiceInput,
 } from "@/lib/validations/service";
-import { createServiceAction } from "@/actions/admin/services";
+import {
+  createServiceAction,
+  updateServiceAction,
+  type SingleServiceRecord,
+} from "@/actions/admin/services";
 import {
   Form,
   FormControl,
@@ -61,11 +65,23 @@ const categoryOptions: { value: VehicleCategory; label: string }[] = [
   { value: "VAN", label: "Utilitaire" },
 ];
 
-export function ServiceForm() {
+interface ServiceFormProps {
+  mode: "create" | "edit";
+  service?: SingleServiceRecord;
+}
+
+export function ServiceForm({ mode, service }: ServiceFormProps) {
   const router = useRouter();
-  const [allCategories, setAllCategories] = useState(true);
+  const isEditMode = mode === "edit" && !!service;
+  const initialAllCategories = useMemo(
+    () =>
+      !service || (service.availableForCategories ?? []).length === 0,
+    [service],
+  );
+  const [allCategories, setAllCategories] = useState(initialAllCategories);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isActive, setIsActive] = useState<boolean>(service?.active ?? true);
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<CreateServiceInput>({
@@ -73,12 +89,12 @@ export function ServiceForm() {
     mode: "onChange",
     reValidateMode: "onBlur",
     defaultValues: {
-      name: "",
-      description: undefined,
-      price: 10,
-      pricingType: "PER_DAY",
-      availableForCategories: [],
-      icon: undefined,
+      name: service?.name ?? "",
+      description: service?.description ?? undefined,
+      price: service?.price ?? 10,
+      pricingType: service?.pricingType ?? "PER_DAY",
+      availableForCategories: service?.availableForCategories ?? [],
+      icon: service?.icon ?? undefined,
     },
   });
 
@@ -123,6 +139,37 @@ export function ServiceForm() {
     };
 
     startTransition(async () => {
+      if (isEditMode && service) {
+        const result = await updateServiceAction(service.id, {
+          ...payload,
+          active: isActive,
+        });
+
+        if (result.success && result.data) {
+          setSuccessMessage(`Service "${result.data.name}" mis à jour avec succès.`);
+          setTimeout(() => {
+            router.push("/admin/services?success=service-updated");
+          }, 1000);
+          return;
+        }
+
+        if (result.fieldErrors) {
+          Object.entries(result.fieldErrors).forEach(([field, messages]) => {
+            if (!messages) return;
+            form.setError(field as keyof CreateServiceInput, {
+              type: "server",
+              message: messages[0],
+            });
+          });
+        }
+
+        if (result.error) {
+          setServerError(result.error);
+        }
+
+        return;
+      }
+
       const result = await createServiceAction(payload);
 
       if (result.success && result.data) {
@@ -136,9 +183,10 @@ export function ServiceForm() {
           icon: undefined,
         });
         setAllCategories(true);
+        setIsActive(true);
         setTimeout(() => {
-          router.push("/admin/services");
-        }, 1200);
+          router.push("/admin/services?success=service-created");
+        }, 1000);
         return;
       }
 
@@ -168,9 +216,13 @@ export function ServiceForm() {
               Retour au catalogue des services
             </Link>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Créer un service</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isEditMode ? "Modifier le service" : "Créer un service"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Configurez un service additionnel (assurance, options premium, équipements).
+            {isEditMode
+              ? "Mettez à jour les informations et la disponibilité du service."
+              : "Configurez un service additionnel (assurance, options premium, équipements)."}
           </p>
         </div>
       </div>
@@ -204,6 +256,21 @@ export function ServiceForm() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {isEditMode && (
+                <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Service actif</p>
+                    <p className="text-xs text-muted-foreground">
+                      Désactivez le service pour le retirer du processus de réservation.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isActive}
+                    onCheckedChange={setIsActive}
+                    disabled={isPending}
+                  />
+                </div>
+              )}
               <FormField
                 control={form.control}
                 name="name"

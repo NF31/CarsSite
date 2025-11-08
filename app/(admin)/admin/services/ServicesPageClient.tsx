@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ServiceRecord, ServicesSummary } from "@/actions/admin/services";
 import type { ServicePricingType, VehicleCategory } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { Gift, Filter, RefreshCcw, Grid3x3, List } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Gift, Filter, RefreshCcw, Grid3x3, List, CheckCircle2 } from "lucide-react";
 import { VehiclesPagination } from "@/components/admin/vehicles/VehiclesPagination";
 import { ServicesGridView } from "@/components/admin/services/ServicesGridView";
 import { ServicesListView } from "@/components/admin/services/ServicesListView";
@@ -47,6 +48,8 @@ interface ServicesPageClientProps {
 }
 
 export function ServicesPageClient({ services, summary }: ServicesPageClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [pricingFilter, setPricingFilter] = useState<PricingFilter>("ALL");
@@ -54,6 +57,84 @@ export function ServicesPageClient({ services, summary }: ServicesPageClientProp
   const [showInactive, setShowInactive] = useState(true);
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
+
+  const successParam = searchParams.get("success");
+  const errorParam = searchParams.get("error");
+  const searchParamsString = searchParams.toString();
+
+  useEffect(() => {
+    if (!successParam) {
+      return;
+    }
+
+    const messages: Record<string, string> = {
+      "service-created": "Service créé avec succès.",
+      "service-updated": "Service mis à jour avec succès.",
+    };
+
+    const message = messages[successParam];
+
+    if (!message) {
+      return;
+    }
+
+    setSuccessBanner(message);
+    setShowSuccess(true);
+
+    const newSearchParams = new URLSearchParams(searchParamsString);
+    newSearchParams.delete("success");
+    const newUrl = newSearchParams.toString()
+      ? `${window.location.pathname}?${newSearchParams.toString()}`
+      : window.location.pathname;
+    router.replace(newUrl);
+
+    const timeout = window.setTimeout(() => {
+      setShowSuccess(false);
+      setSuccessBanner(null);
+    }, 5000);
+
+    return () => window.clearTimeout(timeout);
+  }, [successParam, router, searchParamsString]);
+
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+    setSuccessBanner(null);
+  };
+
+  useEffect(() => {
+    if (!errorParam) {
+      return;
+    }
+
+    const messages: Record<string, string> = {
+      "invalid-service": "Le service demandé est introuvable ou invalide.",
+    };
+
+    const message = messages[errorParam];
+
+    if (!message) {
+      return;
+    }
+
+    setErrorBanner(message);
+    setShowError(true);
+
+    const newSearchParams = new URLSearchParams(searchParamsString);
+    newSearchParams.delete("error");
+    const newUrl = newSearchParams.toString()
+      ? `${window.location.pathname}?${newSearchParams.toString()}`
+      : window.location.pathname;
+    router.replace(newUrl);
+  }, [errorParam, router, searchParamsString]);
+
+  const handleCloseError = () => {
+    setShowError(false);
+    setErrorBanner(null);
+  };
 
   const ITEMS_PER_PAGE = 8;
 
@@ -112,6 +193,36 @@ export function ServicesPageClient({ services, summary }: ServicesPageClientProp
 
   return (
     <div className="space-y-8">
+      {showSuccess && successBanner && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>{successBanner}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCloseSuccess}
+            className="text-xs font-semibold uppercase tracking-wide hover:opacity-75"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
+      {showError && errorBanner && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="flex items-center gap-2">
+            <span aria-hidden>⚠️</span>
+            <span>{errorBanner}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCloseError}
+            className="text-xs font-semibold uppercase tracking-wide hover:opacity-75"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold text-gray-900">Services additionnels</h1>
