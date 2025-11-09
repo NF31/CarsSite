@@ -55,6 +55,8 @@ export function ClientsListView({ clients, startIndex }: ClientsListViewProps) {
       {/* Mode cartes pour mobile/tablette */}
       <div className="grid gap-4 xl:hidden">
         {clients.map((client, index) => {
+          const canCreateReservation = client.status === "ACTIVE";
+
           const lastBooking = client.lastBooking;
 
           return (
@@ -136,12 +138,19 @@ export function ClientsListView({ clients, startIndex }: ClientsListViewProps) {
                         Voir la fiche client
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/admin/bookings/add?clientId=${client.id}`}>
+                    {canCreateReservation ? (
+                      <DropdownMenuItem asChild>
+                        <Link href={`/admin/bookings/add?clientId=${client.id}`}>
+                          <UserRoundPlus className="mr-2 h-4 w-4" />
+                          Créer une réservation
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem disabled className="opacity-60">
                         <UserRoundPlus className="mr-2 h-4 w-4" />
-                        Créer une réservation
-                      </Link>
-                    </DropdownMenuItem>
+                        Réservation indisponible (client inactif)
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onSelect={(event) => event.preventDefault()} disabled>
                       <Mail className="mr-2 h-4 w-4" />
                       Envoyer un email (bientôt)
@@ -199,6 +208,8 @@ export function ClientsListView({ clients, startIndex }: ClientsListViewProps) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {clients.map((client, index) => {
+                  const canCreateReservation = client.status === "ACTIVE";
+
                   const lastBooking = client.lastBooking;
 
                   return (
@@ -295,12 +306,19 @@ export function ClientsListView({ clients, startIndex }: ClientsListViewProps) {
                                 Voir la fiche client
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/admin/bookings/add?clientId=${client.id}`}>
+                            {canCreateReservation ? (
+                              <DropdownMenuItem asChild>
+                                <Link href={`/admin/bookings/add?clientId=${client.id}`}>
+                                  <UserRoundPlus className="mr-2 h-4 w-4" />
+                                  Créer une réservation
+                                </Link>
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem disabled className="opacity-60">
                                 <UserRoundPlus className="mr-2 h-4 w-4" />
-                                Créer une réservation
-                              </Link>
-                            </DropdownMenuItem>
+                                Réservation indisponible (client inactif)
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onSelect={(event) => event.preventDefault()} disabled>
                               <Mail className="mr-2 h-4 w-4" />
                               Envoyer un email (bientôt)
