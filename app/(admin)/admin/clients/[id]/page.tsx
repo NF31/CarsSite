@@ -9,7 +9,9 @@ interface AdminClientDetailsPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function AdminClientDetailsPage({ params }: AdminClientDetailsPageProps) {
+export default async function AdminClientDetailsPage({
+  params,
+}: AdminClientDetailsPageProps) {
   const session = await auth();
 
   if (!session?.user) {
@@ -32,7 +34,11 @@ export default async function AdminClientDetailsPage({ params }: AdminClientDeta
     redirect(`/admin/clients?error=${errorCode}`);
   }
 
-  return <ClientDetailsPageClient client={result.data} />;
+  return (
+    <ClientDetailsPageClient
+      client={result.data}
+    />
+  );
 }
 
 

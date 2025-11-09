@@ -13,4 +13,9 @@ export {
   type ClientDetailStats,
 } from "./get-client";
 
+export {
+  updateClientAction,
+  type UpdateClientResult,
+} from "./update-client";
+
 

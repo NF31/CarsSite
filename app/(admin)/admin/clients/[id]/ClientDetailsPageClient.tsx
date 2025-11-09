@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatDistanceStrict } from "date-fns";
@@ -12,6 +12,7 @@ import {
   CalendarRange,
   CheckCircle2,
   Clock,
+  Edit,
   Mail,
   MapPin,
   Shield,
@@ -161,6 +162,12 @@ export function ClientDetailsPageClient({ client }: ClientDetailsPageClientProps
           </div>
         </div>
         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full xl:w-auto">
+          <Link href={`/admin/clients/edit/${client.id}`} className="w-full sm:w-auto">
+            <Button variant="secondary" className="w-full sm:w-auto">
+              <Edit className="mr-2 h-4 w-4" />
+              Modifier
+            </Button>
+          </Link>
           <Link href={`/admin/bookings/add?clientId=${client.id}`} className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto">
               <UserRoundPlus className="mr-2 h-4 w-4" />

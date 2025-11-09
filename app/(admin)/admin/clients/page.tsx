@@ -1,18 +1,26 @@
 import { getClientsAction } from "@/actions/admin/clients";
 import { ClientsPageClient } from "@/components/admin/clients/ClientsPageClient";
+import { Card, CardContent } from "@/components/ui/card";
 
-export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
 export default async function AdminClientsPage() {
-  const initialResult = await getClientsAction({
+  const result = await getClientsAction({
     page: 1,
     limit: 12,
-    status: "active",
     sortBy: "createdAt",
     sortOrder: "desc",
   });
 
-  return <ClientsPageClient initialData={initialResult.success ? initialResult.data : undefined} />;
+  if (!result.success || !result.data) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          Impossible de charger les clients pour le moment. Veuillez réessayer plus tard.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return <ClientsPageClient initialData={result.data} />;
 }
-
-
