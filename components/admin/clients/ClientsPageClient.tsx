@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   CalendarRange,
@@ -11,6 +11,7 @@ import {
   RefreshCcw,
   Search,
   UserPlus,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,12 +69,14 @@ const formatDateForInput = (value?: string) => {
 };
 
 export function ClientsPageClient({ initialData }: ClientsPageClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const defaultLimit = initialData?.pagination.limit ?? 12;
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [filters, setFilters] = useState<GetClientsFilters>({
     page: initialData?.pagination.page ?? 1,
     limit: defaultLimit,
-    status: "active",
+    status: undefined,
     reservations: undefined,
     sortBy: "createdAt",
     sortOrder: "desc",
@@ -92,8 +95,11 @@ export function ClientsPageClient({ initialData }: ClientsPageClientProps) {
     }
   );
   const [isLoading, setIsLoading] = useState(!initialData);
-  const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -116,10 +122,15 @@ export function ClientsPageClient({ initialData }: ClientsPageClientProps) {
   }, [searchValue]);
 
   useEffect(() => {
-    setIsLoading(true);
-    startTransition(async () => {
+    let isMounted = true;
+
+    const load = async () => {
+      setIsLoading(true);
       try {
         const result = await getClientsAction(filters);
+        if (!isMounted) {
+          return;
+        }
         if (result.success && result.data) {
           setClients(result.data.clients);
           setStats(result.data.stats);
@@ -130,12 +141,104 @@ export function ClientsPageClient({ initialData }: ClientsPageClientProps) {
         }
       } catch (error) {
         console.error("Error loading clients:", error);
-        setErrorMessage("Une erreur est survenue lors du chargement des clients.");
+        if (isMounted) {
+          setErrorMessage("Une erreur est survenue lors du chargement des clients.");
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-    });
+    };
+
+    void load();
+
+    return () => {
+      isMounted = false;
+    };
   }, [filters]);
+
+  const successParam = searchParams.get("success");
+  const errorParam = searchParams.get("error");
+  const searchParamsString = searchParams.toString();
+
+  useEffect(() => {
+    if (!successParam) {
+      return;
+    }
+
+    const messages: Record<string, string> = {
+      "client-updated": "Client mis à jour avec succès.",
+    };
+
+    const message = messages[successParam];
+
+    if (!message) {
+      return;
+    }
+
+    setSuccessBanner(message);
+    setShowSuccess(true);
+
+    const newSearchParams = new URLSearchParams(searchParamsString);
+    newSearchParams.delete("success");
+    const newUrl = newSearchParams.toString()
+      ? `${window.location.pathname}?${newSearchParams.toString()}`
+      : window.location.pathname;
+    router.replace(newUrl);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", newUrl);
+    }
+
+    const timeout = window.setTimeout(() => {
+      setShowSuccess(false);
+      setSuccessBanner(null);
+    }, 5000);
+
+    return () => window.clearTimeout(timeout);
+  }, [successParam, router, searchParamsString]);
+
+  useEffect(() => {
+    if (!errorParam) {
+      return;
+    }
+
+    const messages: Record<string, string> = {
+      "client-invalid": "Client introuvable ou invalide.",
+      "client-unavailable": "Impossible d’afficher ce client.",
+      "client-update-error": "Impossible de mettre à jour ce client.",
+    };
+
+    const message = messages[errorParam];
+
+    if (!message) {
+      return;
+    }
+
+    setErrorBanner(message);
+    setShowError(true);
+
+    const newSearchParams = new URLSearchParams(searchParamsString);
+    newSearchParams.delete("error");
+    newSearchParams.delete("id");
+    const newUrl = newSearchParams.toString()
+      ? `${window.location.pathname}?${newSearchParams.toString()}`
+      : window.location.pathname;
+    router.replace(newUrl);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", newUrl);
+    }
+  }, [errorParam, router, searchParamsString]);
+
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+    setSuccessBanner(null);
+  };
+
+  const handleCloseError = () => {
+    setShowError(false);
+    setErrorBanner(null);
+  };
 
   const handleStatusChange = (value: NonNullable<GetClientsFilters["status"]> | "all") => {
     setFilters((prev) => ({
@@ -196,7 +299,7 @@ export function ClientsPageClient({ initialData }: ClientsPageClientProps) {
     setFilters((prev) => ({
       ...prev,
       search: undefined,
-      status: "active",
+      status: undefined,
       reservations: undefined,
       registrationFrom: undefined,
       registrationTo: undefined,
@@ -210,10 +313,45 @@ export function ClientsPageClient({ initialData }: ClientsPageClientProps) {
     [pagination.page, pagination.limit]
   );
 
-  const isFetching = isLoading || isPending;
+  const showSkeleton = isLoading && clients.length === 0;
 
   return (
     <div className="space-y-8">
+      {showSuccess && successBanner && (
+        <Card className="border-emerald-200 bg-emerald-50 text-emerald-800">
+          <CardContent className="flex items-center justify-between gap-3 py-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              <p className="text-sm font-medium">{successBanner}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseSuccess}
+              className="text-xs font-medium uppercase tracking-wide hover:underline"
+            >
+              Fermer
+            </button>
+          </CardContent>
+        </Card>
+      )}
+
+      {showError && errorBanner && (
+        <Card className="border-red-200 bg-red-50 text-red-800">
+          <CardContent className="flex items-center justify-between gap-3 py-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <p className="text-sm font-medium">{errorBanner}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseError}
+              className="text-xs font-medium uppercase tracking-wide hover:underline"
+            >
+              Fermer
+            </button>
+          </CardContent>
+        </Card>
+      )}
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
@@ -436,7 +574,7 @@ export function ClientsPageClient({ initialData }: ClientsPageClientProps) {
             </div>
           )}
 
-          {isFetching ? (
+          {showSkeleton ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 3 }).map((_, index) => (
                 <Card key={index} className="animate-pulse border border-slate-100">
