@@ -77,13 +77,6 @@ export interface GetClientsResult {
   status?: number;
 }
 
-interface ReturningGroup {
-  userId: string;
-  _count: {
-    _all: number;
-  };
-}
-
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export async function getClientsAction(filters: GetClientsFilters = {}): Promise<GetClientsResult> {
@@ -219,18 +212,32 @@ export async function getClientsAction(filters: GetClientsFilters = {}): Promise
     }
 
     if (filters.registrationFrom || filters.registrationTo) {
-      where.createdAt = {};
-      if (filters.registrationFrom) {
-        const fromDate = new Date(filters.registrationFrom);
-        if (!Number.isNaN(fromDate.getTime())) {
-          where.createdAt.gte = fromDate;
-        }
-      }
+      const createdAtFilter: Prisma.DateTimeFilter = {};
+      let fromDateUtc: Date | null = null;
       if (filters.registrationTo) {
         const toDate = new Date(filters.registrationTo);
         if (!Number.isNaN(toDate.getTime())) {
-          where.createdAt.lte = toDate;
+          toDate.setHours(23, 59, 59, 999);
+          createdAtFilter.lte = toDate;
         }
+      }
+      if (filters.registrationFrom) {
+        const fromDate = new Date(filters.registrationFrom);
+        if (!Number.isNaN(fromDate.getTime())) {
+          fromDate.setHours(0, 0, 0, 0);
+          createdAtFilter.gte = fromDate;
+          fromDateUtc = fromDate;
+        }
+      }
+
+      if (!createdAtFilter.lte && fromDateUtc) {
+        const endOfDay = new Date(fromDateUtc);
+        endOfDay.setHours(23, 59, 59, 999);
+        createdAtFilter.lte = endOfDay;
+      }
+
+      if (Object.keys(createdAtFilter).length > 0) {
+        where.createdAt = createdAtFilter;
       }
     }
 
