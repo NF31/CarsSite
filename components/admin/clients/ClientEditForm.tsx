@@ -92,6 +92,7 @@ export function ClientEditForm({ client }: ClientEditFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const canCreateReservation = !client.deletedAt && client.status === "ACTIVE";
 
   const defaultStatus: StatusOption = useMemo(() => {
     if (client.deletedAt) {
@@ -277,12 +278,24 @@ export function ClientEditForm({ client }: ClientEditFormProps) {
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Link href={`/admin/bookings/add?clientId=${client.id}`}>
-            <Button variant="outline" className="w-full sm:w-auto">
+          {canCreateReservation ? (
+            <Link href={`/admin/bookings/add?clientId=${client.id}`}>
+              <Button variant="outline" className="w-full sm:w-auto">
+                <User className="mr-2 h-4 w-4" />
+                Nouvelle réservation
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto opacity-60"
+              disabled
+              title="Client inactif : réactivez le compte avant de créer une réservation."
+            >
               <User className="mr-2 h-4 w-4" />
               Nouvelle réservation
             </Button>
-          </Link>
+          )}
           <Link href={`/admin/clients/${client.id}`}>
             <Button className="w-full sm:w-auto">Voir la fiche</Button>
           </Link>

@@ -63,6 +63,8 @@ export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
         const lastBooking = client.lastBooking;
         const hasLastBooking = Boolean(lastBooking);
 
+        const canCreateReservation = client.status === "ACTIVE";
+
         return (
           <Card
             key={client.id}
@@ -172,16 +174,24 @@ export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
                         Voir la fiche client
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/admin/bookings/add?clientId=${client.id}`}>
-                        <UserRoundPlus className="mr-2 h-4 w-4" />
-                        Créer une réservation
-                      </Link>
-                    </DropdownMenuItem>
                     <DropdownMenuItem onSelect={(event) => event.preventDefault()} disabled>
                       <Mail className="mr-2 h-4 w-4" />
                       Envoyer un email (bientôt)
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {canCreateReservation ? (
+                      <DropdownMenuItem asChild>
+                        <Link href={`/admin/bookings/add?clientId=${client.id}`}>
+                          <UserRoundPlus className="mr-2 h-4 w-4" />
+                          Créer une réservation
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem disabled className="opacity-60">
+                        <UserRoundPlus className="mr-2 h-4 w-4" />
+                        Réservation indisponible (client inactif)
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href={`/admin/clients/edit/${client.id}`}>
