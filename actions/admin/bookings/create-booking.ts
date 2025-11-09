@@ -115,12 +115,17 @@ export async function createBookingAction(
     const data = parsed.data;
 
     const [user, vehicle, pickupLocation, returnLocation] = await Promise.all([
-      prisma.user.findFirst({
+      prisma.user.findUnique({
         where: {
           id: data.userId,
-          deletedAt: null,
         },
-        select: { id: true, name: true, email: true, driverLicense: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          driverLicense: true,
+          deletedAt: true,
+        },
       }),
       prisma.vehicle.findUnique({
         where: { id: data.vehicleId },
@@ -144,7 +149,16 @@ export async function createBookingAction(
     ]);
 
     if (!user) {
+      console.warn("[Bookings] Client introuvable", { userId: data.userId });
       return { success: false, error: "Client introuvable." };
+    }
+
+    if (user.deletedAt) {
+      console.warn("[Bookings] Client désactivé", { userId: data.userId, deletedAt: user.deletedAt });
+      return {
+        success: false,
+        error: "Ce client est désactivé. Réactivez son compte avant de créer une réservation.",
+      };
     }
 
     if (!user.driverLicense) {

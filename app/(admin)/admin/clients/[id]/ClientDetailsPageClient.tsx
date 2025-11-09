@@ -85,6 +85,7 @@ export function ClientDetailsPageClient({ client }: ClientDetailsPageClientProps
   const router = useRouter();
   const [licenseError, setLicenseError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const canCreateReservation = client.status === "ACTIVE" && !client.deletedAt;
 
   const StatusIcon = CLIENT_STATUS_ICONS[client.status];
 
@@ -168,12 +169,24 @@ export function ClientDetailsPageClient({ client }: ClientDetailsPageClientProps
               Modifier
             </Button>
           </Link>
-          <Link href={`/admin/bookings/add?clientId=${client.id}`} className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto">
+          {canCreateReservation ? (
+            <Link href={`/admin/bookings/add?clientId=${client.id}`} className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto">
+                <UserRoundPlus className="mr-2 h-4 w-4" />
+                Nouvelle réservation
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              className="w-full sm:w-auto opacity-60"
+              variant="outline"
+              disabled
+              title="Client inactif : réactivez le compte avant de créer une réservation."
+            >
               <UserRoundPlus className="mr-2 h-4 w-4" />
               Nouvelle réservation
             </Button>
-          </Link>
+          )}
           <Link href={`/admin/bookings?search=${encodeURIComponent(client.name)}`} className="w-full sm:w-auto">
             <Button variant="outline" className="w-full sm:w-auto">
               <CalendarRange className="mr-2 h-4 w-4" />

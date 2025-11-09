@@ -124,6 +124,7 @@ interface BookingFormProps {
   services: BookingServiceOption[];
   mode?: "create" | "edit";
   booking?: BookingFormInitialValues;
+  initialUserId?: string;
 }
 
 const toDate = (value: string) => {
@@ -148,6 +149,7 @@ export function BookingForm({
   services,
   mode = "create",
   booking,
+  initialUserId,
 }: BookingFormProps) {
   const router = useRouter();
   const isEditMode = mode === "edit";
@@ -190,27 +192,27 @@ export function BookingForm({
             startDate: booking.startDate,
             endDate: booking.endDate,
             status: BookingStatus.CONFIRMED,
-      serviceIds: booking.serviceIds ?? [],
+            serviceIds: booking.serviceIds ?? [],
             totalPrice: booking.totalPrice,
             depositPaid: booking.depositPaid,
             notes: booking.notes ?? "",
             sendConfirmation: false,
           }
         : {
-            userId: "",
+            userId: initialUserId ?? "",
             vehicleId: "",
             pickupLocationId: "",
             returnLocationId: "",
             startDate: "",
             endDate: "",
             status: BookingStatus.CONFIRMED,
-      serviceIds: [],
+            serviceIds: [],
             totalPrice: 0,
             depositPaid: 0,
             notes: "",
             sendConfirmation: true,
           },
-    [isEditMode, booking]
+    [isEditMode, booking, initialUserId]
   );
 
   const form = useForm<BookingFormValues>({
@@ -227,6 +229,36 @@ export function BookingForm({
       form.setValue("status", BookingStatus.CONFIRMED, { shouldDirty: false });
     }
   }, [form, isEditMode]);
+
+  useEffect(() => {
+    setUserOptions(users);
+  }, [users]);
+
+  useEffect(() => {
+    console.log("[BookingForm] users length:", users.length);
+    console.log("[BookingForm] first user:", users[0]);
+    console.log("[BookingForm] initialUserId:", initialUserId);
+  }, [users, initialUserId]);
+
+  useEffect(() => {
+    if (isEditMode || !initialUserId) {
+      return;
+    }
+
+    const optionExists = users.some((user) => user.id === initialUserId);
+    const nextValues = {
+      ...form.getValues(),
+      userId: optionExists ? initialUserId : "",
+    };
+
+    if (!optionExists && initialUserId) {
+      form.setError("userId", {
+        message: "Ce client est introuvable ou inactif.",
+      });
+    }
+
+    form.reset(nextValues);
+  }, [form, initialUserId, isEditMode, users]);
 
   const quickClientForm = useForm<QuickClientInput>({
     resolver: zodResolver(quickClientSchema) as Resolver<
@@ -256,7 +288,11 @@ export function BookingForm({
   const watchDepositPaid = useWatch({ control: form.control, name: "depositPaid" });
 
   const selectedUser = useMemo(
-    () => userOptions.find((user) => user.id === watchUserId) ?? null,
+    () => {
+      const match = userOptions.find((user) => user.id === watchUserId) ?? null;
+      console.log("[BookingForm] selectedUser for watchUserId", watchUserId, match);
+      return match;
+    },
     [userOptions, watchUserId]
   );
 
