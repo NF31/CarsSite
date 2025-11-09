@@ -5,11 +5,13 @@ import {
   BadgeCheck,
   CheckCircle2,
   Clock,
+  Edit,
   IdCard,
   ListChecks,
   Mail,
   MoreVertical,
   Phone,
+  Trash2,
   User,
   UserRoundPlus,
 } from "lucide-react";
@@ -179,6 +181,19 @@ export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
                     <DropdownMenuItem onSelect={(event) => event.preventDefault()} disabled>
                       <Mail className="mr-2 h-4 w-4" />
                       Envoyer un email (bientôt)
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={(event) => event.preventDefault()} disabled>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Modifier (bientôt)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={(event) => event.preventDefault()}
+                      className="text-red-600 focus:text-red-600"
+                      disabled
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Supprimer (bientôt)
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={(event) => event.preventDefault()} disabled>
