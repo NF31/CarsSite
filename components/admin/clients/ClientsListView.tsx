@@ -147,9 +147,11 @@ export function ClientsListView({ clients, startIndex }: ClientsListViewProps) {
                       Envoyer un email (bientôt)
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={(event) => event.preventDefault()} disabled>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Modifier (bientôt)
+                    <DropdownMenuItem asChild>
+                      <Link href={`/admin/clients/edit/${client.id}`}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Modifier
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={(event) => event.preventDefault()}
@@ -304,9 +306,11 @@ export function ClientsListView({ clients, startIndex }: ClientsListViewProps) {
                               Envoyer un email (bientôt)
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={(event) => event.preventDefault()} disabled>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Modifier (bientôt)
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/clients/edit/${client.id}`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Modifier
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onSelect={(event) => event.preventDefault()}
