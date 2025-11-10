@@ -12,7 +12,6 @@ import {
   Wrench,
   ChartLine,
   Receipt,
-  Star,
   Settings,
   Menu,
 } from "lucide-react";
@@ -86,12 +85,12 @@ const menuItems = [
     href: "/admin/invoices",
     badge: null,
   },
-  {
-    title: "Avis",
-    icon: Star,
-    href: "/admin/reviews",
-    badge: null,
-  },
+  // {
+  //   title: "Avis",
+  //   icon: Star,
+  //   href: "/admin/reviews",
+  //   badge: null,
+  // },
   {
     title: "Paramètres",
     icon: Settings,
@@ -100,9 +99,9 @@ const menuItems = [
     submenu: [
       { title: "Vue d'ensemble", href: "/admin/settings" },
       { title: "Informations agence", href: "/admin/settings/agency" },
-      { title: "Configuration", href: "/admin/settings/config" },
-      { title: "Emails", href: "/admin/settings/emails" },
-      { title: "Utilisateurs", href: "/admin/settings/users" },
+      // { title: "Configuration", href: "/admin/settings/config" },
+      // { title: "Emails", href: "/admin/settings/emails" },
+      // { title: "Utilisateurs", href: "/admin/settings/users" },
     ],
   },
 ];

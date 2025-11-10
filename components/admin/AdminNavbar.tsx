@@ -174,6 +174,7 @@ export function AdminNavbar({ session }: AdminNavbarProps) {
                     Mon profil
                   </Link>
                 </DropdownMenuItem>
+                {/* Lien Avis clients désactivé pour le moment */}
                 <DropdownMenuItem asChild>
                   <Link href="/settings" className="flex items-center">
                     <Settings className="mr-2 h-4 w-4" />
