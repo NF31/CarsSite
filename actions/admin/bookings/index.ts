@@ -4,6 +4,12 @@ export { checkVehicleAvailabilityAction } from "./check-availability";
 export { createQuickClientAction } from "./create-client";
 export { getDriverLicenseUrlAction } from "./get-driver-license-url";
 export { uploadDriverLicenseAction } from "./upload-driver-license";
+export { getCalendarEventsAction, type CalendarRange } from "./get-calendar-events";
+export {
+  mapBookingToCalendarEvent,
+  type BookingCalendarEvent,
+  type BookingWithRelations,
+} from "@/lib/bookings/calendar";
 export {
   getBookingByIdAction,
   type GetBookingResult,

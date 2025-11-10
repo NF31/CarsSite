@@ -366,6 +366,13 @@
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
 }
 
+.status-in-progress {
+  background: linear-gradient(135deg, var(--color-info), var(--color-primary-600)) !important;
+  border-color: var(--color-primary-700) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
+}
+
 .status-completed {
   background: linear-gradient(135deg, var(--color-secondary-400), var(--color-secondary-500)) !important;
   border-color: var(--color-secondary-600) !important;
@@ -392,6 +399,16 @@
   border-color: var(--color-warning) !important;
   color: white !important;
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
+}
+
+.booking-aggregate-event {
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, var(--color-neutral-100), var(--color-neutral-200)) !important;
+  border: 2px solid var(--color-neutral-400) !important;
+  color: var(--color-neutral-800) !important;
+  font-weight: 600 !important;
+  padding: 0.4rem 0.6rem !important;
+  box-shadow: 0 4px 10px rgba(148, 163, 184, 0.25) !important;
 }
 
 /* 🎯 ANIMATIONS - CHARTE GRAPHIQUE */
