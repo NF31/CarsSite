@@ -3,21 +3,64 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Calendar, 
-  DollarSign, 
-  Car, 
-  TrendingUp, 
+import {
+  Calendar,
+  DollarSign,
+  Car,
+  TrendingUp,
   TrendingDown,
   AlertTriangle,
   ArrowRight,
-  Users,
-  Clock,
-  CheckCircle2,
-  XCircle
 } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { DashboardRevenueChart } from "@/components/admin/dashboard/DashboardRevenueChart";
+import { DashboardFleetDistributionChart } from "@/components/admin/dashboard/DashboardFleetDistributionChart";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { BookingStatus } from "@prisma/client";
+import { cn } from "@/lib/utils";
+
+const STATUS_META: Record<BookingStatus, { label: string; badgeClass: string }> = {
+  [BookingStatus.PENDING]: {
+    label: "En attente",
+    badgeClass: "bg-amber-100 text-amber-800 border border-amber-200",
+  },
+  [BookingStatus.CONFIRMED]: {
+    label: "Confirmée",
+    badgeClass: "bg-blue-100 text-blue-800 border border-blue-200",
+  },
+  [BookingStatus.IN_PROGRESS]: {
+    label: "En cours",
+    badgeClass: "bg-indigo-100 text-indigo-800 border border-indigo-200",
+  },
+  [BookingStatus.COMPLETED]: {
+    label: "Terminée",
+    badgeClass: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+  },
+  [BookingStatus.CANCELLED]: {
+    label: "Annulée",
+    badgeClass: "bg-rose-100 text-rose-800 border border-rose-200",
+  },
+};
+
+function computeDynamicStatus(booking: { status: BookingStatus; startDate: Date; endDate: Date }) {
+  if (booking.status === BookingStatus.CANCELLED) {
+    return BookingStatus.CANCELLED;
+  }
+
+  const now = new Date();
+
+  if (booking.endDate <= now) {
+    return BookingStatus.COMPLETED;
+  }
+
+  if (booking.startDate <= now && now < booking.endDate) {
+    return BookingStatus.IN_PROGRESS;
+  }
+
+  return booking.status;
+}
 
 export default async function AdminDashboardPage() {
   const session = await auth();
@@ -39,7 +82,9 @@ export default async function AdminDashboardPage() {
 
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+  const revenueDays = 30;
+  const revenueWindowStart = new Date(today);
+  revenueWindowStart.setDate(revenueWindowStart.getDate() - (revenueDays - 1));
 
   // Statistiques des réservations
   const bookingsToday = await prisma.booking.count({
@@ -47,14 +92,6 @@ export default async function AdminDashboardPage() {
       startDate: {
         gte: today,
         lt: tomorrow,
-      },
-    },
-  });
-
-  const bookingsThisMonth = await prisma.booking.count({
-    where: {
-      startDate: {
-        gte: startOfMonth,
       },
     },
   });
@@ -138,6 +175,43 @@ export default async function AdminDashboardPage() {
     ? Math.round((reservedVehicles / totalVehicles) * 100)
     : 0;
 
+  const revenueWindowBookings = await prisma.booking.findMany({
+    where: {
+      startDate: {
+        gte: revenueWindowStart,
+        lt: tomorrow,
+      },
+      status: {
+        in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED"],
+      },
+    },
+    select: {
+      startDate: true,
+      totalPrice: true,
+    },
+  });
+
+  const revenueByDay = new Map<string, number>();
+  for (const booking of revenueWindowBookings) {
+    const dayKey = format(booking.startDate, "yyyy-MM-dd");
+    const amount = Number(booking.totalPrice) || 0;
+    revenueByDay.set(dayKey, (revenueByDay.get(dayKey) ?? 0) + amount);
+  }
+
+  const revenueChartData = Array.from({ length: revenueDays }, (_, index) => {
+    const currentDate = new Date(revenueWindowStart);
+    currentDate.setDate(revenueWindowStart.getDate() + index);
+    const key = format(currentDate, "yyyy-MM-dd");
+    return {
+      date: key,
+      label: format(currentDate, "dd MMM", { locale: fr }),
+      revenue: revenueByDay.get(key) ?? 0,
+    };
+  });
+
+  const revenueTotalLast30Days = revenueChartData.reduce((sum, item) => sum + item.revenue, 0);
+  const revenueAveragePerDay = revenueDays > 0 ? revenueTotalLast30Days / revenueDays : 0;
+
   // Réservations récentes
   const recentBookings = await prisma.booking.findMany({
     take: 5,
@@ -194,7 +268,7 @@ export default async function AdminDashboardPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
           <p className="text-gray-600 mt-1">
-            Bienvenue, {session.user.name} - Vue d'ensemble de votre activité
+            Bienvenue, {session.user.name} - Vue d&apos;ensemble de votre activité
           </p>
         </div>
         <div className="flex gap-2">
@@ -239,11 +313,11 @@ export default async function AdminDashboardPage() {
 
       {/* Cartes de métriques */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Réservations Aujourd'hui */}
+        {/* Réservations Aujourd&apos;hui */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
-              Réservations Aujourd'hui
+              Réservations Aujourd&apos;hui
             </CardTitle>
             <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
               <Calendar className="h-5 w-5 text-blue-600" />
@@ -346,11 +420,11 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Taux d'Occupation */}
+        {/* Taux d&apos;occupation */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
-              Taux d'Occupation
+              Taux d&apos;occupation
             </CardTitle>
             <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-indigo-600" />
@@ -379,45 +453,21 @@ export default async function AdminDashboardPage() {
 
       {/* Graphiques et Tableau */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Graphique Revenus - Placeholder */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Revenus sur 30 jours</CardTitle>
-            <CardDescription>
-              Évolution des revenus quotidiens
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="text-center">
-                <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">Graphique à venir</p>
-                <p className="text-sm text-gray-400">Intégration de Recharts ou Chart.js</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <DashboardRevenueChart
+          data={revenueChartData}
+          total={revenueTotalLast30Days}
+          average={revenueAveragePerDay}
+        />
 
-        {/* Graphique Taux d'Occupation - Placeholder */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Taux d'Occupation</CardTitle>
-            <CardDescription>
-              Répartition des véhicules
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="text-center">
-                <Car className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">Graphique à venir</p>
-                <p className="text-sm text-gray-400">Disponible: {availableVehicles}</p>
-                <p className="text-sm text-gray-400">Réservé: {reservedVehicles}</p>
-                <p className="text-sm text-gray-400">Maintenance: {maintenanceVehicles}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <DashboardFleetDistributionChart
+          data={[
+            { key: "available", label: "Disponible", value: availableVehicles },
+            { key: "reserved", label: "Réservé", value: reservedVehicles },
+            { key: "maintenance", label: "Maintenance", value: maintenanceVehicles },
+          ]}
+          totalVehicles={totalVehicles}
+          occupancyRate={occupancyRate}
+        />
       </div>
 
       {/* Réservations Récentes */}
@@ -504,25 +554,17 @@ export default async function AdminDashboardPage() {
                           }).format(Number(booking.totalPrice))}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
-                        <Badge
-                          variant={
-                            booking.status === "CONFIRMED" || booking.status === "COMPLETED"
-                              ? "default"
-                              : booking.status === "PENDING"
-                              ? "secondary"
-                              : booking.status === "IN_PROGRESS"
-                              ? "default"
-                              : "outline"
-                          }
-                        >
-                          {booking.status === "PENDING" && "En attente"}
-                          {booking.status === "CONFIRMED" && "Confirmée"}
-                          {booking.status === "IN_PROGRESS" && "En cours"}
-                          {booking.status === "COMPLETED" && "Terminée"}
-                          {booking.status === "CANCELLED" && "Annulée"}
+                  <td className="py-3 px-4">
+                    {(() => {
+                      const status = computeDynamicStatus(booking);
+                      const meta = STATUS_META[status];
+                      return (
+                        <Badge variant="outline" className={cn("font-medium", meta.badgeClass)}>
+                          {meta.label}
                         </Badge>
-                      </td>
+                      );
+                    })()}
+                  </td>
                       <td className="py-3 px-4 text-right">
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/admin/bookings/${booking.id}`}>
