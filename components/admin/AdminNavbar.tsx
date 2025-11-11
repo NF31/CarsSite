@@ -3,7 +3,7 @@
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,17 +16,58 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Bell, User, Settings, LogOut, LayoutDashboard, Shield, Search } from "lucide-react";
+import {
+  Bell,
+  User,
+  Settings,
+  LogOut,
+  LayoutDashboard,
+  Shield,
+  Search,
+  Check,
+  X,
+  Loader2,
+  Clock,
+} from "lucide-react";
 import { AdminSidebarMobile } from "./AdminSidebar";
 import type { Session } from "next-auth";
+import type { AdminNotificationData, BookingNotificationItem } from "@/lib/admin/notifications";
+import { moderateBookingStatusAction } from "@/actions/admin/bookings";
 
 interface AdminNavbarProps {
   session: Session;
+  bookingNotifications?: AdminNotificationData;
 }
 
-export function AdminNavbar({ session }: AdminNavbarProps) {
+const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+  return dateTimeFormatter.format(date);
+}
+
+function truncateReference(reference: string) {
+  if (reference.length <= 12) {
+    return reference;
+  }
+  return `${reference.slice(0, 8)}…${reference.slice(-2)}`;
+}
+
+export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingBookings, setPendingBookings] = useState<BookingNotificationItem[]>(
+    bookingNotifications?.items ?? [],
+  );
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+  const [isModerating, startModerate] = useTransition();
 
   const getInitials = (name: string) => {
     return name
@@ -46,8 +87,24 @@ export function AdminNavbar({ session }: AdminNavbarProps) {
     }
   };
 
-  // TODO: Récupérer le nombre de notifications depuis l'API
-  const notificationCount = 0; // À remplacer par un appel API
+  const notificationCount = pendingBookings.length;
+  const hiddenNotifications =
+    Math.max(0, (bookingNotifications?.totalPending ?? 0) - pendingBookings.length) || 0;
+
+  const handleModeration = (bookingId: string, action: "approve" | "reject") => {
+    setActionError(null);
+    setActiveBookingId(bookingId);
+    startModerate(async () => {
+      const result = await moderateBookingStatusAction({ bookingId, action });
+      if (!result.success) {
+        setActionError(result.error ?? "Impossible de traiter cette réservation.");
+        setActiveBookingId(null);
+        return;
+      }
+      setPendingBookings((previous) => previous.filter((item) => item.id !== bookingId));
+      setActiveBookingId(null);
+    });
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -122,9 +179,97 @@ export function AdminNavbar({ session }: AdminNavbarProps) {
             <DropdownMenuContent align="end" className="w-80 sm:w-96 max-w-[calc(100vw-2rem)]">
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                Aucune notification
-              </div>
+              {notificationCount === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Aucune demande de modification en attente.
+                </div>
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  <div className="space-y-3 px-2 py-2">
+                    {pendingBookings.map((booking) => {
+                      const isProcessing = isModerating && activeBookingId === booking.id;
+                      return (
+                        <div
+                          key={booking.id}
+                          className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-900">
+                                  {booking.userName}
+                                </span>
+                                <Badge variant="outline" className="text-[10px] font-mono">
+                                  {truncateReference(booking.reference)}
+                                </Badge>
+                              </div>
+                              {booking.userEmail ? (
+                                <p className="text-xs text-muted-foreground">{booking.userEmail}</p>
+                              ) : null}
+                            </div>
+                            <Link
+                              href={`/admin/bookings/${booking.id}`}
+                              className="text-xs text-primary underline-offset-2 hover:underline"
+                            >
+                              Voir
+                            </Link>
+                          </div>
+                          <div className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
+                            <div className="flex items-center gap-2 font-medium text-gray-900">
+                              <Clock className="h-3.5 w-3.5 text-slate-500" />
+                              Période demandée
+                            </div>
+                            <p className="mt-1">
+                              {formatDateTime(booking.startDate)} → {formatDateTime(booking.endDate)}
+                            </p>
+                            <p className="mt-1 text-muted-foreground">
+                              {booking.vehicleLabel}
+                              {booking.vehiclePlate ? ` • ${booking.vehiclePlate}` : ""}
+                            </p>
+                          </div>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled={isProcessing}
+                              onClick={() => handleModeration(booking.id, "reject")}
+                              className="inline-flex items-center gap-1"
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <X className="h-3.5 w-3.5" />
+                              )}
+                              Refuser
+                            </Button>
+                            <Button
+                              size="sm"
+                              disabled={isProcessing}
+                              onClick={() => handleModeration(booking.id, "approve")}
+                              className="inline-flex items-center gap-1"
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                              Valider
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {hiddenNotifications > 0 && (
+                <div className="px-4 pb-3 text-xs text-muted-foreground">
+                  Et {hiddenNotifications} autre{hiddenNotifications > 1 ? "s" : ""} demande{hiddenNotifications > 1 ? "s" : ""} en file d&apos;attente.
+                </div>
+              )}
+              {actionError ? (
+                <div className="px-4 pb-3 text-xs font-medium text-red-600">{actionError}</div>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
 
