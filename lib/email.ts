@@ -323,11 +323,89 @@ export async function sendBookingUpdateEmail({
 
   const bookingStatus = booking.status ?? BookingStatus.PENDING;
 
+  const statusMessages: Record<BookingStatus, string> = {
+    [BookingStatus.PENDING]:
+      "Votre demande de modification a bien été prise en compte et reste en attente de validation. Nous reviendrons vers vous sous peu.",
+    [BookingStatus.CONFIRMED]:
+      "Bonne nouvelle ! Nous avons validé votre demande de modification. Les nouvelles dates ainsi que les informations ci-dessous sont désormais confirmées.",
+    [BookingStatus.IN_PROGRESS]:
+      "Les nouvelles dates de votre réservation ont été intégrées. Votre véhicule vous attend pour la période indiquée ci-dessous.",
+    [BookingStatus.COMPLETED]:
+      "Votre réservation a été mise à jour et terminée. Retrouvez ci-dessous le récapitulatif des informations finales.",
+    [BookingStatus.CANCELLED]:
+      "Nous sommes désolés : nous n'avons pas pu accepter votre demande de modification. La réservation a été annulée. N'hésitez pas à nous contacter pour envisager une autre solution.",
+  };
+
+  const statusMessage = statusMessages[bookingStatus];
+  const heroContent: Record<
+    BookingStatus,
+    {
+      title: string;
+      subtitle: string;
+      badge: string;
+      gradientFrom: string;
+      gradientTo: string;
+      ctaLabel: string;
+      ctaMutedLabel?: string;
+    }
+  > = {
+    [BookingStatus.PENDING]: {
+      title: "Modification en attente",
+      subtitle: "Nous traitons votre demande et reviendrons vers vous rapidement.",
+      badge: "Demande reçue",
+      gradientFrom: "#fbbf24",
+      gradientTo: "#f59e0b",
+      ctaLabel: "Suivre ma réservation",
+      ctaMutedLabel: "Besoin d'aide ? Répondez directement à ce message.",
+    },
+    [BookingStatus.CONFIRMED]: {
+      title: "Votre demande est validée !",
+      subtitle: "Les nouvelles dates sont confirmées, retrouvez le détail ci-dessous.",
+      badge: "Demande acceptée",
+      gradientFrom: "#0ea5e9",
+      gradientTo: "#0284c7",
+      ctaLabel: "Voir la réservation mise à jour",
+    },
+    [BookingStatus.IN_PROGRESS]: {
+      title: "Votre trajet démarre bientôt",
+      subtitle: "Retrouvez toutes les informations utiles avant votre départ.",
+      badge: "Réservation active",
+      gradientFrom: "#7c3aed",
+      gradientTo: "#5b21b6",
+      ctaLabel: "Consulter les détails",
+    },
+    [BookingStatus.COMPLETED]: {
+      title: "Réservation finalisée",
+      subtitle: "Merci d’avoir voyagé avec nous. Voici le récapitulatif final.",
+      badge: "Trajet terminé",
+      gradientFrom: "#10b981",
+      gradientTo: "#059669",
+      ctaLabel: "Voir mon historique",
+    },
+    [BookingStatus.CANCELLED]: {
+      title: "Nous n'avons pas pu valider votre demande",
+      subtitle: "Nous restons disponibles pour vous proposer une alternative.",
+      badge: "Demande refusée",
+      gradientFrom: "#ef4444",
+      gradientTo: "#b91c1c",
+      ctaLabel: "Contacter le support",
+      ctaMutedLabel: "Une question ? Répondez à cet email et nous vous aiderons rapidement.",
+    },
+  };
+
+  const hero = heroContent[bookingStatus];
+
   const template = getBookingUpdateEmailTemplate({
     greeting,
     name,
     reference: booking.reference,
     period: booking.period,
+    statusMessage,
+    heroTitle: hero.title,
+    heroSubtitle: hero.subtitle,
+    heroBadge: hero.badge,
+    heroGradientFrom: hero.gradientFrom,
+    heroGradientTo: hero.gradientTo,
     vehicle,
     locations,
     pricing: {
@@ -341,6 +419,8 @@ export async function sendBookingUpdateEmail({
       backgroundColor: statusColors[bookingStatus].background,
     },
     dashboardUrl,
+    ctaLabel: hero.ctaLabel,
+    ctaMutedLabel: hero.ctaMutedLabel,
   });
 
   try {

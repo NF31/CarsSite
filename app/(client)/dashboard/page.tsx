@@ -33,6 +33,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { EditBookingDialog } from "@/components/client/dashboard/EditBookingDialog";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -169,7 +170,8 @@ export default async function DashboardPage() {
     .filter(
       (booking) =>
         booking.startDate > now &&
-        ![BookingStatus.CANCELLED, BookingStatus.IN_PROGRESS].includes(booking.derivedStatus),
+        booking.derivedStatus !== BookingStatus.CANCELLED &&
+        booking.derivedStatus !== BookingStatus.IN_PROGRESS,
     )
     .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
     .slice(0, 3);
@@ -181,8 +183,9 @@ export default async function DashboardPage() {
         booking.derivedStatus === BookingStatus.CANCELLED),
   );
 
-  const outstandingInvoices = invoices.filter((invoice) =>
-    [InvoiceStatus.SENT, InvoiceStatus.OVERDUE].includes(invoice.status),
+  const outstandingInvoices = invoices.filter(
+    (invoice) =>
+      invoice.status === InvoiceStatus.SENT || invoice.status === InvoiceStatus.OVERDUE,
   );
 
   const paidInvoices = invoices.filter((invoice) => invoice.status === InvoiceStatus.PAID);
@@ -305,8 +308,8 @@ export default async function DashboardPage() {
                             ? `${booking.vehicle.brand} ${booking.vehicle.model}`
                             : booking.reference}
                         </h3>
-                        <Badge className={`${BOOKING_STATUS_COLORS[booking.status]} text-[10px]`}>
-                        {BOOKING_STATUS_LABELS[booking.derivedStatus]}
+                        <Badge className={`${BOOKING_STATUS_COLORS[booking.derivedStatus]} text-[10px]`}>
+                          {BOOKING_STATUS_LABELS[booking.derivedStatus]}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -404,6 +407,13 @@ export default async function DashboardPage() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                      ) : null}
+                      {booking.startDate > now && booking.derivedStatus !== BookingStatus.PENDING ? (
+                        <EditBookingDialog
+                          bookingId={booking.id}
+                          startDate={booking.startDate.toISOString()}
+                          endDate={booking.endDate.toISOString()}
+                        />
                       ) : null}
                     </div>
                   </div>
@@ -565,6 +575,13 @@ export default async function DashboardPage() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                      ) : null}
+                      {booking.startDate > now && booking.derivedStatus !== BookingStatus.PENDING ? (
+                        <EditBookingDialog
+                          bookingId={booking.id}
+                          startDate={booking.startDate.toISOString()}
+                          endDate={booking.endDate.toISOString()}
+                        />
                       ) : null}
                     </div>
                   </div>
