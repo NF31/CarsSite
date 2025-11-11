@@ -249,6 +249,10 @@ model Booking {
   notes             String?
   cancellationReason String?
   cancelledAt      DateTime?
+  cancellationRequested       Boolean       @default(false)
+  cancellationRequestedAt     DateTime?
+  cancellationRequestedRefundRate Float?
+  cancellationPreviousStatus  BookingStatus?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 

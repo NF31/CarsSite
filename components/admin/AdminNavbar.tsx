@@ -59,11 +59,19 @@ function truncateReference(reference: string) {
   return `${reference.slice(0, 8)}…${reference.slice(-2)}`;
 }
 
+type NavbarNotificationItem = BookingNotificationItem & {
+  type?: "creation" | "modification" | "cancellation";
+  cancellationReason?: string | null;
+  cancellationRequestedAt?: string | null;
+  cancellationRefundRate?: number | null;
+  depositPaid?: number;
+};
+
 export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [pendingBookings, setPendingBookings] = useState<BookingNotificationItem[]>(
-    bookingNotifications?.items ?? [],
+  const [pendingBookings, setPendingBookings] = useState<NavbarNotificationItem[]>(
+    (bookingNotifications?.items as NavbarNotificationItem[]) ?? [],
   );
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
@@ -181,7 +189,7 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
               <DropdownMenuSeparator />
               {notificationCount === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  Aucune demande de modification en attente.
+                  Aucune demande de validation ou d&apos;annulation en attente.
                 </div>
               ) : (
                 <div className="max-h-96 overflow-y-auto">
@@ -195,12 +203,20 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-sm font-semibold text-gray-900">
                                   {booking.userName}
                                 </span>
                                 <Badge variant="outline" className="text-[10px] font-mono">
                                   {truncateReference(booking.reference)}
+                                </Badge>
+                                <Badge
+                                  variant={booking.type === "cancellation" ? "destructive" : "secondary"}
+                                  className="text-[10px]"
+                                >
+                                  {booking.type === "cancellation"
+                                    ? "Annulation demandée"
+                                    : "Validation requise"}
                                 </Badge>
                               </div>
                               {booking.userEmail ? (
@@ -227,6 +243,30 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                               {booking.vehiclePlate ? ` • ${booking.vehiclePlate}` : ""}
                             </p>
                           </div>
+                          {booking.type === "cancellation" ? (
+                            <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                              <p className="font-semibold">Annulation à valider</p>
+                              {booking.cancellationRequestedAt ? (
+                                <p>
+                                  Demandée le{" "}
+                                  {formatDateTime(booking.cancellationRequestedAt)}
+                                </p>
+                              ) : null}
+                              {booking.cancellationReason ? (
+                                <p className="mt-1 italic text-rose-800">
+                                  « {booking.cancellationReason} »
+                                </p>
+                              ) : null}
+                              <p className="mt-1">
+                                Acompte : {booking.depositPaid ? `${booking.depositPaid.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}` : "—"}.
+                                {booking.cancellationRefundRate === 1
+                                  ? " Remboursement estimé : 100%."
+                                  : booking.cancellationRefundRate === 0.5
+                                  ? " Remboursement estimé : 50%."
+                                  : " Aucun remboursement estimé."}
+                              </p>
+                            </div>
+                          ) : null}
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             <Button
                               variant="secondary"
@@ -240,7 +280,7 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                               ) : (
                                 <X className="h-3.5 w-3.5" />
                               )}
-                              Refuser
+                              {booking.type === "cancellation" ? "Rejeter la demande" : "Refuser"}
                             </Button>
                             <Button
                               size="sm"
@@ -253,7 +293,7 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                               ) : (
                                 <Check className="h-3.5 w-3.5" />
                               )}
-                              Valider
+                              {booking.type === "cancellation" ? "Confirmer l'annulation" : "Valider"}
                             </Button>
                           </div>
                         </div>
