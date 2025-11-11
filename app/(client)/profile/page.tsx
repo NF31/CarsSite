@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { User, Mail, Phone, Camera, FileText, Lock, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateProfileSchema, changePasswordSchema, deleteAccountSchema } from "@/lib/validations/profile";
@@ -222,6 +223,13 @@ export default function ProfilePage() {
     <div className="container py-8 px-4 sm:px-6 max-w-4xl">
       <div className="space-y-6">
         {/* En-tête */}
+        <ClientBreadcrumbs
+          items={[
+            { label: "Tableau de bord", href: "/dashboard" },
+            { label: "Mon profil" },
+          ]}
+          className="mb-4"
+        />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Mon profil</h1>
           <p className="text-gray-600 mt-1">Gérez vos informations personnelles et votre compte</p>
