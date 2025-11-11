@@ -40,15 +40,15 @@ Créer une plateforme complète de location de voitures avec :
 
 ### Phase 1 : Setup & Infrastructure (Semaine 1)
 **Durée :** 1 semaine  
-**Statut :** ⏳ À démarrer
+**Statut :** ✅ Terminé
 
 #### Jalons
-- [ ] Configuration environnement
-- [ ] Base de données Neon PostgreSQL
-- [ ] Prisma setup et migrations
-- [ ] NextAuth configuration
-- [ ] Structure de base (layouts, navigation)
-- [ ] Composants UI de base
+- [x] Configuration environnement
+- [x] Base de données Neon PostgreSQL
+- [x] Prisma setup et migrations initiales
+- [x] NextAuth configuration
+- [x] Structure de base (layouts, navigation)
+- [x] Composants UI de base
 
 #### Livrables
 - Environnement de développement fonctionnel
@@ -59,8 +59,8 @@ Créer une plateforme complète de location de voitures avec :
 #### Tâches Détaillées
 1. **Configuration**
    - Variables d'environnement
-   - Neon PostgreSQL Atlas setup
-   - Prisma schema implémenté
+   - Neon PostgreSQL setup
+   - Prisma schema implémenté (Users, Vehicles, Services, Bookings, Maintenance, Locations…)
    - NextAuth configuré
 
 2. **Structure**
@@ -118,26 +118,26 @@ Créer une plateforme complète de location de voitures avec :
 
 ### Phase 3 : Interface Admin (Semaines 4-5)
 **Durée :** 2 semaines  
-**Statut :** ⏳ Planifié
+**Statut :** ✅ Largement livrée *(reste le dashboard analytique)*
 
 #### Jalons
 - [ ] Dashboard admin
-- [ ] Gestion véhicules (CRUD)
-- [ ] Gestion réservations
-- [ ] Gestion clients
-- [ ] Gestion services
-- [ ] Gestion maintenance
+- [x] Gestion véhicules (CRUD)
+- [x] Gestion réservations
+- [x] Gestion clients
+- [x] Gestion services
+- [x] Gestion maintenance
 
 #### Livrables
-- Interface admin complète
-- Toutes les fonctionnalités de gestion
+- Interface admin complète (hors dashboard analytique)
+- Toutes les fonctionnalités de gestion opérationnelles
 
 #### Tâches Détaillées
 1. **Dashboard**
-   - Métriques principales
-   - Graphiques
-   - Réservations récentes
-   - Alertes
+   - Métriques principales *(à implémenter)*
+   - Graphiques *(à implémenter)*
+   - Réservations récentes *(à implémenter)*
+   - Alertes *(à implémenter)*
 
 2. **Gestion Véhicules**
    - Liste avec filtres
@@ -146,16 +146,16 @@ Créer une plateforme complète de location de voitures avec :
    - Calendrier disponibilité
 
 3. **Gestion Réservations**
-   - Liste complète
-   - Création manuelle
-   - Modification/Annulation
-   - Détails complets
+   - Liste complète (grille & tableau responsives)
+   - Création manuelle avec vérification disponibilités & upload permis
+   - Modification/Annulation avec contrôles de dates
+   - Détails complets + accès sécurisé au permis
 
 4. **Autres Sections**
    - Clients
    - Services
    - Maintenance
-   - Statistiques
+   - Statistiques *(à traiter dans le dashboard)*
 
 ---
 
@@ -167,7 +167,7 @@ Créer une plateforme complète de location de voitures avec :
 - [ ] Système d'avis
 - [ ] Modération avis (admin)
 - [ ] Facturation
-- [ ] Emails automatiques
+- [x] Emails automatiques (confirmations & mises à jour de réservation)
 - [ ] Statistiques avancées
 
 #### Livrables
@@ -186,9 +186,9 @@ Créer une plateforme complète de location de voitures avec :
    - Envoi par email
 
 3. **Notifications**
-   - Emails de confirmation
-   - Rappels réservations
-   - Notifications admin
+   - Emails de confirmation / mise à jour (en production)
+   - Rappels réservations *(à implémenter)*
+   - Notifications admin *(à implémenter)*
 
 4. **Statistiques**
    - Rapports détaillés
@@ -272,9 +272,9 @@ Créer une plateforme complète de location de voitures avec :
 
 ```
 Semaine 0  : ✅ Préparation
-Semaine 1  : ⏳ Setup & Infrastructure
+Semaine 1  : ✅ Setup & Infrastructure
 Semaines 2-3: ⏳ Fonctionnalités Client Core
-Semaines 4-5: ⏳ Interface Admin
+Semaines 4-5: ✅ Interface Admin (hors dashboard)
 Semaine 6  : ⏳ Fonctionnalités Avancées
 Semaine 7  : ⏳ Tests & Optimisations
 Semaine 8  : ⏳ Déploiement & Production
