@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Settings, Bell, Shield, Globe, CheckCircle2, AlertCircle } from "lucide-react";
+import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 import { getSettingsAction, updateSettingsAction } from "@/actions/settings";
 
 export default function SettingsPage() {
@@ -95,6 +96,13 @@ export default function SettingsPage() {
     <div className="container py-8 px-4 sm:px-6 max-w-4xl">
       <div className="space-y-6">
         {/* En-tête */}
+        <ClientBreadcrumbs
+          items={[
+            { label: "Tableau de bord", href: "/dashboard" },
+            { label: "Paramètres" },
+          ]}
+          className="mb-4"
+        />
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <Settings className="h-8 w-8" />
