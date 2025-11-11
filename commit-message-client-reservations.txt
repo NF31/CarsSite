@@ -1,0 +1,24 @@
+feat(client): page mes réservations + pagination historique
+
+Résumé :
+Ajout de la page `/reservations` côté client avec vue complète des réservations (à venir, en cours, historiques), actions (modifier/annuler) et pagination côté serveur sur l’historique. Adaptation du dashboard pour gérer les query params asynchrones.
+
+Fichiers ajoutés :
+1. `app/(client)/reservations/page.tsx`
+   - Liste des réservations par statut, cartes détail, estimation annulation (via dialog), pagination 5 éléments/historique.
+2. `app/(client)/reservations/layout.tsx`
+   - Layout protégé (auth obligatoire) + métadonnées spécifiques.
+
+Fichiers modifiés :
+1. `app/(client)/dashboard/page.tsx`
+   - Résolution asynchrone des `searchParams` et réutilisation pour la pagination “Activité récente”.
+
+Fonctionnalités :
+- Page “Mes réservations” complète avec sections à venir / en cours / historiques.
+- Pagination de l’historique sur l’onglet client, navigation via query `historyPage`.
+- Boutons “Modifier / Annuler” conditionnels, info véhicule et factures.
+- Gestion correcte des query params (dashboard + page réservations) selon Next 14.
+
+Total : 3 fichiers (2 ajoutés, 1 modifié)
+
+

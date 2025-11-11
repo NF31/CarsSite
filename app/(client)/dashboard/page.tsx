@@ -79,10 +79,16 @@ type DashboardBookingWithCancellation = DashboardBooking & {
   cancellationRequestedRefundRate?: number | null;
 };
 
+type DashboardSearchParams =
+  | Record<string, string | string[] | undefined>
+  | URLSearchParams
+  | Promise<Record<string, string | string[] | undefined>>
+  | undefined;
+
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: DashboardSearchParams;
 }) {
   const session = await auth();
 
@@ -90,19 +96,36 @@ export default async function DashboardPage({
     redirect("/login");
   }
 
-  const safeSearchParams: Record<string, string | string[] | undefined> = searchParams ?? {};
+  const resolvedSearchParams: Record<string, string | string[] | undefined> = await (async () => {
+    if (!searchParams) {
+      return {};
+    }
+
+    if (searchParams instanceof URLSearchParams) {
+      return Object.fromEntries(searchParams.entries());
+    }
+
+    if (searchParams instanceof Promise) {
+      const awaited = await searchParams;
+      return awaited ?? {};
+    }
+
+    return searchParams;
+  })();
 
   const parsePageParam = (value: string | string[] | undefined): number => {
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return 1;
+      }
+      return parsePageParam(value[0]);
+    }
+
     if (!value) {
       return 1;
     }
 
-    const firstValue = Array.isArray(value) ? value[0] : value;
-    if (!firstValue) {
-      return 1;
-    }
-
-    const parsed = Number.parseInt(firstValue, 10);
+    const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
   };
 
@@ -160,7 +183,7 @@ export default async function DashboardPage({
       : defaultSettings.configuration.cancellationPolicy;
 
   const initialRecentResult = await getClientRecentBookingsAction({
-    page: parsePageParam(safeSearchParams.recentPage),
+    page: parsePageParam(resolvedSearchParams.recentPage),
     limit: RECENT_ACTIVITY_PAGE_SIZE,
   });
 
@@ -329,7 +352,7 @@ export default async function DashboardPage({
               </CardDescription>
             </div>
             <Button variant="outline" asChild>
-              <Link href="/client/reservations" className="inline-flex items-center gap-1">
+              <Link href="/reservations" className="inline-flex items-center gap-1">
                 Gérer mes réservations
                 <ArrowRight className="h-4 w-4" />
               </Link>
