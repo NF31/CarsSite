@@ -4,6 +4,9 @@ import { getPasswordResetEmailTemplate } from "./templates/password-reset-email"
 import { getAccountDeletionEmailTemplate } from "./templates/account-deletion-email";
 import { getBookingConfirmationEmailTemplate } from "./templates/booking-confirmation-email";
 import { getBookingUpdateEmailTemplate } from "./templates/booking-update-email";
+import { getBookingCancellationEmailTemplate } from "./templates/booking-cancellation-email";
+import { getBookingCancellationRejectedEmailTemplate } from "./templates/booking-cancellation-rejected-email";
+import { getBookingCancellationRequestEmailTemplate } from "./templates/booking-cancellation-request-email";
 import { BookingStatus } from "@prisma/client";
 
 // Vérifier si les credentials email sont configurés
@@ -439,6 +442,267 @@ export async function sendBookingUpdateEmail({
       success: false,
       error:
         error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
+    };
+  }
+}
+
+interface BookingCancellationRejectedEmailParams {
+  to: string;
+  name: string;
+  greeting: string;
+  booking: {
+    reference: string;
+    totalPrice: number;
+    depositPaid: number;
+    remainingAmount: number;
+    startDate: Date;
+    endDate: Date;
+    period: string;
+    reason?: string | null;
+  };
+  vehicle: {
+    label: string;
+    licensePlate: string;
+  };
+  locations: {
+    pickup: string;
+    return: string;
+  };
+}
+
+export async function sendBookingCancellationRejectedEmail({
+  to,
+  name,
+  greeting,
+  booking,
+  vehicle,
+  locations,
+}: BookingCancellationRejectedEmailParams) {
+  if (!hasEmailCredentials || !transporter) {
+    console.warn(
+      "⚠️  Email credentials non configurés. L'email de refus d'annulation n'a pas pu être envoyé.",
+    );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const dashboardUrl = `${baseUrl}/client/dashboard`;
+
+  const template = getBookingCancellationRejectedEmailTemplate({
+    greeting,
+    name,
+    reference: booking.reference,
+    period: booking.period,
+    vehicle,
+    locations,
+    pricing: {
+      total: booking.totalPrice ?? 0,
+      deposit: booking.depositPaid ?? 0,
+      remaining: booking.remainingAmount ?? 0,
+    },
+    dashboardUrl,
+    reason: booking.reason,
+  });
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"CarRental" <${process.env.GMAIL_USER}>`,
+      to,
+      subject: `Votre demande d'annulation ${booking.reference}`,
+      html: template.html,
+      text: template.text,
+    });
+
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(
+      "Erreur lors de l'envoi de l'email de refus d'annulation de réservation:",
+      error,
+    );
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
+    };
+  }
+}
+
+interface BookingCancellationEmailParams {
+  to: string;
+  name: string;
+  greeting: string;
+  booking: {
+    reference: string;
+    totalPrice: number;
+    depositPaid: number;
+    remainingAmount: number;
+    startDate: Date;
+    endDate: Date;
+    refundAmount: number;
+    refundRate: number;
+    refundLabel: string;
+    retentionAmount: number;
+    period: string;
+    reason?: string | null;
+  };
+  vehicle: {
+    label: string;
+    licensePlate: string;
+  };
+  locations: {
+    pickup: string;
+    return: string;
+  };
+  policy: string;
+}
+
+interface BookingCancellationRequestEmailParams {
+  to: string;
+  name: string;
+  greeting: string;
+  booking: {
+    reference: string;
+    period: string;
+    reason?: string | null;
+  };
+  vehicle: {
+    label: string;
+    licensePlate: string;
+  };
+  locations: {
+    pickup: string;
+    return: string;
+  };
+  pricing: {
+    total: number;
+    deposit: number;
+    refund: number;
+    retained: number;
+  };
+  policy: string;
+}
+
+export async function sendBookingCancellationRequestEmail({
+  to,
+  name,
+  greeting,
+  booking,
+  vehicle,
+  locations,
+  pricing,
+  policy,
+}: BookingCancellationRequestEmailParams) {
+  if (!hasEmailCredentials || !transporter) {
+    console.warn(
+      "⚠️  Email credentials non configurés. L'email de demande d'annulation n'a pas pu être envoyé.",
+    );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const dashboardUrl = `${baseUrl}/client/dashboard`;
+
+  const template = getBookingCancellationRequestEmailTemplate({
+    greeting,
+    name,
+    reference: booking.reference,
+    period: booking.period,
+    vehicle,
+    locations,
+    pricing,
+    policy,
+    reason: booking.reason,
+    dashboardUrl,
+  });
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"CarRental" <${process.env.GMAIL_USER}>`,
+      to,
+      subject: `Demande d'annulation ${booking.reference} reçue`,
+      html: template.html,
+      text: template.text,
+    });
+
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(
+      "Erreur lors de l'envoi de l'email de demande d'annulation:",
+      error,
+    );
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
+    };
+  }
+}
+
+export async function sendBookingCancellationEmail({
+  to,
+  name,
+  greeting,
+  booking,
+  vehicle,
+  locations,
+  policy,
+}: BookingCancellationEmailParams) {
+  if (!hasEmailCredentials || !transporter) {
+    console.warn(
+      "⚠️  Email credentials non configurés. L'email d'annulation de réservation n'a pas pu être envoyé.",
+    );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const dashboardUrl = `${baseUrl}/client/dashboard`;
+
+  const template = getBookingCancellationEmailTemplate({
+    greeting,
+    name,
+    reference: booking.reference,
+    period: booking.period,
+    vehicle,
+    locations,
+    pricing: {
+      total: booking.totalPrice ?? 0,
+      deposit: booking.depositPaid ?? 0,
+      refund: booking.refundAmount ?? 0,
+      retained: booking.retentionAmount ?? 0,
+      remaining: booking.remainingAmount ?? 0,
+      refundLabel: booking.refundLabel,
+    },
+    dashboardUrl,
+    policy,
+    reason: booking.reason,
+  });
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"CarRental" <${process.env.GMAIL_USER}>`,
+      to,
+      subject: `Annulation de votre réservation ${booking.reference}`,
+      html: template.html,
+      text: template.text,
+    });
+
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email d'annulation de réservation:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
     };
   }
 }
