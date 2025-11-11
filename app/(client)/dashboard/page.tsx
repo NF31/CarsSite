@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import type { ComponentProps } from "react";
 import {
   Card,
   CardContent,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { BookingStatus, InvoiceStatus } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +36,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { EditBookingDialog } from "@/components/client/dashboard/EditBookingDialog";
+import { CancelBookingDialog } from "@/components/client/dashboard/CancelBookingDialog";
+import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -87,6 +91,34 @@ const INVOICE_STATUS_COLORS: Record<InvoiceStatus, string> = {
   [InvoiceStatus.CANCELLED]: "bg-rose-100 text-rose-800 border border-rose-200",
 };
 
+type CancelDialogProps = ComponentProps<typeof CancelBookingDialog>;
+
+type DashboardBooking = Prisma.BookingGetPayload<{
+  include: {
+    vehicle: {
+      select: {
+        brand: true;
+        model: true;
+        licensePlate: true;
+      };
+    };
+    invoices: {
+      select: {
+        id: true;
+        invoiceNumber: true;
+        status: true;
+        total: true;
+      };
+    };
+  };
+}>;
+
+type DashboardBookingWithCancellation = DashboardBooking & {
+  cancellationRequested?: boolean | null;
+  cancellationRequestedAt?: Date | null;
+  cancellationRequestedRefundRate?: number | null;
+};
+
 export default async function DashboardPage() {
   const session = await auth();
 
@@ -96,7 +128,9 @@ export default async function DashboardPage() {
 
   const userId = session.user.id;
 
-  const [bookings, invoices] = await Promise.all([
+  const defaultSettings = createDefaultAdminSettings();
+
+  const [bookings, invoices, cancellationPolicySetting] = await Promise.all([
     prisma.booking.findMany({
       where: { userId },
       include: {
@@ -119,7 +153,7 @@ export default async function DashboardPage() {
       orderBy: {
         startDate: "asc",
       },
-    }),
+    }) as Promise<DashboardBooking[]>,
     prisma.invoice.findMany({
       where: { userId },
       include: {
@@ -134,7 +168,16 @@ export default async function DashboardPage() {
         issuedAt: "desc",
       },
     }),
+    prisma.setting.findUnique({
+      where: { key: "config.cancellationPolicy" },
+      select: { value: true },
+    }),
   ]);
+
+  const cancellationPolicy =
+    typeof cancellationPolicySetting?.value === "string"
+      ? cancellationPolicySetting.value
+      : defaultSettings.configuration.cancellationPolicy;
 
   const now = new Date();
 
@@ -157,10 +200,17 @@ export default async function DashboardPage() {
     return booking.status;
   };
 
-  const derivedBookings = bookings.map((booking) => ({
-    ...booking,
-    derivedStatus: deriveBookingStatus(booking),
-  }));
+  const derivedBookings = (bookings as DashboardBookingWithCancellation[]).map((booking) => {
+    const cancellationRequested = booking.cancellationRequested ?? false;
+    return {
+      ...booking,
+      cancellationRequested,
+      cancellationRequestedAt: booking.cancellationRequestedAt ?? null,
+      cancellationRequestedRefundRate: booking.cancellationRequestedRefundRate ?? null,
+      derivedStatus: deriveBookingStatus(booking),
+      isCancellationPending: cancellationRequested,
+    };
+  });
 
   const activeBookings = derivedBookings.filter(
     (booking) => booking.derivedStatus === BookingStatus.IN_PROGRESS,
@@ -311,6 +361,11 @@ export default async function DashboardPage() {
                         <Badge className={`${BOOKING_STATUS_COLORS[booking.derivedStatus]} text-[10px]`}>
                           {BOOKING_STATUS_LABELS[booking.derivedStatus]}
                         </Badge>
+                        {booking.isCancellationPending ? (
+                          <Badge variant="destructive" className="text-[10px]">
+                            Annulation demandée
+                          </Badge>
+                        ) : null}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Départ le {dateTimeFormatter.format(new Date(booking.startDate))}
@@ -415,6 +470,26 @@ export default async function DashboardPage() {
                           endDate={booking.endDate.toISOString()}
                         />
                       ) : null}
+                      {booking.startDate > now &&
+                      (booking.derivedStatus === BookingStatus.PENDING ||
+                        booking.derivedStatus === BookingStatus.CONFIRMED) ? (
+                        (() => {
+                          const cancellationProps = {
+                            bookingId: booking.id,
+                            startDate: booking.startDate.toISOString(),
+                            depositPaid: booking.depositPaid ?? 0,
+                            cancellationPolicy,
+                            cancellationState: {
+                              requested: booking.isCancellationPending,
+                              requestedAt: booking.cancellationRequestedAt
+                                ? booking.cancellationRequestedAt.toISOString()
+                                : null,
+                              refundRate: booking.cancellationRequestedRefundRate ?? null,
+                            },
+                          } as unknown as CancelDialogProps;
+                          return <CancelBookingDialog {...cancellationProps} />;
+                        })()
+                      ) : null}
                     </div>
                   </div>
                 ))}
@@ -480,7 +555,7 @@ export default async function DashboardPage() {
                     key={booking.id}
                     className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-white px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between"
                   >
-                    <div>
+                      <div>
                       <p className="text-sm font-medium text-gray-900">
                         {booking.vehicle
                           ? `${booking.vehicle.brand} ${booking.vehicle.model}`
@@ -495,6 +570,11 @@ export default async function DashboardPage() {
                       <Badge className={`${BOOKING_STATUS_COLORS[booking.derivedStatus]} text-[10px]`}>
                         {BOOKING_STATUS_LABELS[booking.derivedStatus]}
                       </Badge>
+                      {booking.isCancellationPending ? (
+                        <Badge variant="destructive" className="text-[10px]">
+                          Annulation demandée
+                        </Badge>
+                      ) : null}
                       {booking.vehicle ? (
                         <Dialog>
                           <DialogTrigger asChild>
@@ -582,6 +662,26 @@ export default async function DashboardPage() {
                           startDate={booking.startDate.toISOString()}
                           endDate={booking.endDate.toISOString()}
                         />
+                      ) : null}
+                      {booking.startDate > now &&
+                      (booking.derivedStatus === BookingStatus.PENDING ||
+                        booking.derivedStatus === BookingStatus.CONFIRMED) ? (
+                        (() => {
+                          const cancellationProps = {
+                            bookingId: booking.id,
+                            startDate: booking.startDate.toISOString(),
+                            depositPaid: booking.depositPaid ?? 0,
+                            cancellationPolicy,
+                            cancellationState: {
+                              requested: booking.isCancellationPending,
+                              requestedAt: booking.cancellationRequestedAt
+                                ? booking.cancellationRequestedAt.toISOString()
+                                : null,
+                              refundRate: booking.cancellationRequestedRefundRate ?? null,
+                            },
+                          } as unknown as CancelDialogProps;
+                          return <CancelBookingDialog {...cancellationProps} />;
+                        })()
                       ) : null}
                     </div>
                   </div>
