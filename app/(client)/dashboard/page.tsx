@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import type { ComponentProps } from "react";
 import {
   Card,
   CardContent,
@@ -38,60 +37,21 @@ import {
 import { EditBookingDialog } from "@/components/client/dashboard/EditBookingDialog";
 import { CancelBookingDialog } from "@/components/client/dashboard/CancelBookingDialog";
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
+import { getClientRecentBookingsAction } from "@/actions/client/bookings/get-recent";
+import { RecentActivityCard } from "@/components/client/dashboard/RecentActivityCard";
+import {
+  BOOKING_STATUS_COLORS,
+  BOOKING_STATUS_LABELS,
+  INVOICE_STATUS_COLORS,
+  INVOICE_STATUS_LABELS,
+  currencyFormatter,
+  dateFormatter,
+  dateTimeFormatter,
+} from "@/components/client/dashboard/dashboard-constants";
 
-const currencyFormatter = new Intl.NumberFormat("fr-FR", {
-  style: "currency",
-  currency: "EUR",
-  minimumFractionDigits: 2,
-});
+export const dynamic = "force-dynamic";
 
-const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-});
-
-const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
-  [BookingStatus.PENDING]: "En attente",
-  [BookingStatus.CONFIRMED]: "Confirmée",
-  [BookingStatus.IN_PROGRESS]: "En cours",
-  [BookingStatus.COMPLETED]: "Terminée",
-  [BookingStatus.CANCELLED]: "Annulée",
-};
-
-const BOOKING_STATUS_COLORS: Record<BookingStatus, string> = {
-  [BookingStatus.PENDING]: "bg-amber-100 text-amber-800 border border-amber-200",
-  [BookingStatus.CONFIRMED]: "bg-blue-100 text-blue-800 border border-blue-200",
-  [BookingStatus.IN_PROGRESS]: "bg-indigo-100 text-indigo-800 border border-indigo-200",
-  [BookingStatus.COMPLETED]: "bg-emerald-100 text-emerald-800 border border-emerald-200",
-  [BookingStatus.CANCELLED]: "bg-rose-100 text-rose-800 border border-rose-200",
-};
-
-const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
-  [InvoiceStatus.DRAFT]: "Brouillon",
-  [InvoiceStatus.SENT]: "Envoyée",
-  [InvoiceStatus.PAID]: "Payée",
-  [InvoiceStatus.OVERDUE]: "En retard",
-  [InvoiceStatus.CANCELLED]: "Annulée",
-};
-
-const INVOICE_STATUS_COLORS: Record<InvoiceStatus, string> = {
-  [InvoiceStatus.DRAFT]: "bg-slate-100 text-slate-700 border border-slate-200",
-  [InvoiceStatus.SENT]: "bg-blue-100 text-blue-800 border border-blue-200",
-  [InvoiceStatus.PAID]: "bg-emerald-100 text-emerald-800 border border-emerald-200",
-  [InvoiceStatus.OVERDUE]: "bg-amber-100 text-amber-800 border border-amber-200",
-  [InvoiceStatus.CANCELLED]: "bg-rose-100 text-rose-800 border border-rose-200",
-};
-
-type CancelDialogProps = ComponentProps<typeof CancelBookingDialog>;
+const RECENT_ACTIVITY_PAGE_SIZE = 5;
 
 type DashboardBooking = Prisma.BookingGetPayload<{
   include: {
@@ -119,12 +79,32 @@ type DashboardBookingWithCancellation = DashboardBooking & {
   cancellationRequestedRefundRate?: number | null;
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login");
   }
+
+  const safeSearchParams: Record<string, string | string[] | undefined> = searchParams ?? {};
+
+  const parsePageParam = (value: string | string[] | undefined): number => {
+    if (!value) {
+      return 1;
+    }
+
+    const firstValue = Array.isArray(value) ? value[0] : value;
+    if (!firstValue) {
+      return 1;
+    }
+
+    const parsed = Number.parseInt(firstValue, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  };
 
   const userId = session.user.id;
 
@@ -178,6 +158,26 @@ export default async function DashboardPage() {
     typeof cancellationPolicySetting?.value === "string"
       ? cancellationPolicySetting.value
       : defaultSettings.configuration.cancellationPolicy;
+
+  const initialRecentResult = await getClientRecentBookingsAction({
+    page: parsePageParam(safeSearchParams.recentPage),
+    limit: RECENT_ACTIVITY_PAGE_SIZE,
+  });
+
+  const initialRecentBookings =
+    initialRecentResult.success && initialRecentResult.data
+      ? initialRecentResult.data
+      : {
+          bookings: [],
+          pagination: {
+            total: 0,
+            limit: RECENT_ACTIVITY_PAGE_SIZE,
+            page: 1,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
 
   const now = new Date();
 
@@ -243,10 +243,6 @@ export default async function DashboardPage() {
 
   const recentInvoices = invoices.slice(0, 5);
 
-  const recentBookings = derivedBookings
-    .filter((booking) => booking.startDate <= now)
-    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())
-    .slice(0, 5);
 
   return (
     <div className="container space-y-8 py-8 px-4 sm:px-6">
@@ -471,24 +467,15 @@ export default async function DashboardPage() {
                         />
                       ) : null}
                       {booking.startDate > now &&
+                      !booking.isCancellationPending &&
                       (booking.derivedStatus === BookingStatus.PENDING ||
                         booking.derivedStatus === BookingStatus.CONFIRMED) ? (
-                        (() => {
-                          const cancellationProps = {
-                            bookingId: booking.id,
-                            startDate: booking.startDate.toISOString(),
-                            depositPaid: booking.depositPaid ?? 0,
-                            cancellationPolicy,
-                            cancellationState: {
-                              requested: booking.isCancellationPending,
-                              requestedAt: booking.cancellationRequestedAt
-                                ? booking.cancellationRequestedAt.toISOString()
-                                : null,
-                              refundRate: booking.cancellationRequestedRefundRate ?? null,
-                            },
-                          } as unknown as CancelDialogProps;
-                          return <CancelBookingDialog {...cancellationProps} />;
-                        })()
+                        <CancelBookingDialog
+                          bookingId={booking.id}
+                          startDate={booking.startDate.toISOString()}
+                          depositPaid={booking.depositPaid ?? 0}
+                          cancellationPolicy={cancellationPolicy}
+                        />
                       ) : null}
                     </div>
                   </div>
@@ -543,151 +530,11 @@ export default async function DashboardPage() {
             <CardTitle>Activité récente</CardTitle>
             <CardDescription>Vos dernières réservations terminées ou en cours.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {recentBookings.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-muted-foreground">
-                Vos réservations récentes apparaîtront ici.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentBookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-white px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between"
-                  >
-                      <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {booking.vehicle
-                          ? `${booking.vehicle.brand} ${booking.vehicle.model}`
-                          : booking.reference}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Départ le {dateFormatter.format(new Date(booking.startDate))} • Retour le{" "}
-                        {dateFormatter.format(new Date(booking.endDate))}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-                      <Badge className={`${BOOKING_STATUS_COLORS[booking.derivedStatus]} text-[10px]`}>
-                        {BOOKING_STATUS_LABELS[booking.derivedStatus]}
-                      </Badge>
-                      {booking.isCancellationPending ? (
-                        <Badge variant="destructive" className="text-[10px]">
-                          Annulation demandée
-                        </Badge>
-                      ) : null}
-                      {booking.vehicle ? (
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="inline-flex items-center gap-1">
-                              <Info className="h-4 w-4" />
-                              Détails véhicule
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-lg">
-                            <DialogHeader>
-                              <DialogTitle>
-                                {booking.vehicle.brand} {booking.vehicle.model}
-                              </DialogTitle>
-                              <DialogDescription>
-                                Informations liées à ce véhicule et à votre réservation.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 text-sm">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                    Marque
-                                  </p>
-                                  <p className="font-semibold text-gray-900">{booking.vehicle.brand}</p>
-                                </div>
-                                <div className="space-y-1">
-                                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                    Modèle
-                                  </p>
-                                  <p className="font-semibold text-gray-900">{booking.vehicle.model}</p>
-                                </div>
-                                <div className="space-y-1">
-                                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                    Immatriculation
-                                  </p>
-                                  <p className="font-semibold text-gray-900">
-                                    {booking.vehicle.licensePlate}
-                                  </p>
-                                </div>
-                                <div className="space-y-1">
-                                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                    Statut calculé
-                                  </p>
-                                  <Badge className={`${BOOKING_STATUS_COLORS[booking.derivedStatus]} text-[10px]`}>
-                                    {BOOKING_STATUS_LABELS[booking.derivedStatus]}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                  Période de location
-                                </p>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {dateTimeFormatter.format(new Date(booking.startDate))} →{" "}
-                                  {dateTimeFormatter.format(new Date(booking.endDate))}
-                                </p>
-                              </div>
-                              {booking.invoices[0] ? (
-                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-                                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                                    Facture associée
-                                  </p>
-                                  <div className="mt-1 flex items-center justify-between">
-                                    <span className="font-semibold text-gray-900">
-                                      {booking.invoices[0].invoiceNumber}
-                                    </span>
-                                    <Badge
-                                      className={`${INVOICE_STATUS_COLORS[booking.invoices[0].status]} text-[10px]`}
-                                    >
-                                      {INVOICE_STATUS_LABELS[booking.invoices[0].status]}
-                                    </Badge>
-                                  </div>
-                                  <p className="mt-1 text-xs text-muted-foreground">
-                                    Montant : {currencyFormatter.format(booking.invoices[0].total)}
-                                  </p>
-                                </div>
-                              ) : null}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      ) : null}
-                      {booking.startDate > now && booking.derivedStatus !== BookingStatus.PENDING ? (
-                        <EditBookingDialog
-                          bookingId={booking.id}
-                          startDate={booking.startDate.toISOString()}
-                          endDate={booking.endDate.toISOString()}
-                        />
-                      ) : null}
-                      {booking.startDate > now &&
-                      (booking.derivedStatus === BookingStatus.PENDING ||
-                        booking.derivedStatus === BookingStatus.CONFIRMED) ? (
-                        (() => {
-                          const cancellationProps = {
-                            bookingId: booking.id,
-                            startDate: booking.startDate.toISOString(),
-                            depositPaid: booking.depositPaid ?? 0,
-                            cancellationPolicy,
-                            cancellationState: {
-                              requested: booking.isCancellationPending,
-                              requestedAt: booking.cancellationRequestedAt
-                                ? booking.cancellationRequestedAt.toISOString()
-                                : null,
-                              refundRate: booking.cancellationRequestedRefundRate ?? null,
-                            },
-                          } as unknown as CancelDialogProps;
-                          return <CancelBookingDialog {...cancellationProps} />;
-                        })()
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <CardContent>
+            <RecentActivityCard
+              initialData={initialRecentBookings}
+              cancellationPolicy={cancellationPolicy}
+            />
           </CardContent>
         </Card>
 
