@@ -11,6 +11,12 @@ interface BookingUpdateTemplateParams {
   name: string;
   reference: string;
   period: string;
+  statusMessage: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroBadge: string;
+  heroGradientFrom: string;
+  heroGradientTo: string;
   vehicle: {
     label: string;
     licensePlate: string;
@@ -30,6 +36,8 @@ interface BookingUpdateTemplateParams {
     backgroundColor: string;
   };
   dashboardUrl: string;
+  ctaLabel: string;
+  ctaMutedLabel?: string;
 }
 
 export function getBookingUpdateEmailTemplate({
@@ -37,15 +45,24 @@ export function getBookingUpdateEmailTemplate({
   name,
   reference,
   period,
+  statusMessage,
+  heroTitle,
+  heroSubtitle,
+  heroBadge,
+  heroGradientFrom,
+  heroGradientTo,
   vehicle,
   locations,
   pricing,
   status,
   dashboardUrl,
+  ctaLabel,
+  ctaMutedLabel,
 }: BookingUpdateTemplateParams) {
   const totalFormatted = formatCurrency(pricing.total);
   const depositFormatted = formatCurrency(pricing.deposit);
   const remainingFormatted = formatCurrency(pricing.remaining);
+  const secondaryCtaLabel = ctaMutedLabel ?? "Besoin d'aide ? Contactez-nous";
 
   return {
     html: `
@@ -62,18 +79,17 @@ export function getBookingUpdateEmailTemplate({
               <td align="center">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px; background-color:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 24px 60px -30px rgba(2,132,199,0.25); font-family:'Geist Sans', Arial, sans-serif;">
                   <tr>
-                    <td align="center" style="background:linear-gradient(135deg,#0ea5e9 0%,#0284c7 100%); padding:32px 24px;">
-                      <p style="margin:0; text-transform:uppercase; letter-spacing:2px; font-size:12px; color:rgba(255,255,255,0.75); font-weight:600;">Mise à jour de votre trajet</p>
-                      <h1 style="margin:12px 0 0; font-size:28px; line-height:1.3; color:#ffffff; font-weight:600;">Votre réservation a été modifiée</h1>
-                      <p style="margin:8px 0 0; font-size:16px; color:rgba(255,255,255,0.85);">Référence <span style="font-weight:600;">${reference}</span></p>
+                    <td align="center" style="background:linear-gradient(135deg,${heroGradientFrom} 0%,${heroGradientTo} 100%); padding:32px 24px;">
+                      <p style="margin:0; text-transform:uppercase; letter-spacing:2px; font-size:12px; color:rgba(255,255,255,0.75); font-weight:600;">${heroBadge}</p>
+                      <h1 style="margin:12px 0 0; font-size:28px; line-height:1.3; color:#ffffff; font-weight:600;">${heroTitle}</h1>
+                      <p style="margin:8px 0 0; font-size:16px; color:rgba(255,255,255,0.85);">${heroSubtitle}</p>
+                      <p style="margin:14px 0 0; font-size:15px; color:rgba(255,255,255,0.9);">Référence <span style="font-weight:600;">${reference}</span></p>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding:28px 24px 32px; color:#1f2937;">
                       <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${greeting} ${name},</h2>
-                      <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#4b5563;">
-                        Nous confirmons que les informations de votre réservation ont été mises à jour selon vos instructions. Merci de vérifier le nouveau récapitulatif ci-dessous.
-                      </p>
+                      <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#4b5563;">${statusMessage}</p>
 
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px;">
                         <tr>
@@ -152,7 +168,7 @@ export function getBookingUpdateEmailTemplate({
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 28px;">
                         <tr>
                           <td align="center" style="background-color:#0ea5e9; border-radius:9999px;">
-                            <a href="${dashboardUrl}" style="display:inline-block; padding:14px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">Voir ma réservation mise à jour</a>
+                            <a href="${dashboardUrl}" style="display:inline-block; padding:14px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">${ctaLabel}</a>
                           </td>
                         </tr>
                       </table>
@@ -161,7 +177,7 @@ export function getBookingUpdateEmailTemplate({
                         <tr>
                           <td>
                             <p style="margin:0 0 10px; font-size:13px; color:#64748b;">
-                              Une question ? Répondez à ce message ou appelez-nous au <span style="font-weight:600; color:#0284c7;">+33 1 23 45 67 89</span>.
+                              ${secondaryCtaLabel}
                             </p>
                             <p style="margin:0; font-size:13px; color:#64748b;">
                               Merci pour votre confiance.<br>
@@ -189,7 +205,7 @@ export function getBookingUpdateEmailTemplate({
     text: `
 ${greeting} ${name},
 
-Votre réservation ${reference} vient d'être modifiée.
+${statusMessage}
 
 Nouvelle période : ${period}
 Véhicule : ${vehicle.label} (${vehicle.licensePlate})
@@ -203,7 +219,7 @@ Statut mis à jour : ${status.label}
 Consultez les détails depuis votre espace client :
 ${dashboardUrl}
 
-Besoin d'aide ? Répondez directement à ce message.
+${secondaryCtaLabel}
 
 À bientôt,
 L’équipe CarRental
