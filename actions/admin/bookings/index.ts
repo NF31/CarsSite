@@ -20,6 +20,7 @@ export {
   type BookingDetailLocation,
 } from "./get-booking";
 export { updateBookingAction } from "./update-booking";
+export { moderateBookingStatusAction } from "./moderate-booking";
 export {
   getBookingsAction,
   type GetBookingsFilters,
