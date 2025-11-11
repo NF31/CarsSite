@@ -98,11 +98,11 @@ Ce document présente toutes les User Stories du projet CarRental, organisées p
 **Afin de** accéder à mes réservations
 
 **Critères d'acceptation :**
-- [ ] Formulaire d'inscription (nom, email, téléphone)
-- [ ] Vérification email
-- [ ] Choix du mot de passe sécurisé
-- [ ] Acceptation des CGV
-- [ ] Confirmation d'inscription
+- [x] Formulaire d'inscription (nom, email, téléphone)
+- [x] Vérification email
+- [x] Choix du mot de passe sécurisé
+- [x] Acceptation des CGV
+- [x] Confirmation d'inscription
 
 #### US-008 : Connexion
 **En tant que** client  
@@ -110,10 +110,10 @@ Ce document présente toutes les User Stories du projet CarRental, organisées p
 **Afin de** accéder à mes informations
 
 **Critères d'acceptation :**
-- [ ] Connexion par email/mot de passe
-- [ ] Option "Se souvenir de moi"
-- [ ] Récupération de mot de passe
-- [ ] Session sécurisée
+- [x] Connexion par email/mot de passe
+- [x] Option "Se souvenir de moi"
+- [x] Récupération de mot de passe
+- [x] Session sécurisée
 
 #### US-009 : Consultation de l'historique
 **En tant que** client  
@@ -133,10 +133,10 @@ Ce document présente toutes les User Stories du projet CarRental, organisées p
 **Afin de** les mettre à jour
 
 **Critères d'acceptation :**
-- [ ] Modification des coordonnées
-- [ ] Mise à jour du permis de conduire
-- [ ] Changement de mot de passe
-- [ ] Préférences de notification
+- [x] Modification des coordonnées
+- [x] Mise à jour du permis de conduire
+- [x] Changement de mot de passe
+- [x] Préférences de notification
 
 ### Avis et Commentaires
 
