@@ -27,6 +27,7 @@ import { Info, Calendar, Clock, History, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { BookingStatus } from "@prisma/client";
+import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -384,6 +385,13 @@ export default async function ClientReservationsPage({ searchParams }: ClientRes
 
   return (
     <div className="container space-y-8 py-8 px-4 sm:px-6">
+      <ClientBreadcrumbs
+        items={[
+          { label: "Tableau de bord", href: "/dashboard" },
+          { label: "Mes réservations" },
+        ]}
+        className="mb-4"
+      />
       <header className="space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">Mes réservations</h1>
         <p className="text-gray-600">

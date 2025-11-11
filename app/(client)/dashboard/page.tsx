@@ -39,6 +39,7 @@ import { CancelBookingDialog } from "@/components/client/dashboard/CancelBooking
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 import { getClientRecentBookingsAction } from "@/actions/client/bookings/get-recent";
 import { RecentActivityCard } from "@/components/client/dashboard/RecentActivityCard";
+import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 import {
   BOOKING_STATUS_COLORS,
   BOOKING_STATUS_LABELS,
@@ -269,6 +270,12 @@ export default async function DashboardPage({
 
   return (
     <div className="container space-y-8 py-8 px-4 sm:px-6">
+      <ClientBreadcrumbs
+        items={[
+          { label: "Tableau de bord", href: "/dashboard" },
+        ]}
+        className="mb-4"
+      />
       <header className="space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">Bienvenue, {session.user.name} 👋</h1>
         <p className="text-gray-600">
