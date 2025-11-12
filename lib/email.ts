@@ -8,6 +8,17 @@ import { getBookingCancellationEmailTemplate } from "./templates/booking-cancell
 import { getBookingCancellationRejectedEmailTemplate } from "./templates/booking-cancellation-rejected-email";
 import { getBookingCancellationRequestEmailTemplate } from "./templates/booking-cancellation-request-email";
 import { BookingStatus } from "@prisma/client";
+import {
+  queueVerificationEmail,
+  queuePasswordResetEmail,
+  queueAccountDeletionEmail,
+  queueBookingConfirmationEmail,
+  queueBookingUpdateEmail,
+  queueBookingCancellationRejectedEmail,
+  queueBookingCancellationRequestEmail,
+  queueBookingCancellationEmail,
+} from "./email-queue-sender";
+import { isRedisAvailable } from "./redis";
 
 // Vérifier si les credentials email sont configurés
 const hasEmailCredentials =
@@ -43,6 +54,21 @@ export async function sendVerificationEmail(
     );
   }
 
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueVerificationEmail(email, name, token);
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
   if (!transporter) {
     throw new Error("Transporter email non initialisé");
   }
@@ -63,7 +89,7 @@ export async function sendVerificationEmail(
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log("Email envoyé:", info.messageId);
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email:", error);
     throw error;
@@ -88,6 +114,21 @@ export async function sendPasswordResetEmail(
     );
   }
 
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queuePasswordResetEmail(email, name, token);
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
   if (!transporter) {
     throw new Error("Transporter email non initialisé");
   }
@@ -107,7 +148,7 @@ export async function sendPasswordResetEmail(
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log("Email de réinitialisation envoyé:", info.messageId);
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email:", error);
     throw error;
@@ -132,6 +173,21 @@ export async function sendAccountDeletionEmail(
     );
   }
 
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueAccountDeletionEmail(email, name, token);
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
   if (!transporter) {
     throw new Error("Transporter email non initialisé");
   }
@@ -151,7 +207,7 @@ export async function sendAccountDeletionEmail(
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log("Email de confirmation de suppression envoyé:", info.messageId);
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email:", error);
     throw error;
@@ -190,10 +246,40 @@ export async function sendBookingConfirmationEmail({
   vehicle,
   locations,
 }: BookingConfirmationEmailParams) {
-  if (!hasEmailCredentials || !transporter) {
+  if (!hasEmailCredentials) {
     console.warn(
       "⚠️  Email credentials non configurés. L'email de confirmation de réservation n'a pas pu être envoyé."
     );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueBookingConfirmationEmail({
+        to,
+        name,
+        greeting,
+        booking,
+        vehicle,
+        locations,
+      });
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
     return {
       success: false,
       skipped: true,
@@ -251,7 +337,7 @@ export async function sendBookingConfirmationEmail({
       text: template.text,
     });
 
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
     return {
@@ -294,10 +380,40 @@ export async function sendBookingUpdateEmail({
   vehicle,
   locations,
 }: BookingUpdateEmailParams) {
-  if (!hasEmailCredentials || !transporter) {
+  if (!hasEmailCredentials) {
     console.warn(
       "⚠️  Email credentials non configurés. L'email de mise à jour de réservation n'a pas pu être envoyé."
     );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueBookingUpdateEmail({
+        to,
+        name,
+        greeting,
+        booking,
+        vehicle,
+        locations,
+      });
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
     return {
       success: false,
       skipped: true,
@@ -435,7 +551,7 @@ export async function sendBookingUpdateEmail({
       text: template.text,
     });
 
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de mise à jour:", error);
     return {
@@ -478,10 +594,40 @@ export async function sendBookingCancellationRejectedEmail({
   vehicle,
   locations,
 }: BookingCancellationRejectedEmailParams) {
-  if (!hasEmailCredentials || !transporter) {
+  if (!hasEmailCredentials) {
     console.warn(
       "⚠️  Email credentials non configurés. L'email de refus d'annulation n'a pas pu être envoyé.",
     );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueBookingCancellationRejectedEmail({
+        to,
+        name,
+        greeting,
+        booking,
+        vehicle,
+        locations,
+      });
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
     return {
       success: false,
       skipped: true,
@@ -517,7 +663,7 @@ export async function sendBookingCancellationRejectedEmail({
       text: template.text,
     });
 
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error(
       "Erreur lors de l'envoi de l'email de refus d'annulation de réservation:",
@@ -595,10 +741,42 @@ export async function sendBookingCancellationRequestEmail({
   pricing,
   policy,
 }: BookingCancellationRequestEmailParams) {
-  if (!hasEmailCredentials || !transporter) {
+  if (!hasEmailCredentials) {
     console.warn(
       "⚠️  Email credentials non configurés. L'email de demande d'annulation n'a pas pu être envoyé.",
     );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueBookingCancellationRequestEmail({
+        to,
+        name,
+        greeting,
+        booking,
+        vehicle,
+        locations,
+        pricing,
+        policy,
+      });
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
     return {
       success: false,
       skipped: true,
@@ -631,7 +809,7 @@ export async function sendBookingCancellationRequestEmail({
       text: template.text,
     });
 
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error(
       "Erreur lors de l'envoi de l'email de demande d'annulation:",
@@ -654,10 +832,41 @@ export async function sendBookingCancellationEmail({
   locations,
   policy,
 }: BookingCancellationEmailParams) {
-  if (!hasEmailCredentials || !transporter) {
+  if (!hasEmailCredentials) {
     console.warn(
       "⚠️  Email credentials non configurés. L'email d'annulation de réservation n'a pas pu être envoyé.",
     );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueBookingCancellationEmail({
+        to,
+        name,
+        greeting,
+        booking,
+        vehicle,
+        locations,
+        policy,
+      });
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
     return {
       success: false,
       skipped: true,
@@ -697,7 +906,7 @@ export async function sendBookingCancellationEmail({
       text: template.text,
     });
 
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email d'annulation de réservation:", error);
     return {
