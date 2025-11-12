@@ -164,7 +164,7 @@ GMAIL_USER="votre-email"
 GMAIL_PASSWORD="votre-password"
 
 # Google Maps
-GOOGLE_MAPS_API_KEY="votre-google-maps-key"
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="votre-google-maps-key"
 ```
 
 ### Démarrage
