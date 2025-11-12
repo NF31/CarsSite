@@ -175,6 +175,12 @@ export async function createMaintenanceAction(
 
     const record = serializeMaintenanceRecord(maintenance);
 
+    // Invalider le cache de disponibilité du véhicule
+    const { invalidateVehicleAvailabilityCache } = await import("@/lib/cache-invalidation");
+    await invalidateVehicleAvailabilityCache(data.vehicleId).catch((error) => {
+      console.error("Error invalidating vehicle availability cache:", error);
+    });
+
     return {
       success: true,
       data: record,

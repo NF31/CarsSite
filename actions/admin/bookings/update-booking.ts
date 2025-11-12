@@ -348,6 +348,17 @@ export async function updateBookingAction(
 
       await reserveVehicleIfNeeded(data.vehicleId, data.status);
 
+      // Invalider le cache des réservations et de disponibilité
+      const { invalidateBookingCache, invalidateVehicleAvailabilityCache } = await import("@/lib/cache-invalidation");
+      await Promise.all([
+        invalidateBookingCache(data.bookingId).catch((error) => {
+          console.error("Error invalidating booking cache:", error);
+        }),
+        invalidateVehicleAvailabilityCache(data.vehicleId).catch((error) => {
+          console.error("Error invalidating vehicle availability cache:", error);
+        }),
+      ]);
+
       if (data.sendConfirmation) {
         const bookingPeriod = `${format(data.startDate, "dd MMMM yyyy 'à' HH:mm", {
           locale: fr,

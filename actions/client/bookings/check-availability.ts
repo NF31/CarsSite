@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { BookingStatus, MaintenanceStatus, MaintenanceType } from "@prisma/client";
 import { z } from "zod";
 import { headers } from "next/headers";
-import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit";
+import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit-redis";
 
 const clientAvailabilitySchema = z.object({
   bookingId: z.string().min(1),

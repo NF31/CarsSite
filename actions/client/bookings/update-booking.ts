@@ -9,7 +9,7 @@ import {
   MaintenanceType,
 } from "@prisma/client";
 import { headers } from "next/headers";
-import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit";
+import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit-redis";
 import { sendBookingUpdateEmail } from "@/lib/email";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -276,6 +276,12 @@ export async function updateClientBookingAction(
     revalidatePath("/admin/dashboard");
     revalidatePath("/admin/statistics");
     revalidatePath("/admin/invoices");
+
+    // Invalider le cache des réservations
+    const { invalidateBookingCache } = await import("@/lib/cache-invalidation");
+    await invalidateBookingCache(bookingId).catch((error) => {
+      console.error("Error invalidating booking cache:", error);
+    });
 
     return {
       success: true,

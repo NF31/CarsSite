@@ -112,8 +112,14 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
       };
     }
 
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
+    // Utiliser le cache Redis pour les détails d'une réservation
+    const { getOrSetCache, CACHE_PREFIXES, CACHE_TTL } = await import("@/lib/cache");
+    
+    const booking = await getOrSetCache(
+      bookingId,
+      async () => {
+        return await prisma.booking.findUnique({
+          where: { id: bookingId },
       select: {
         id: true,
         reference: true,
@@ -181,6 +187,12 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
         },
       },
     });
+      },
+      {
+        prefix: CACHE_PREFIXES.BOOKING,
+        ttl: CACHE_TTL.BOOKING,
+      }
+    );
 
     if (!booking) {
       return {
