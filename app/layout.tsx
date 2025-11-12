@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/session-provider";
+import { MotionProvider } from "@/components/providers/motion-provider";
 import { ConditionalHeaderFooter } from "@/components/layout/conditional-header-footer";
 import { FullCalendarStyles } from "@/components/providers/fullcalendar-styles";
 
@@ -31,9 +32,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <FullCalendarStyles />
-        <AuthProvider>
-          <ConditionalHeaderFooter>{children}</ConditionalHeaderFooter>
-        </AuthProvider>
+        <MotionProvider>
+          <AuthProvider>
+            <ConditionalHeaderFooter>{children}</ConditionalHeaderFooter>
+          </AuthProvider>
+        </MotionProvider>
       </body>
     </html>
   );
