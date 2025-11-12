@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "worker:email": "tsx scripts/start-email-worker.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.19",
