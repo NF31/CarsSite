@@ -3,8 +3,10 @@
 import { headers } from "next/headers";
 import { signIn } from "@/auth";
 import {
-  checkLoginRateLimit,
-  recordLoginAttempt,
+  checkLoginRateLimitRedis as checkLoginRateLimit,
+  recordLoginAttemptRedis as recordLoginAttempt,
+} from "@/lib/rate-limit-redis";
+import {
   incrementFailedLoginAttempts,
   resetFailedLoginAttempts,
 } from "@/lib/rate-limit";

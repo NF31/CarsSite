@@ -115,17 +115,12 @@ export async function createBookingAction(
     const data = parsed.data;
 
     const [user, vehicle, pickupLocation, returnLocation] = await Promise.all([
-      prisma.user.findUnique({
+      prisma.user.findFirst({
         where: {
           id: data.userId,
+          deletedAt: null,
         },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          driverLicense: true,
-          deletedAt: true,
-        },
+        select: { id: true, name: true, email: true, driverLicense: true },
       }),
       prisma.vehicle.findUnique({
         where: { id: data.vehicleId },
@@ -149,16 +144,7 @@ export async function createBookingAction(
     ]);
 
     if (!user) {
-      console.warn("[Bookings] Client introuvable", { userId: data.userId });
       return { success: false, error: "Client introuvable." };
-    }
-
-    if (user.deletedAt) {
-      console.warn("[Bookings] Client désactivé", { userId: data.userId, deletedAt: user.deletedAt });
-      return {
-        success: false,
-        error: "Ce client est désactivé. Réactivez son compte avant de créer une réservation.",
-      };
     }
 
     if (!user.driverLicense) {
@@ -356,6 +342,17 @@ export async function createBookingAction(
         reference: created.reference,
         bookingId: created.id,
       });
+
+      // Invalider le cache des réservations et de disponibilité
+      const { invalidateBookingsCache, invalidateVehicleAvailabilityCache } = await import("@/lib/cache-invalidation");
+      await Promise.all([
+        invalidateBookingsCache().catch((error) => {
+          console.error("Error invalidating bookings cache:", error);
+        }),
+        invalidateVehicleAvailabilityCache(data.vehicleId).catch((error) => {
+          console.error("Error invalidating vehicle availability cache:", error);
+        }),
+      ]);
 
       return {
         success: true,

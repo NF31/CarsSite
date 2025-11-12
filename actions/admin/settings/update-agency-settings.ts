@@ -126,6 +126,12 @@ export async function updateAgencySettingsAction(
       }),
     );
 
+    // Invalider le cache des settings
+    const { invalidateSettingsCache } = await import("@/lib/cache-invalidation");
+    await invalidateSettingsCache().catch((error) => {
+      console.error("Error invalidating settings cache:", error);
+    });
+
     return {
       success: true,
       message: "Informations de l'agence mises à jour avec succès.",

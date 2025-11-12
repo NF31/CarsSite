@@ -123,6 +123,12 @@ export async function updateConfigurationSettingsAction(
       }),
     );
 
+    // Invalider le cache des settings
+    const { invalidateSettingsCache } = await import("@/lib/cache-invalidation");
+    await invalidateSettingsCache().catch((error) => {
+      console.error("Error invalidating settings cache:", error);
+    });
+
     return {
       success: true,
       message: "Configuration générale mise à jour avec succès.",
