@@ -1,20 +1,35 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import {
+  getOrSetCache,
+  CACHE_PREFIXES,
+  CACHE_TTL,
+} from "@/lib/cache";
 
 export async function getBrandsAction() {
   try {
-    const vehicles = await prisma.vehicle.findMany({
-      select: {
-        brand: true,
-      },
-      distinct: ["brand"],
-      orderBy: {
-        brand: "asc",
-      },
-    });
+    // Utiliser le cache Redis pour les marques
+    const brands = await getOrSetCache(
+      "all",
+      async () => {
+        const vehicles = await prisma.vehicle.findMany({
+          select: {
+            brand: true,
+          },
+          distinct: ["brand"],
+          orderBy: {
+            brand: "asc",
+          },
+        });
 
-    const brands = vehicles.map((v) => v.brand);
+        return vehicles.map((v) => v.brand);
+      },
+      {
+        prefix: "brands",
+        ttl: CACHE_TTL.VEHICLES_LIST, // 5 minutes (change peu)
+      }
+    );
 
     return {
       success: true,

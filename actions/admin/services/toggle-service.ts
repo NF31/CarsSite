@@ -82,6 +82,12 @@ export async function toggleServiceActiveAction(
       },
     });
 
+    // Invalider le cache des services
+    const { invalidateServicesCache } = await import("@/lib/cache-invalidation");
+    await invalidateServicesCache().catch((error) => {
+      console.error("Error invalidating services cache:", error);
+    });
+
     return {
       success: true,
       data: updated,

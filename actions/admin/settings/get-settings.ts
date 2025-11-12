@@ -7,6 +7,11 @@ import {
   buildAdminSettingsData,
 } from "./shared";
 import type { AdminSettingsData } from "@/types/admin-settings";
+import {
+  getOrSetCache,
+  CACHE_PREFIXES,
+  CACHE_TTL,
+} from "@/lib/cache";
 
 export interface GetAdminSettingsResult {
   success: boolean;
@@ -35,15 +40,25 @@ export async function getAdminSettingsAction(): Promise<GetAdminSettingsResult> 
       };
     }
 
-    const settings = await prisma.setting.findMany({
-      where: {
-        key: {
-          in: [...ALL_ADMIN_SETTING_KEYS],
-        },
-      },
-    });
+    // Utiliser le cache Redis pour les settings admin
+    const data = await getOrSetCache(
+      "all",
+      async () => {
+        const settings = await prisma.setting.findMany({
+          where: {
+            key: {
+              in: [...ALL_ADMIN_SETTING_KEYS],
+            },
+          },
+        });
 
-    const data = buildAdminSettingsData(settings);
+        return buildAdminSettingsData(settings);
+      },
+      {
+        prefix: CACHE_PREFIXES.SETTINGS,
+        ttl: CACHE_TTL.SETTINGS,
+      }
+    );
 
     return {
       success: true,
