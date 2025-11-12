@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { BookingStatus } from "@prisma/client";
 import { headers } from "next/headers";
-import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit";
+import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit-redis";
 import { sendBookingCancellationRequestEmail } from "@/lib/email";
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 import { format } from "date-fns";
@@ -272,6 +272,12 @@ export async function cancelClientBookingAction(
     revalidatePath("/admin/dashboard");
     revalidatePath("/admin/statistics");
     revalidatePath("/admin/invoices");
+
+    // Invalider le cache des réservations
+    const { invalidateBookingCache } = await import("@/lib/cache-invalidation");
+    await invalidateBookingCache(booking.id).catch((error) => {
+      console.error("Error invalidating booking cache:", error);
+    });
 
     return {
       success: true,

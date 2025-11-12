@@ -3,6 +3,11 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import {
+  getOrSetCache,
+  CACHE_PREFIXES,
+  CACHE_TTL,
+} from "@/lib/cache";
 
 export interface GetVehicleByIdResult {
   success: boolean;
@@ -61,26 +66,35 @@ export async function getVehicleByIdAction(
       };
     }
 
-    // Récupérer le véhicule avec toutes les relations nécessaires
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      include: {
-        location: {
-          select: {
-            id: true,
-            name: true,
-            city: true,
-            address: true,
+    // Utiliser le cache Redis pour les détails d'un véhicule
+    const vehicle = await getOrSetCache(
+      vehicleId,
+      async () => {
+        return await prisma.vehicle.findUnique({
+          where: { id: vehicleId },
+          include: {
+            location: {
+              select: {
+                id: true,
+                name: true,
+                city: true,
+                address: true,
+              },
+            },
+            _count: {
+              select: {
+                bookings: true,
+                reviews: true,
+              },
+            },
           },
-        },
-        _count: {
-          select: {
-            bookings: true,
-            reviews: true,
-          },
-        },
+        });
       },
-    });
+      {
+        prefix: CACHE_PREFIXES.VEHICLE,
+        ttl: CACHE_TTL.VEHICLE,
+      }
+    );
 
     if (!vehicle) {
       return {

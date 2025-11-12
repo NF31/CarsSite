@@ -400,6 +400,13 @@ export async function updateVehicleAction(
       console.log(`✅ ${deletedImages.length} image(s) supprimée(s) de Cloudinary et de la BDD`);
     }
 
+    // Invalider le cache des véhicules
+    const { invalidateVehicleCache } = await import("@/lib/cache-invalidation");
+    await invalidateVehicleCache(id).catch((error) => {
+      console.error("Error invalidating vehicle cache:", error);
+      // Ne pas faire échouer la mise à jour si l'invalidation échoue
+    });
+
     return {
       success: true,
       data: {

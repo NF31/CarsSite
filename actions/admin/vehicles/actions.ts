@@ -2,6 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import type { VehicleCategory, VehicleStatus } from "@prisma/client";
+import {
+  getOrSetCache,
+  CACHE_PREFIXES,
+  CACHE_TTL,
+} from "@/lib/cache";
 
 export interface GetVehiclesFilters {
   status?: VehicleStatus;
@@ -62,6 +67,24 @@ export interface GetVehiclesResult {
     };
   };
   error?: string;
+}
+
+/**
+ * Génère une clé de cache unique basée sur les filtres
+ */
+function getVehiclesCacheKey(filters: GetVehiclesFilters): string {
+  const parts = [
+    filters.status || "all",
+    filters.category || "all",
+    filters.brand || "all",
+    filters.locationId || "all",
+    filters.search || "all",
+    filters.page || 1,
+    filters.limit || 12,
+    filters.sortBy || "createdAt",
+    filters.sortOrder || "desc",
+  ];
+  return parts.join(":");
 }
 
 export async function getVehiclesAction(
@@ -132,53 +155,121 @@ export async function getVehiclesAction(
     // Calculer le skip
     const skip = (page - 1) * limit;
 
-    // Récupérer les véhicules et le total
-    const [vehicles, total] = await Promise.all([
-      prisma.vehicle.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: {
-          location: {
-            select: {
-              id: true,
-              name: true,
-              address: true,
-              city: true,
+    // Générer la clé de cache
+    const cacheKey = getVehiclesCacheKey(filters);
+
+    // Utiliser le cache Redis pour les véhicules
+    // Note: On ne met pas en cache si on a une recherche textuelle (trop variable)
+    const shouldCache = !search;
+
+    if (shouldCache) {
+      const cached = await getOrSetCache(
+        cacheKey,
+        async () => {
+          // Récupérer les véhicules et le total
+          const [vehicles, total] = await Promise.all([
+            prisma.vehicle.findMany({
+              where,
+              skip,
+              take: limit,
+              orderBy,
+              include: {
+                location: {
+                  select: {
+                    id: true,
+                    name: true,
+                    address: true,
+                    city: true,
+                  },
+                },
+                _count: {
+                  select: {
+                    bookings: true,
+                    reviews: true,
+                  },
+                },
+              },
+            }),
+            prisma.vehicle.count({ where }),
+          ]);
+
+          const totalPages = Math.ceil(total / limit);
+
+          return {
+            vehicles: vehicles.map((vehicle) => ({
+              ...vehicle,
+              transmission: vehicle.transmission,
+              fuelType: vehicle.fuelType,
+            })),
+            pagination: {
+              total,
+              page,
+              limit,
+              totalPages,
+              hasNext: page < totalPages,
+              hasPrev: page > 1,
+            },
+          };
+        },
+        {
+          prefix: CACHE_PREFIXES.VEHICLES_LIST,
+          ttl: CACHE_TTL.VEHICLES_LIST,
+        }
+      );
+
+      return {
+        success: true,
+        data: cached,
+      };
+    } else {
+      // Pas de cache pour les recherches textuelles
+      const [vehicles, total] = await Promise.all([
+        prisma.vehicle.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: {
+            location: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+                city: true,
+              },
+            },
+            _count: {
+              select: {
+                bookings: true,
+                reviews: true,
+              },
             },
           },
-          _count: {
-            select: {
-              bookings: true,
-              reviews: true,
-            },
+        }),
+        prisma.vehicle.count({ where }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        success: true,
+        data: {
+          vehicles: vehicles.map((vehicle) => ({
+            ...vehicle,
+            transmission: vehicle.transmission,
+            fuelType: vehicle.fuelType,
+          })),
+          pagination: {
+            total,
+            page,
+            limit,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
           },
         },
-      }),
-      prisma.vehicle.count({ where }),
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      success: true,
-      data: {
-        vehicles: vehicles.map((vehicle) => ({
-          ...vehicle,
-          transmission: vehicle.transmission,
-          fuelType: vehicle.fuelType,
-        })),
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages,
-          hasNext: page < totalPages,
-          hasPrev: page > 1,
-        },
-      },
-    };
+      };
+    }
   } catch (error) {
     console.error("Error fetching vehicles:", error);
     return {

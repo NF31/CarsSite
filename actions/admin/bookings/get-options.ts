@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { ServicePricingType, UserRole, VehicleStatus } from "@prisma/client";
 import { extractCloudinaryAssetInfo } from "@/lib/cloudinary-utils";
+import {
+  getOrSetCache,
+  CACHE_PREFIXES,
+  CACHE_TTL,
+} from "@/lib/cache";
 
 export interface BookingUserOption {
   id: string;
@@ -85,7 +90,14 @@ export async function getBookingOptionsAction(
       };
     }
 
-    const [users, vehicles, locations, services] = await Promise.all([
+    // Générer une clé de cache basée sur les paramètres
+    const cacheKey = `options:${JSON.stringify(params)}`;
+
+    // Utiliser le cache Redis pour les options de réservation
+    const data = await getOrSetCache(
+      cacheKey,
+      async () => {
+        const [users, vehicles, locations, services] = await Promise.all([
       prisma.user.findMany({
         where: {
           deletedAt: null,
@@ -352,28 +364,36 @@ export async function getBookingOptionsAction(
           address: location.address,
         }));
 
-        locationOptions.push(...mappedExtraLocations);
+          locationOptions.push(...mappedExtraLocations);
+        }
       }
-    }
 
-    userOptions.sort((a, b) => a.name.localeCompare(b.name, "fr"));
-    serviceOptions.sort((a, b) => a.name.localeCompare(b.name, "fr"));
-    locationOptions.sort((a, b) => {
-      const cityComparison = a.city.localeCompare(b.city, "fr");
-      if (cityComparison !== 0) {
-        return cityComparison;
-      }
-      return a.name.localeCompare(b.name, "fr");
-    });
+      userOptions.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+      serviceOptions.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+      locationOptions.sort((a, b) => {
+        const cityComparison = a.city.localeCompare(b.city, "fr");
+        if (cityComparison !== 0) {
+          return cityComparison;
+        }
+        return a.name.localeCompare(b.name, "fr");
+      });
 
-    return {
-      success: true,
-      data: {
+      return {
         users: userOptions,
         vehicles: vehicleOptions,
         locations: locationOptions,
         services: serviceOptions,
-      },
+      };
+    },
+    {
+      prefix: CACHE_PREFIXES.BOOKING_OPTIONS,
+      ttl: CACHE_TTL.BOOKING_OPTIONS,
+    }
+  );
+
+    return {
+      success: true,
+      data,
     };
   } catch (error) {
     console.error("Booking options error:", error);

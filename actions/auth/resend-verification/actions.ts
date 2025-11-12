@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/rate-limit-redis";
 import { generateVerificationToken } from "@/lib/verification-token";
 import { sendVerificationEmail } from "@/lib/email";
 

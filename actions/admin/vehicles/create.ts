@@ -246,6 +246,13 @@ export async function createVehicleAction(
       },
     });
 
+    // Invalider le cache des véhicules
+    const { invalidateVehiclesCache } = await import("@/lib/cache-invalidation");
+    await invalidateVehiclesCache().catch((error) => {
+      console.error("Error invalidating vehicles cache:", error);
+      // Ne pas faire échouer la création si l'invalidation échoue
+    });
+
     return {
       success: true,
       data: {

@@ -414,6 +414,17 @@ export async function moderateBookingStatusAction(
     revalidatePath("/admin/invoices");
     revalidatePath("/dashboard");
 
+    // Invalider le cache des réservations et de disponibilité
+    const { invalidateBookingCache, invalidateVehicleAvailabilityCache } = await import("@/lib/cache-invalidation");
+    await Promise.all([
+      invalidateBookingCache(booking.id).catch((error) => {
+        console.error("Error invalidating booking cache:", error);
+      }),
+      invalidateVehicleAvailabilityCache(booking.vehicleId).catch((error) => {
+        console.error("Error invalidating vehicle availability cache:", error);
+      }),
+    ]);
+
     return {
       success: true,
     };
