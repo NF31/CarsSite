@@ -1,68 +1,65 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
-import { Search, Car, Shield, Clock } from "lucide-react";
+import { HomeCategories } from "@/components/public/home/HomeCategories";
+import { HomeAdvantages } from "@/components/public/home/HomeAdvantages";
+import { HomePopularVehicles } from "@/components/public/home/HomePopularVehicles";
+import { HomeTestimonials } from "@/components/public/home/HomeTestimonials";
+import { HomeMapSection } from "@/components/public/home/HomeMapSection";
+import { HomeHero } from "@/components/public/home/HomeHero";
+import { HomeSectionTitle } from "@/components/public/home/HomeSectionTitle";
 
 export default function HomePage() {
   return (
     <div className="flex flex-col">
-      {/* Hero Section */}
-      <section className="container py-20 text-center">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6">
-          Trouvez votre véhicule idéal
-        </h1>
-        <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Réservez facilement votre voiture en ligne. Large choix de véhicules,
-          tarifs transparents, réservation en 4 étapes.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Button asChild size="lg">
-            <Link href="/vehicles">
-              <Search className="mr-2 h-5 w-5" />
-              Rechercher un véhicule
-            </Link>
-          </Button>
-          <Button variant="outline" size="lg" asChild>
-            <Link href="/about">En savoir plus</Link>
-          </Button>
+      {/* Hero Section avec widget de recherche */}
+      <HomeHero />
+
+      {/* Section Catégories */}
+      <section className="container py-16 md:py-24">
+        <HomeSectionTitle
+          title="Choisissez votre catégorie"
+          description="Des véhicules pour tous les besoins et tous les budgets"
+        />
+        <HomeCategories />
+      </section>
+
+      {/* Section Avantages */}
+      <section className="bg-muted/50 py-16 md:py-24">
+        <div className="container">
+          <HomeSectionTitle
+            title="Pourquoi choisir CarRental ?"
+            description="Des avantages qui font la différence"
+          />
+          <HomeAdvantages />
         </div>
       </section>
 
-      {/* Features */}
-      <section className="container py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <Car className="h-10 w-10 text-primary mb-2" />
-              <CardTitle>Large choix</CardTitle>
-              <CardDescription>
-                Plus de 100 véhicules disponibles
-              </CardDescription>
-            </CardHeader>
-          </Card>
+      {/* Section Véhicules Populaires */}
+      <section className="container py-16 md:py-24">
+        <HomeSectionTitle
+          title="Nos véhicules les plus populaires"
+          description="Découvrez notre sélection de véhicules les plus appréciés"
+        />
+        <HomePopularVehicles />
+      </section>
 
-          <Card>
-            <CardHeader>
-              <Shield className="h-10 w-10 text-primary mb-2" />
-              <CardTitle>Assurance incluse</CardTitle>
-              <CardDescription>
-                Protection complète pour votre tranquillité
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Clock className="h-10 w-10 text-primary mb-2" />
-              <CardTitle>Réservation rapide</CardTitle>
-              <CardDescription>
-                En 4 étapes simples, moins de 5 minutes
-              </CardDescription>
-            </CardHeader>
-          </Card>
+      {/* Section Google Maps pour les trajets */}
+      <section className="bg-muted/50 py-16 md:py-24">
+        <div className="container">
+          <HomeSectionTitle
+            title="Trouvez nos agences"
+            description="Localisez nos points de location et planifiez votre trajet"
+          />
+          <HomeMapSection />
         </div>
+      </section>
+
+      {/* Section Témoignages */}
+      <section className="container py-16 md:py-24">
+        <HomeSectionTitle
+          title="Ce que disent nos clients"
+          description="Des milliers de clients satisfaits nous font confiance"
+        />
+        <HomeTestimonials />
       </section>
     </div>
   );
 }
-
