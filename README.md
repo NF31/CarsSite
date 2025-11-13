@@ -167,6 +167,8 @@ GMAIL_PASSWORD="votre-password"
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="votre-google-maps-key"
 ```
 
+**Important :** Si vous rencontrez l'erreur `RefererNotAllowedMapError`, consultez le guide de configuration dans `docs/google-maps-setup.md`
+
 ### Démarrage
 
 ```bash

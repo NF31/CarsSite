@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Car, Fuel, Loader2, MapPin, Plus, TrendingUp } from "lucide-react";
+import { AlertCircle, Car, Fuel, Loader2, MapPin, Plus, TrendingUp, X } from "lucide-react";
 import { LoadScript } from "@react-google-maps/api";
 
 declare global {
@@ -15,7 +15,10 @@ declare global {
     google?: {
       maps?: {
         places?: {
-          PlaceAutocompleteElement: typeof google.maps.places.PlaceAutocompleteElement;
+          Autocomplete: typeof google.maps.places.Autocomplete;
+        };
+        event?: {
+          clearInstanceListeners: (instance: any) => void;
         };
       };
     };
@@ -49,146 +52,129 @@ function SearchWidgetContent() {
   const [returnValue, setReturnValue] = useState("");
   const [returnPlaceId, setReturnPlaceId] = useState("");
   const [startDate, setStartDate] = useState<string>("");
+  const [startTime, setStartTime] = useState<string>("10:00");
+  const [endTime, setEndTime] = useState<string>("10:00");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const todayDateString = getTodayDateString();
-  const autocompleteContainerRef = useRef<HTMLDivElement>(null);
-  const returnAutocompleteContainerRef = useRef<HTMLDivElement>(null);
-  const autocompleteElementRef = useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
-  const returnAutocompleteElementRef = useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
+  const pickupInputRef = useRef<HTMLInputElement>(null);
+  
+  // Calculer l'heure minimale pour aujourd'hui (heure actuelle, sans délai supplémentaire)
+  const getMinTimeForToday = (): string => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    // Utiliser l'heure actuelle (pas de délai supplémentaire)
+    return `${String(currentHour).padStart(2, "0")}:${String(currentMinute).padStart(2, "0")}`;
+  };
+  
+  // Vérifier si la date de départ est aujourd'hui et calculer l'heure minimale
+  const isStartDateToday = startDate === todayDateString;
+  // Utiliser useMemo pour recalculer seulement quand nécessaire
+  const minStartTime = useMemo(() => {
+    return isStartDateToday ? getMinTimeForToday() : "00:00";
+  }, [isStartDateToday, startDate]); // Recalculer si la date change ou si c'est aujourd'hui
+  const returnInputRef = useRef<HTMLInputElement>(null);
+  const autocompletePickupRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteReturnRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  // Initialiser PlaceAutocompleteElement après le chargement de Google Maps
+  // Initialiser Autocomplete pour le pickup
   useEffect(() => {
-    if (!autocompleteContainerRef.current || typeof window === "undefined") {
+    if (!pickupInputRef.current || typeof window === "undefined") {
       return;
     }
 
     // Vérifier si Google Maps est chargé
-    if (!window.google?.maps?.places?.PlaceAutocompleteElement) {
+    if (!window.google?.maps?.places?.Autocomplete) {
       // Attendre que Google Maps soit chargé
       const checkGoogleMaps = setInterval(() => {
-        if (window.google?.maps?.places?.PlaceAutocompleteElement && autocompleteContainerRef.current) {
+        if (window.google?.maps?.places?.Autocomplete && pickupInputRef.current) {
           clearInterval(checkGoogleMaps);
-          initializeAutocomplete();
+          initializePickupAutocomplete();
         }
       }, 100);
 
       return () => clearInterval(checkGoogleMaps);
     }
 
-    initializeAutocomplete();
+    initializePickupAutocomplete();
 
-    function initializeAutocomplete() {
-      if (!autocompleteContainerRef.current || !window.google?.maps?.places?.PlaceAutocompleteElement) {
+    function initializePickupAutocomplete() {
+      if (!pickupInputRef.current || !window.google?.maps?.places?.Autocomplete) {
         return;
       }
 
-      // Nettoyer l'élément existant si présent
-      if (autocompleteElementRef.current) {
-        autocompleteElementRef.current.remove();
-        autocompleteElementRef.current = null;
+      // Nettoyer l'autocomplete existant si présent
+      if (autocompletePickupRef.current) {
+        google.maps.event.clearInstanceListeners(autocompletePickupRef.current);
+        autocompletePickupRef.current = null;
       }
 
-      // Créer le PlaceAutocompleteElement
-      const PlaceAutocompleteElement = window.google.maps.places.PlaceAutocompleteElement;
-      const autocompleteElement = new PlaceAutocompleteElement({
+      // Créer l'Autocomplete
+      const autocomplete = new window.google.maps.places.Autocomplete(pickupInputRef.current, {
         componentRestrictions: { country: "fr" },
-        requestedLanguage: "fr",
+        fields: ["formatted_address", "place_id", "geometry"],
         types: ["geocode"],
-      } as google.maps.places.PlaceAutocompleteElementOptions);
+      });
 
-      // Configurer les attributs du Web Component
-      autocompleteElement.setAttribute("class", "w-full h-full");
-      autocompleteElement.style.width = "100%";
-      autocompleteElement.style.height = "100%";
+      autocompletePickupRef.current = autocomplete;
 
-      // Écouter l'événement de sélection de lieu
-      autocompleteElement.addEventListener("g-place-select", (event: any) => {
-        const place = event.place;
+      // Écouter la sélection d'un lieu
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
         if (place) {
-          // Essayer différentes propriétés possibles
-          const displayName = place.formattedAddress || place.displayName || place.name || "";
-          const placeId = place.id || place.place_id || "";
-          if (displayName && placeId) {
+          const displayName = place.formatted_address || "";
+          const placeId = place.place_id || "";
+          console.log("[HomeSearchWidget] 🎯 Place selected for pickup:", { displayName, placeId });
+          if (displayName) {
             setPickupValue(displayName);
-            setPickupPlaceId(placeId);
+            if (placeId) {
+              setPickupPlaceId(placeId);
+            }
+            
+            // Mettre à jour le champ caché
+            const form = pickupInputRef.current?.closest("form");
+            if (form) {
+              const hiddenInput = form.querySelector('input[name="pickup"]') as HTMLInputElement;
+              if (hiddenInput) {
+                hiddenInput.value = displayName;
+              }
+              const hiddenPlaceIdInput = form.querySelector('input[name="pickupPlaceId"]') as HTMLInputElement;
+              if (hiddenPlaceIdInput && placeId) {
+                hiddenPlaceIdInput.value = placeId;
+              }
+            }
           }
         }
       });
 
-      // Ajouter le Web Component au conteneur
-      autocompleteContainerRef.current.appendChild(autocompleteElement);
-      autocompleteElementRef.current = autocompleteElement;
-
-      // Configurer l'input dans le shadow DOM après l'ajout au DOM
-      setTimeout(() => {
-        const shadowRoot = autocompleteElement.shadowRoot;
-        if (shadowRoot) {
-          const input = shadowRoot.querySelector("input") as HTMLInputElement;
-          if (input) {
-            // Styles minimalistes - seulement la couleur du texte et le placeholder
-            const existingStyle = shadowRoot.querySelector("style[data-pickup-styles]");
-            if (!existingStyle) {
-              const style = document.createElement("style");
-              style.setAttribute("data-pickup-styles", "true");
-              style.textContent = `
-                input {
-                  color: #1e293b !important;
-                  padding-left: 2.75rem !important;
-                }
-                input::placeholder {
-                  color: #94a3b8 !important;
-                  opacity: 1 !important;
-                }
-              `;
-              shadowRoot.appendChild(style);
-            }
-
-            // Configurer l'input
-            input.placeholder = "Paris CDG Aéroport Terminal 2";
-            input.required = true;
-            input.name = "pickup";
-            input.id = "pickup";
-            input.style.color = "#1e293b";
-            input.style.paddingLeft = "2.75rem";
-
-            // Écouter les changements de valeur
-            const handleInput = (e: Event) => {
-              const target = e.target as HTMLInputElement;
-              setPickupValue(target.value);
-              if (!target.value) {
-                setPickupPlaceId("");
-              }
-            };
-            input.addEventListener("input", handleInput, { passive: true });
-          }
-        }
-      }, 500);
+      console.log("[HomeSearchWidget] ✅ Autocomplete initialized for pickup");
     }
 
     // Cleanup
     return () => {
-      if (autocompleteElementRef.current) {
-        autocompleteElementRef.current.remove();
-        autocompleteElementRef.current = null;
+      if (autocompletePickupRef.current) {
+        google.maps.event.clearInstanceListeners(autocompletePickupRef.current);
+        autocompletePickupRef.current = null;
       }
     };
   }, []);
 
-  // Initialiser PlaceAutocompleteElement pour le retour quand showDifferentReturn est true
+  // Initialiser Autocomplete pour le retour quand showDifferentReturn est true
   useEffect(() => {
-    if (!showDifferentReturn || !returnAutocompleteContainerRef.current || typeof window === "undefined") {
-      // Nettoyer l'élément de retour si showDifferentReturn est false
-      if (returnAutocompleteElementRef.current) {
-        returnAutocompleteElementRef.current.remove();
-        returnAutocompleteElementRef.current = null;
+    if (!showDifferentReturn || !returnInputRef.current || typeof window === "undefined") {
+      // Nettoyer l'autocomplete de retour si showDifferentReturn est false
+      if (autocompleteReturnRef.current) {
+        google.maps.event.clearInstanceListeners(autocompleteReturnRef.current);
+        autocompleteReturnRef.current = null;
       }
       return;
     }
 
     // Vérifier si Google Maps est chargé
-    if (!window.google?.maps?.places?.PlaceAutocompleteElement) {
+    if (!window.google?.maps?.places?.Autocomplete) {
       // Attendre que Google Maps soit chargé
       const checkGoogleMaps = setInterval(() => {
-        if (window.google?.maps?.places?.PlaceAutocompleteElement && returnAutocompleteContainerRef.current) {
+        if (window.google?.maps?.places?.Autocomplete && returnInputRef.current) {
           clearInterval(checkGoogleMaps);
           initializeReturnAutocomplete();
         }
@@ -200,105 +186,85 @@ function SearchWidgetContent() {
     initializeReturnAutocomplete();
 
     function initializeReturnAutocomplete() {
-      if (!returnAutocompleteContainerRef.current || !window.google?.maps?.places?.PlaceAutocompleteElement) {
+      if (!returnInputRef.current || !window.google?.maps?.places?.Autocomplete) {
         return;
       }
 
-      // Nettoyer l'élément existant si présent
-      if (returnAutocompleteElementRef.current) {
-        returnAutocompleteElementRef.current.remove();
-        returnAutocompleteElementRef.current = null;
+      // Nettoyer l'autocomplete existant si présent
+      if (autocompleteReturnRef.current) {
+        google.maps.event.clearInstanceListeners(autocompleteReturnRef.current);
+        autocompleteReturnRef.current = null;
       }
 
-      // Créer le PlaceAutocompleteElement pour le retour
-      const PlaceAutocompleteElement = window.google.maps.places.PlaceAutocompleteElement;
-      const autocompleteElement = new PlaceAutocompleteElement({
+      // Créer l'Autocomplete
+      const autocomplete = new window.google.maps.places.Autocomplete(returnInputRef.current, {
         componentRestrictions: { country: "fr" },
-        requestedLanguage: "fr",
+        fields: ["formatted_address", "place_id", "geometry"],
         types: ["geocode"],
-      } as google.maps.places.PlaceAutocompleteElementOptions);
+      });
 
-      // Configurer les attributs du Web Component
-      autocompleteElement.setAttribute("class", "w-full h-full");
-      autocompleteElement.style.width = "100%";
-      autocompleteElement.style.height = "100%";
+      autocompleteReturnRef.current = autocomplete;
 
-      // Écouter l'événement de sélection de lieu
-      autocompleteElement.addEventListener("g-place-select", (event: any) => {
-        const place = event.place;
+      // Écouter la sélection d'un lieu
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
         if (place) {
-          // Essayer différentes propriétés possibles
-          const displayName = place.formattedAddress || place.displayName || place.name || "";
-          const placeId = place.id || place.place_id || "";
-          if (displayName && placeId) {
+          const displayName = place.formatted_address || "";
+          const placeId = place.place_id || "";
+          console.log("[HomeSearchWidget] 🎯 Place selected for return:", { displayName, placeId });
+          if (displayName) {
             setReturnValue(displayName);
-            setReturnPlaceId(placeId);
+            if (placeId) {
+              setReturnPlaceId(placeId);
+            }
+            
+            // Mettre à jour le champ caché
+            const form = returnInputRef.current?.closest("form");
+            if (form) {
+              const hiddenInput = form.querySelector('input[name="returnLocation"]') as HTMLInputElement;
+              if (hiddenInput) {
+                hiddenInput.value = displayName;
+              }
+              const hiddenPlaceIdInput = form.querySelector('input[name="returnPlaceId"]') as HTMLInputElement;
+              if (hiddenPlaceIdInput && placeId) {
+                hiddenPlaceIdInput.value = placeId;
+              }
+            }
           }
         }
       });
 
-      // Ajouter le Web Component au conteneur
-      returnAutocompleteContainerRef.current.appendChild(autocompleteElement);
-      returnAutocompleteElementRef.current = autocompleteElement;
-
-      // Configurer l'input dans le shadow DOM après l'ajout au DOM
-      setTimeout(() => {
-        const shadowRoot = autocompleteElement.shadowRoot;
-        if (shadowRoot) {
-          const input = shadowRoot.querySelector("input") as HTMLInputElement;
-          if (input) {
-            // Styles minimalistes - seulement la couleur du texte et le placeholder
-            const existingStyle = shadowRoot.querySelector("style[data-return-styles]");
-            if (!existingStyle) {
-              const style = document.createElement("style");
-              style.setAttribute("data-return-styles", "true");
-              style.textContent = `
-                input {
-                  color: #1e293b !important;
-                  padding-left: 2.75rem !important;
-                }
-                input::placeholder {
-                  color: #94a3b8 !important;
-                  opacity: 1 !important;
-                }
-              `;
-              shadowRoot.appendChild(style);
-            }
-
-            // Configurer l'input
-            input.placeholder = "Lieu de retour différent";
-            input.required = false;
-            input.name = "returnLocation";
-            input.id = "returnLocation";
-            input.style.color = "#1e293b";
-            input.style.paddingLeft = "2.75rem";
-
-            // Écouter les changements de valeur
-            const handleInput = (e: Event) => {
-              const target = e.target as HTMLInputElement;
-              setReturnValue(target.value);
-              if (!target.value) {
-                setReturnPlaceId("");
-              }
-            };
-            input.addEventListener("input", handleInput, { passive: true });
-          }
-        }
-      }, 500);
+      console.log("[HomeSearchWidget] ✅ Autocomplete initialized for return");
     }
 
     // Cleanup
     return () => {
-      if (returnAutocompleteElementRef.current) {
-        returnAutocompleteElementRef.current.remove();
-        returnAutocompleteElementRef.current = null;
+      if (autocompleteReturnRef.current) {
+        google.maps.event.clearInstanceListeners(autocompleteReturnRef.current);
+        autocompleteReturnRef.current = null;
       }
     };
   }, [showDifferentReturn]);
 
   return (
-    <div className="w-full rounded-3xl border border-white/10 bg-white p-6 text-slate-900 shadow-xl shadow-slate-950/10 md:p-8">
-      <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100 p-1">
+    <div className="w-full rounded-2xl sm:rounded-3xl border border-white/10 bg-white p-4 sm:p-6 md:p-8 text-slate-900 shadow-xl shadow-slate-950/10">
+      {errorMessage && (
+        <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 text-red-800 px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-start justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+            <span className="text-xs sm:text-sm break-words">{errorMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            className="text-red-700 hover:text-red-900 transition-colors flex-shrink-0"
+            aria-label="Fermer le message d'erreur"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl bg-slate-100 p-1">
         {categories.map((category) => {
           const Icon = category.icon;
           const isActive = selectedCategory === category.value;
@@ -308,44 +274,183 @@ function SearchWidgetContent() {
               type="button"
               onClick={() => setSelectedCategory(category.value)}
               className={cn(
-                "flex-1 justify-center gap-2 rounded-xl text-sm font-medium transition",
+                "flex-1 justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition px-2 sm:px-3",
                 isActive ? "bg-white text-slate-900 shadow" : "bg-transparent text-slate-500 hover:bg-white",
               )}
               variant={isActive ? "default" : "ghost"}
             >
-              <Icon className="h-4 w-4" />
-              {category.label}
+              <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{category.label}</span>
+              <span className="sm:hidden">{category.label.split(" ")[0]}</span>
             </Button>
           );
         })}
       </div>
 
-      <form className="mt-6 space-y-6" action="/vehicles" method="get">
-        <div className="grid gap-4 md:grid-cols-[1.2fr_1fr] md:items-start">
+      <form 
+        className="mt-4 sm:mt-6 space-y-4 sm:space-y-6" 
+        action="/vehicles" 
+        method="get"
+        onSubmit={(e) => {
+          e.preventDefault(); // Empêcher la soumission par défaut pour synchroniser les valeurs
+          
+          // Récupérer les valeurs depuis toutes les sources possibles
+          // Utiliser directement l'état React (qui est synchronisé avec l'input via onChange)
+          const finalPickupValue = pickupValue?.trim() || "";
+          const finalPickupPlaceId = pickupPlaceId?.trim() || "";
+          
+          // Pour le retour
+          let finalReturnValue = "";
+          let finalReturnPlaceId = "";
+          
+          if (showDifferentReturn) {
+            finalReturnValue = returnValue?.trim() || "";
+            finalReturnPlaceId = returnPlaceId?.trim() || "";
+          } else {
+            // Si pas de lieu de retour différent, utiliser le lieu de retrait
+            finalReturnValue = finalPickupValue;
+            finalReturnPlaceId = finalPickupPlaceId;
+          }
+          
+          console.log("[HomeSearchWidget] 🎯 Final values before redirect:", {
+            pickupValue: finalPickupValue,
+            pickupPlaceId: finalPickupPlaceId,
+            returnValue: finalReturnValue,
+            returnPlaceId: finalReturnPlaceId,
+            selectedCategory,
+            showDifferentReturn,
+          });
+          
+          // Construire l'URL avec tous les paramètres
+          const params = new URLSearchParams();
+          
+          // Catégorie
+          if (selectedCategory) {
+            params.set("category", selectedCategory);
+          }
+          
+          // Lieux - toujours envoyer pickup même si vide pour le debug
+          if (finalPickupValue && finalPickupValue.length > 0) {
+            params.set("pickup", finalPickupValue);
+          }
+          if (finalPickupPlaceId && finalPickupPlaceId.length > 0) {
+            params.set("pickupPlaceId", finalPickupPlaceId);
+          }
+          // Lieu de retour
+          if (showDifferentReturn && finalReturnValue && finalReturnValue.length > 0) {
+            params.set("returnLocation", finalReturnValue);
+          } else if (!showDifferentReturn && finalPickupValue && finalPickupValue.length > 0) {
+            // Si pas de lieu de retour différent, répéter le lieu de retrait
+            params.set("returnLocation", finalPickupValue);
+          }
+          if (finalReturnPlaceId && finalReturnPlaceId.length > 0) {
+            params.set("returnPlaceId", finalReturnPlaceId);
+          }
+          
+          // Dates - Utiliser les valeurs de l'état React qui sont déjà validées
+          if (startDate) {
+            params.set("startDate", startDate);
+          }
+          const endDateInput = e.currentTarget.querySelector('input[name="endDate"]') as HTMLInputElement;
+          if (endDateInput?.value) {
+            params.set("endDate", endDateInput.value);
+          }
+          if (startTime) {
+            params.set("startTime", startTime);
+          }
+          if (endTime) {
+            params.set("endTime", endTime);
+          }
+          
+          // Validation finale : vérifier que la date/heure de départ n'est pas dans le passé
+          if (startDate === todayDateString) {
+            const now = new Date();
+            const [hours, minutes] = startTime.split(":").map(Number);
+            const selectedDateTime = new Date();
+            selectedDateTime.setHours(hours, minutes, 0, 0);
+            
+            // Vérifier que l'heure n'est pas dans le passé (sans délai supplémentaire)
+            if (selectedDateTime < now) {
+              setErrorMessage(`L'heure de départ ne peut pas être dans le passé. Veuillez sélectionner une heure future (au moins ${getMinTimeForToday()}).`);
+              e.preventDefault();
+              // Faire défiler vers le haut pour voir le message
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              return;
+            }
+          }
+          
+          // Réinitialiser le message d'erreur si la validation passe
+          setErrorMessage(null);
+          
+          const url = `/vehicles?${params.toString()}`;
+          console.log("[HomeSearchWidget] Redirecting to:", url);
+          
+          // Rediriger vers la page des véhicules avec tous les paramètres
+          window.location.href = url;
+        }}
+      >
+        {/* Champ caché pour la catégorie */}
+        <input type="hidden" name="category" value={selectedCategory} />
+        
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-[1.2fr_1fr] md:items-start">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="pickup" className="flex items-center gap-2 text-sm font-semibold text-slate-600">
                 <Badge className="bg-slate-900 text-white">1</Badge>
                 Retrait & retour
               </Label>
-              <div className="relative h-12 rounded-xl border border-slate-200 bg-white">
-                <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary z-30 pointer-events-none" />
-                <div
-                  ref={autocompleteContainerRef}
-                  className="relative w-full h-full rounded-xl"
+              <div className="relative h-10 sm:h-12 rounded-lg sm:rounded-xl border border-slate-200 bg-white">
+                <MapPin className="absolute left-3 sm:left-4 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-primary z-30 pointer-events-none" />
+                <Input
+                  ref={pickupInputRef}
+                  id="pickup"
+                  name="pickup"
+                  type="text"
+                  placeholder="Paris CDG Aéroport Terminal 2"
+                  className="h-10 sm:h-12 w-full rounded-lg sm:rounded-xl border-0 bg-transparent pl-9 sm:pl-11 pr-3 sm:pr-4 text-sm sm:text-base text-slate-900 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  value={pickupValue}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPickupValue(value);
+                    // Mettre à jour le champ caché
+                    const form = e.target.closest("form");
+                    if (form) {
+                      const hiddenInput = form.querySelector('input[name="pickup"]') as HTMLInputElement;
+                      if (hiddenInput) {
+                        hiddenInput.value = value;
+                      }
+                    }
+                    if (!value) {
+                      setPickupPlaceId("");
+                    }
+                  }}
+                  required
                 />
-                <input type="hidden" name="pickupPlaceId" value={pickupPlaceId} />
-                <input type="hidden" name="pickup" value={pickupValue} />
+                <input type="hidden" name="pickupPlaceId" value={pickupPlaceId || ""} />
               </div>
               {showDifferentReturn ? (
-                <div className="relative h-12 rounded-xl border border-slate-200 bg-white">
-                  <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary z-30 pointer-events-none" />
-                  <div
-                    ref={returnAutocompleteContainerRef}
-                    className="relative w-full h-full rounded-xl"
+                <div className="relative h-10 sm:h-12 rounded-lg sm:rounded-xl border border-slate-200 bg-white">
+                  <MapPin className="absolute left-3 sm:left-4 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-primary z-30 pointer-events-none" />
+                  <Input
+                    ref={returnInputRef}
+                    id="returnLocation"
+                    name="returnLocation"
+                    type="text"
+                    placeholder="Lieu de retour différent"
+                    className="h-10 sm:h-12 w-full rounded-lg sm:rounded-xl border-0 bg-transparent pl-9 sm:pl-11 pr-3 sm:pr-4 text-sm sm:text-base text-slate-900 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    value={returnValue}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      console.log("[HomeSearchWidget] 📝 Input change for return:", value);
+                      setReturnValue(value);
+                      // Si la valeur est vidée, réinitialiser le placeId
+                      if (!value.trim()) {
+                        setReturnPlaceId("");
+                      }
+                    }}
                   />
-                  <input type="hidden" name="returnPlaceId" value={returnPlaceId} />
-                  <input type="hidden" name="returnLocation" value={returnValue} />
+                  <input type="hidden" name="returnLocation" value={returnValue || ""} />
+                  <input type="hidden" name="returnPlaceId" value={returnPlaceId || ""} />
                 </div>
               ) : null}
               <button
@@ -362,7 +467,7 @@ function SearchWidgetContent() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="start-date" className="text-sm font-semibold text-slate-600">
                 Date de départ
@@ -372,12 +477,44 @@ function SearchWidgetContent() {
                   id="start-date"
                   name="startDate"
                   type="date"
-                  className="h-12 rounded-xl border-slate-200"
+                  className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-slate-200 text-sm"
                   min={todayDateString}
                   required
-                  onChange={(e) => setStartDate(e.target.value)}
+                  value={startDate}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setStartDate(newDate);
+                    // Réinitialiser le message d'erreur quand la date change
+                    setErrorMessage(null);
+                    // Si la nouvelle date est aujourd'hui et que l'heure sélectionnée est dans le passé, la réinitialiser
+                    if (newDate === todayDateString) {
+                      const minTime = getMinTimeForToday();
+                      if (startTime < minTime) {
+                        setStartTime(minTime);
+                      }
+                    }
+                  }}
                 />
-                <Input id="start-time" name="startTime" type="time" defaultValue="10:00" className="h-12 rounded-xl border-slate-200" />
+                <Input 
+                  id="start-time" 
+                  name="startTime" 
+                  type="time" 
+                  value={startTime}
+                  min={minStartTime}
+                  className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-slate-200 text-sm" 
+                  onChange={(e) => {
+                    const newTime = e.target.value;
+                    // Réinitialiser le message d'erreur quand l'heure change
+                    setErrorMessage(null);
+                    // Valider que l'heure n'est pas dans le passé si la date est aujourd'hui
+                    if (isStartDateToday && newTime < minStartTime) {
+                      // Si l'heure est dans le passé, utiliser l'heure minimale
+                      setStartTime(minStartTime);
+                    } else {
+                      setStartTime(newTime);
+                    }
+                  }}
+                />
               </div>
             </div>
             <div className="space-y-2">
@@ -389,11 +526,18 @@ function SearchWidgetContent() {
                   id="end-date"
                   name="endDate"
                   type="date"
-                  className="h-12 rounded-xl border-slate-200"
+                  className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-slate-200 text-sm"
                   min={startDate || todayDateString}
                   required
                 />
-                <Input id="end-time" name="endTime" type="time" defaultValue="10:00" className="h-12 rounded-xl border-slate-200" />
+                <Input 
+                  id="end-time" 
+                  name="endTime" 
+                  type="time" 
+                  value={endTime}
+                  className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-slate-200 text-sm" 
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
               </div>
             </div>
           </div>
@@ -402,7 +546,7 @@ function SearchWidgetContent() {
         <Button
           type="submit"
           size="lg"
-          className="h-12 w-full rounded-xl bg-primary text-primary-foreground text-base font-semibold hover:bg-primary/90 md:w-auto md:px-10"
+          className="h-11 sm:h-12 w-full rounded-lg sm:rounded-xl bg-primary text-primary-foreground text-sm sm:text-base font-semibold hover:bg-primary/90 md:w-auto md:px-8 lg:px-10"
           aria-label="Voir les véhicules disponibles"
         >
           Voir les véhicules
@@ -414,6 +558,10 @@ function SearchWidgetContent() {
 
 export function HomeSearchWidget() {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  
+  // Mémoriser le tableau de bibliothèques pour éviter les rechargements
+  // GOOGLE_MAPS_LIBRARIES est déjà une constante, mais useMemo garantit la stabilité
+  const libraries = useMemo(() => GOOGLE_MAPS_LIBRARIES, []);
 
   if (!apiKey) {
     return (
@@ -426,7 +574,7 @@ export function HomeSearchWidget() {
   }
 
   return (
-    <LoadScript googleMapsApiKey={apiKey} libraries={GOOGLE_MAPS_LIBRARIES}>
+    <LoadScript googleMapsApiKey={apiKey} libraries={libraries}>
       <SearchWidgetContent />
     </LoadScript>
   );
