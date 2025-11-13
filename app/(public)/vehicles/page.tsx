@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { getPublicVehiclesAction } from "@/actions/public/vehicles";
 import { VehiclesSearchBar } from "@/components/public/vehicles/VehiclesSearchBar";
 import { VehiclesPageClient } from "./VehiclesPageClient";
@@ -24,6 +25,57 @@ interface VehiclesPageProps {
     sortBy?: string;
     page?: string;
   }>;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: VehiclesPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  
+  // Si on a des critères de recherche, personnaliser le titre
+  if (params.startDate && params.endDate) {
+    const startDate = new Date(params.startDate).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    const endDate = new Date(params.endDate).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    const title = `Véhicules disponibles du ${startDate} au ${endDate} - CarRental`;
+    const description = `Trouvez votre véhicule de location du ${startDate} au ${endDate}. ${params.pickup ? `Retrait à ${params.pickup}. ` : ""}Large choix de véhicules disponibles.`;
+    
+    return {
+      title,
+      description,
+      robots: {
+        index: true,
+        follow: true,
+      },
+      openGraph: {
+        title,
+        description,
+        type: "website",
+      },
+    };
+  }
+  
+  // Par défaut (sans recherche), titre simple
+  return {
+    title: "Véhicules - CarRental",
+    description: "Découvrez notre catalogue de véhicules disponibles à la location.",
+    robots: {
+      index: true,
+      follow: true,
+    },
+    openGraph: {
+      title: "Véhicules - CarRental",
+      description: "Découvrez notre catalogue de véhicules disponibles à la location.",
+      type: "website",
+    },
+  };
 }
 
 export default async function VehiclesPage({
