@@ -13,7 +13,7 @@ export default function HomePage() {
       <HomeHero />
 
       {/* Section Catégories */}
-      <section className="container py-16 md:py-24">
+      <section className="container px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-24">
         <HomeSectionTitle
           title="Choisissez votre catégorie"
           description="Des véhicules pour tous les besoins et tous les budgets"
@@ -22,8 +22,8 @@ export default function HomePage() {
       </section>
 
       {/* Section Avantages */}
-      <section className="bg-muted/50 py-16 md:py-24">
-        <div className="container">
+      <section className="bg-muted/50 py-12 sm:py-16 md:py-24">
+        <div className="container px-4 sm:px-6 lg:px-8">
           <HomeSectionTitle
             title="Pourquoi choisir CarRental ?"
             description="Des avantages qui font la différence"
@@ -33,7 +33,7 @@ export default function HomePage() {
       </section>
 
       {/* Section Véhicules Populaires */}
-      <section className="container py-16 md:py-24">
+      <section className="container px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-24">
         <HomeSectionTitle
           title="Nos véhicules les plus populaires"
           description="Découvrez notre sélection de véhicules les plus appréciés"
@@ -42,8 +42,8 @@ export default function HomePage() {
       </section>
 
       {/* Section Google Maps pour les trajets */}
-      <section className="bg-muted/50 py-16 md:py-24">
-        <div className="container">
+      <section className="bg-muted/50 py-12 sm:py-16 md:py-24">
+        <div className="container px-4 sm:px-6 lg:px-8">
           <HomeSectionTitle
             title="Trouvez nos agences"
             description="Localisez nos points de location et planifiez votre trajet"
@@ -53,7 +53,7 @@ export default function HomePage() {
       </section>
 
       {/* Section Témoignages */}
-      <section className="container py-16 md:py-24">
+      <section className="container px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-24">
         <HomeSectionTitle
           title="Ce que disent nos clients"
           description="Des milliers de clients satisfaits nous font confiance"
