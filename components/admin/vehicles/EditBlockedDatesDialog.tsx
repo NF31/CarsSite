@@ -177,7 +177,7 @@ export function EditBlockedDatesDialog({
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   required
-                  min={startDate || new Date().toISOString().split('T')[0]} // Minimum : date de début ou aujourd'hui
+                  min={startDate || new Date().toISOString().split("T")[0]} // Minimum : date de début ou aujourd'hui
                 />
               </div>
               <div className="space-y-2">

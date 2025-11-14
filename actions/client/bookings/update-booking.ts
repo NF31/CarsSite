@@ -116,6 +116,7 @@ export async function updateClientBookingAction(
         totalPrice: true,
         depositPaid: true,
         remainingAmount: true,
+        serviceIds: true,
         user: {
           select: {
             name: true,
@@ -127,6 +128,7 @@ export async function updateClientBookingAction(
             brand: true,
             model: true,
             licensePlate: true,
+            pricePerDay: true,
           },
         },
         pickupLocation: {
@@ -210,17 +212,81 @@ export async function updateClientBookingAction(
       };
     }
 
+    // Recalculer le prix basé sur la nouvelle durée
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const diffMs = endDateValue.getTime() - startDateValue.getTime();
+    const numberOfDays = Math.max(diffMs / msPerDay, 1); // Minimum 1 jour
+
+    // Récupérer le véhicule avec son prix par jour
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: existingBooking.vehicleId },
+      select: {
+        pricePerDay: true,
+      },
+    });
+
+    if (!vehicle) {
+      return {
+        success: false,
+        error: "Véhicule introuvable.",
+      };
+    }
+
+    // Calculer le prix de base du véhicule
+    const vehiclePrice = vehicle.pricePerDay * numberOfDays;
+
+    // Calculer le prix des services si présents
+    let servicesPrice = 0;
+    if (existingBooking.serviceIds && existingBooking.serviceIds.length > 0) {
+      const services = await prisma.service.findMany({
+        where: {
+          id: { in: existingBooking.serviceIds },
+          active: true,
+        },
+        select: {
+          id: true,
+          price: true,
+          pricingType: true,
+        },
+      });
+
+      for (const service of services) {
+        switch (service.pricingType) {
+          case "PER_DAY":
+            servicesPrice += service.price * numberOfDays;
+            break;
+          case "FIXED":
+            servicesPrice += service.price;
+            break;
+          case "PERCENTAGE":
+            servicesPrice += (vehiclePrice * service.price) / 100;
+            break;
+        }
+      }
+    }
+
+    // Nouveau prix total
+    const newTotalPrice = vehiclePrice + servicesPrice;
+
+    // Recalculer le solde restant (en conservant l'acompte déjà payé)
+    const depositPaid = existingBooking.depositPaid ?? 0;
+    const newRemainingAmount = Math.max(newTotalPrice - depositPaid, 0);
+
     const updatedBooking = await prisma.booking.update({
       where: { id: existingBooking.id },
       data: {
         startDate: startDateValue,
         endDate: endDateValue,
+        totalPrice: newTotalPrice,
+        remainingAmount: newRemainingAmount,
         status: BookingStatus.PENDING,
       },
       select: {
         startDate: true,
         endDate: true,
         status: true,
+        totalPrice: true,
+        remainingAmount: true,
       },
     });
 
@@ -238,14 +304,9 @@ export async function updateClientBookingAction(
         greeting,
         booking: {
           reference: existingBooking.reference ?? "Réservation",
-          totalPrice: existingBooking.totalPrice ?? 0,
+          totalPrice: updatedBooking.totalPrice ?? 0,
           depositPaid: existingBooking.depositPaid ?? 0,
-          remainingAmount:
-            existingBooking.remainingAmount ??
-            Math.max(
-              (existingBooking.totalPrice ?? 0) - (existingBooking.depositPaid ?? 0),
-              0,
-            ),
+          remainingAmount: updatedBooking.remainingAmount ?? 0,
           startDate: updatedBooking.startDate,
           endDate: updatedBooking.endDate,
           status: updatedBooking.status,
@@ -263,10 +324,19 @@ export async function updateClientBookingAction(
         },
       });
 
-      if (!emailResult.success && !emailResult.skipped) {
+      if (emailResult.skipped) {
         console.warn(
-          "[Client Booking] Notification email pending request failed",
+          "[Client Booking] ⚠️  Email de mise à jour ignoré (credentials non configurés). Vérifiez GMAIL_USER et GMAIL_PASSWORD dans .env",
+        );
+      } else if (!emailResult.success) {
+        console.warn(
+          "[Client Booking] ❌ Échec de l'envoi de l'email de mise à jour",
           emailResult.error ?? "unknown reason",
+        );
+      } else {
+        console.log(
+          "[Client Booking] ✅ Email de mise à jour envoyé",
+          emailResult.queued ? "(mis en queue)" : "(envoyé directement)",
         );
       }
     }

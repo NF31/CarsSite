@@ -314,29 +314,28 @@ export async function createBookingAction(
             return: returnLocation.name,
           },
         });
-        if (!emailResult.success) {
+        if (emailResult.skipped) {
           console.warn(
-            "⚠️  Envoi de l'email de confirmation échoué pour la réservation",
+            `[Admin Bookings] ⚠️  Email de confirmation ignoré pour la réservation ${created.reference} (credentials non configurés). Vérifiez GMAIL_USER et GMAIL_PASSWORD dans .env`,
+          );
+        } else if (!emailResult.success) {
+          console.warn(
+            "[Admin Bookings] ❌ Échec de l'envoi de l'email de confirmation pour la réservation",
             created.reference,
-            emailResult.error ?? "raison inconnue"
+            emailResult.error ?? "raison inconnue",
           );
         } else {
-          console.log("[Bookings] Email de confirmation envoyé", {
+          console.log("[Admin Bookings] ✅ Email de confirmation envoyé", {
             reference: created.reference,
             messageId: emailResult.messageId,
+            queued: emailResult.queued,
           });
         }
       }
 
-      if (
-        vehicle.status === VehicleStatus.AVAILABLE &&
-        [BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS].includes(data.status)
-      ) {
-        await prisma.vehicle.update({
-          where: { id: data.vehicleId },
-          data: { status: VehicleStatus.RESERVED },
-        });
-      }
+      // Ne pas changer automatiquement le statut du véhicule en RESERVED
+      // La disponibilité est gérée par les réservations existantes via le filtre de dates
+      // Le statut du véhicule (AVAILABLE/MAINTENANCE/UNAVAILABLE) reste indépendant des réservations
 
       console.log("[Bookings] Réservation créée avec succès", {
         reference: created.reference,

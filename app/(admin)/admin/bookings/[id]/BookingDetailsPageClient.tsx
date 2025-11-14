@@ -36,9 +36,12 @@ import {
 } from "@/components/admin/bookings/booking-helpers";
 import {
   getDriverLicenseUrlAction,
+  moderateBookingStatusAction,
   type BookingDetail,
 } from "@/actions/admin/bookings";
 import { BookingStatus, ServicePricingType, VehicleStatus } from "@prisma/client";
+import { X, Check } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface BookingDetailsPageClientProps {
   booking: BookingDetail;
@@ -98,6 +101,9 @@ function computeDynamicStatus(booking: BookingDetail): BookingStatus {
 export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientProps) {
   const router = useRouter();
   const [licenseError, setLicenseError] = useState<string | null>(null);
+  const [isModerating, startModerate] = useTransition();
+  const [moderationError, setModerationError] = useState<string | null>(null);
+  const [activeModeration, setActiveModeration] = useState<string | null>(null);
   const [isLicensePending, startLicenseTransition] = useTransition();
 
   const computedStatus = useMemo(() => computeDynamicStatus(booking), [booking]);
@@ -188,6 +194,38 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
     });
   };
 
+  const handleModeration = (action: "approve" | "reject") => {
+    setModerationError(null);
+    setActiveModeration(action);
+
+    startModerate(async () => {
+      try {
+        const result = await moderateBookingStatusAction({
+          bookingId: booking.id,
+          action,
+        });
+
+        if (!result.success) {
+          setModerationError(result.error ?? "Erreur lors de la validation/refus de la réservation.");
+          return;
+        }
+
+        // Rafraîchir la page pour afficher les changements
+        router.refresh();
+      } catch (error) {
+        console.error("Erreur lors de la modération", error);
+        setModerationError("Une erreur inattendue est survenue.");
+      } finally {
+        setActiveModeration(null);
+      }
+    });
+  };
+
+  // Vérifier si la réservation nécessite une validation (statut PENDING)
+  const needsValidation = computedStatus === BookingStatus.PENDING;
+  const isCancellationRequest = booking.cancellationRequested === true;
+  const isProcessing = isModerating && activeModeration !== null;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -224,7 +262,72 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
           </div>
         </div>
         <div className="flex flex-col md:flex-row gap-2 w-full xl:w-auto">
-          {canEdit ? (
+          {needsValidation ? (
+            <>
+              {isCancellationRequest ? (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={isProcessing}
+                    onClick={() => handleModeration("reject")}
+                    className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {isProcessing && activeModeration === "reject" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                    )}
+                    Conserver la réservation
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={isProcessing}
+                    onClick={() => handleModeration("approve")}
+                    className="w-full md:w-auto"
+                  >
+                    {isProcessing && activeModeration === "approve" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="mr-2 h-4 w-4" />
+                    )}
+                    Accepter l&apos;annulation
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={isProcessing}
+                    onClick={() => handleModeration("reject")}
+                    className="w-full md:w-auto"
+                  >
+                    {isProcessing && activeModeration === "reject" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="mr-2 h-4 w-4" />
+                    )}
+                    Refuser
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={isProcessing}
+                    onClick={() => handleModeration("approve")}
+                    className="w-full md:w-auto"
+                  >
+                    {isProcessing && activeModeration === "approve" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="mr-2 h-4 w-4" />
+                    )}
+                    Valider
+                  </Button>
+                </>
+              )}
+            </>
+          ) : canEdit ? (
             <Link href={`/admin/bookings/edit/${booking.id}`} className="w-full md:w-auto">
               <Button className="w-full md:w-auto">
                 <Edit className="mr-2 h-4 w-4" />
@@ -239,6 +342,51 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
           )}
         </div>
       </div>
+
+      {moderationError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{moderationError}</AlertDescription>
+        </Alert>
+      )}
+
+      {needsValidation && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {isCancellationRequest ? (
+              <>
+                <strong>⚠️ Demande d&apos;annulation du client</strong>
+                <br />
+                Le client a demandé l&apos;annulation de cette réservation.
+                {booking.cancellationPreviousStatus && (
+                  <>
+                    <br />
+                    <strong>Statut actuel :</strong> {BOOKING_STATUS_LABELS[booking.status]} (en attente)
+                    <br />
+                    <strong>Statut précédent :</strong> {BOOKING_STATUS_LABELS[booking.cancellationPreviousStatus]} (sera restauré si vous conservez la réservation)
+                  </>
+                )}
+                {booking.cancellationReason && (
+                  <>
+                    <br />
+                    <strong>Raison de l&apos;annulation :</strong> {booking.cancellationReason}
+                  </>
+                )}
+                <br />
+                <br />
+                <strong>Actions possibles :</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li><strong>Conserver la réservation</strong> : La réservation sera restaurée à son statut précédent ({booking.cancellationPreviousStatus ? BOOKING_STATUS_LABELS[booking.cancellationPreviousStatus] : "CONFIRMED"}) et les dates seront conservées.</li>
+                  <li><strong>Accepter l&apos;annulation</strong> : La réservation sera annulée et les dates seront libérées.</li>
+                </ul>
+              </>
+            ) : (
+              "Cette réservation est en attente de validation. Utilisez les boutons ci-dessus pour valider ou refuser."
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,320px)]">
         <div className="space-y-6 min-w-0">

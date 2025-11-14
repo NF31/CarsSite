@@ -41,6 +41,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 - **React Hook Form** - Gestion des formulaires
 - **Zod** - Validation des données
 - **Framer Motion** - Animations fluides
+- **Sonner** - Notifications toast
 
 ### Backend
 - **Next.js API Routes** - API Serverless
@@ -48,6 +49,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 - **Prisma** - ORM pour PostgreSQL
 - **Redis** - Cache et sessions (optionnel)
 - **NextAuth.js** - Authentification
+- **BullMQ** - Queue d'emails avec Redis
 
 ### Services Externes
 - **Cloudinary** - Gestion des images
@@ -81,6 +83,9 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 - **[16-workflows-detailed.md](./16-workflows-detailed.md)** - Workflows détaillés avec diagrammes de flux
 - **[17-insurance-services-detailed.md](./17-insurance-services-detailed.md)** - Assurances et services détaillés (inspiré SIXT)
 - **[18-competitive-analysis.md](./18-competitive-analysis.md)** - Analyse comparative des sites de référence
+- **[email-troubleshooting.md](./email-troubleshooting.md)** - Guide de dépannage des emails
+- **[email-queue-explained.md](./email-queue-explained.md)** - Explication du système de queue d'emails
+- **[deployment-production.md](./deployment-production.md)** - Guide de déploiement en production avec PM2
 - **[content-strategy.md](./content-strategy.md)** - Stratégie de contenu et navigation
 - **[design-system.md](./design-system.md)** - Design system et composants UI
 - **[roadmap-projet.md](./roadmap-projet.md)** - Roadmap complète du projet
@@ -152,7 +157,9 @@ NEXTAUTH_SECRET="votre-secret"
 NEXTAUTH_URL="http://localhost:3000"
 
 # Paiement
-STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_KEY="pk_test_..." # Clé publique Stripe (optionnelle)
+STRIPE_SECRET="sk_test_..." # Clé secrète Stripe
+STRIPE_WEBHOOK_SECRET="whsec_..." # Secret du webhook Stripe
 STRIPE_PUBLISHABLE_KEY="pk_test_..."
 PAYPAL_CLIENT_ID="votre-paypal-id"
 PAYPAL_CLIENT_SECRET="votre-paypal-secret"
