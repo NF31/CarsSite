@@ -13,6 +13,9 @@ import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit-redis";
 import { sendBookingUpdateEmail } from "@/lib/email";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
+import { createRefundAction } from "@/actions/public/payments/create-refund";
+import { createCheckoutSessionAction } from "@/actions/public/payments/create-checkout-session";
 
 function parseDate(value: FormDataEntryValue | null) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -25,10 +28,18 @@ function parseDate(value: FormDataEntryValue | null) {
   return date;
 }
 
+export interface UpdateBookingResult {
+  success: boolean;
+  error?: string;
+  requiresPayment?: boolean;
+  paymentUrl?: string;
+  refundAmount?: number;
+}
+
 export async function updateClientBookingAction(
-  _prevState: { success: boolean; error?: string },
+  _prevState: UpdateBookingResult,
   formData: FormData,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<UpdateBookingResult> {
   try {
     const session = await auth();
 
@@ -115,6 +126,7 @@ export async function updateClientBookingAction(
         status: true,
         totalPrice: true,
         depositPaid: true,
+        securityDepositPaid: true,
         remainingAmount: true,
         serviceIds: true,
         user: {
@@ -212,80 +224,89 @@ export async function updateClientBookingAction(
       };
     }
 
-    // Recalculer le prix basé sur la nouvelle durée
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const diffMs = endDateValue.getTime() - startDateValue.getTime();
-    const numberOfDays = Math.max(diffMs / msPerDay, 1); // Minimum 1 jour
+    // Extraire les heures des dates modifiées
+    const startHours = startDateValue.getHours().toString().padStart(2, "0");
+    const startMinutes = startDateValue.getMinutes().toString().padStart(2, "0");
+    const endHours = endDateValue.getHours().toString().padStart(2, "0");
+    const endMinutes = endDateValue.getMinutes().toString().padStart(2, "0");
+    
+    const startTime = `${startHours}:${startMinutes}`;
+    const endTime = `${endHours}:${endMinutes}`;
 
-    // Récupérer le véhicule avec son prix par jour
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: existingBooking.vehicleId },
-      select: {
-        pricePerDay: true,
-      },
+    // Recalculer le prix en utilisant la fonction de calcul standardisée
+    // qui prend en compte les heures, les services, etc.
+    const priceResult = await calculateBookingPriceAction({
+      vehicleId: existingBooking.vehicleId,
+      startDate: startDateValue.toISOString(),
+      endDate: endDateValue.toISOString(),
+      startTime: startTime,
+      endTime: endTime,
+      serviceIds: existingBooking.serviceIds || [],
     });
 
-    if (!vehicle) {
+    if (!priceResult.success || !priceResult.data) {
       return {
         success: false,
-        error: "Véhicule introuvable.",
+        error: priceResult.error || "Impossible de recalculer le prix de la réservation.",
       };
     }
 
-    // Calculer le prix de base du véhicule
-    const vehiclePrice = vehicle.pricePerDay * numberOfDays;
+    // Nouveau prix total calculé (véhicule + services)
+    const newTotalPrice = Math.round(priceResult.data.totalPrice * 100) / 100;
+    
+    // Calculer le nouvel acompte (30% du nouveau prix total)
+    const newDownPayment = Math.round(newTotalPrice * 0.3 * 100) / 100;
+    
+    // Récupérer les montants déjà payés
+    const oldDepositPaid = existingBooking.depositPaid ?? 0;
+    const securityDepositPaid = existingBooking.securityDepositPaid ?? 0;
+    
+    // Calculer la différence d'acompte
+    const depositDifference = newDownPayment - oldDepositPaid;
+    const roundedDepositDifference = Math.round(depositDifference * 100) / 100;
+    
+    // Calculer le nouveau solde restant
+    const newRemainingAmount = Math.round((newTotalPrice - newDownPayment) * 100) / 100;
 
-    // Calculer le prix des services si présents
-    let servicesPrice = 0;
-    if (existingBooking.serviceIds && existingBooking.serviceIds.length > 0) {
-      const services = await prisma.service.findMany({
-        where: {
-          id: { in: existingBooking.serviceIds },
-          active: true,
-        },
-        select: {
-          id: true,
-          price: true,
-          pricingType: true,
-        },
-      });
+    // IMPORTANT: Ne PAS faire les remboursements/paiements maintenant
+    // On stocke les informations pour que l'admin puisse valider/refuser
+    // Les actions Stripe seront déclenchées uniquement après validation admin
 
-      for (const service of services) {
-        switch (service.pricingType) {
-          case "PER_DAY":
-            servicesPrice += service.price * numberOfDays;
-            break;
-          case "FIXED":
-            servicesPrice += service.price;
-            break;
-          case "PERCENTAGE":
-            servicesPrice += (vehiclePrice * service.price) / 100;
-            break;
-        }
-      }
+    // Mettre à jour la réservation avec les nouvelles dates
+    // IMPORTANT: Préserver securityDepositPaid si elle a déjà été payée
+    // IMPORTANT: Stocker les dates originales pour pouvoir les restaurer si refus
+    const updateData: any = {
+      startDate: startDateValue,
+      endDate: endDateValue,
+      totalPrice: newTotalPrice,
+      depositPaid: newDownPayment,
+      remainingAmount: newRemainingAmount,
+      status: BookingStatus.PENDING, // Retour en attente pour validation admin
+      // Marquer comme demande de modification
+      modificationRequested: true,
+      modificationRequestedAt: new Date(),
+      // Stocker les dates et prix originaux pour restauration si refus
+      originalStartDate: existingBooking.startDate,
+      originalEndDate: existingBooking.endDate,
+      originalTotalPrice: existingBooking.totalPrice,
+      originalDepositPaid: oldDepositPaid,
+      modificationDepositDifference: roundedDepositDifference,
+    };
+    
+    // Préserver la caution déjà payée (ne pas la réinitialiser si elle est > 0)
+    if (securityDepositPaid > 0) {
+      updateData.securityDepositPaid = securityDepositPaid;
     }
-
-    // Nouveau prix total
-    const newTotalPrice = vehiclePrice + servicesPrice;
-
-    // Recalculer le solde restant (en conservant l'acompte déjà payé)
-    const depositPaid = existingBooking.depositPaid ?? 0;
-    const newRemainingAmount = Math.max(newTotalPrice - depositPaid, 0);
-
+    
     const updatedBooking = await prisma.booking.update({
       where: { id: existingBooking.id },
-      data: {
-        startDate: startDateValue,
-        endDate: endDateValue,
-        totalPrice: newTotalPrice,
-        remainingAmount: newRemainingAmount,
-        status: BookingStatus.PENDING,
-      },
+      data: updateData,
       select: {
         startDate: true,
         endDate: true,
         status: true,
         totalPrice: true,
+        depositPaid: true,
         remainingAmount: true,
       },
     });
@@ -305,7 +326,7 @@ export async function updateClientBookingAction(
         booking: {
           reference: existingBooking.reference ?? "Réservation",
           totalPrice: updatedBooking.totalPrice ?? 0,
-          depositPaid: existingBooking.depositPaid ?? 0,
+          depositPaid: updatedBooking.depositPaid ?? 0,
           remainingAmount: updatedBooking.remainingAmount ?? 0,
           startDate: updatedBooking.startDate,
           endDate: updatedBooking.endDate,
@@ -356,6 +377,10 @@ export async function updateClientBookingAction(
     return {
       success: true,
       error: undefined,
+      // Ne plus retourner paymentUrl car le paiement sera géré après validation admin
+      requiresPayment: false, // Le paiement sera géré après validation admin
+      paymentUrl: undefined,
+      refundAmount: undefined, // Le remboursement sera géré après validation admin
     };
   } catch (error) {
     console.error("[Client Booking] update error", error);
