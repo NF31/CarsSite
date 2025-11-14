@@ -92,12 +92,9 @@ export function getEmailQueue(): Queue<EmailJobData> {
           type: "exponential",
           delay: 2000, // Délai initial de 2 secondes
         },
-        removeOnComplete: {
-          age: 24 * 3600, // Garder les jobs complétés pendant 24h
-          count: 1000, // Garder les 1000 derniers jobs
-        },
+        removeOnComplete: true, // Supprimer immédiatement les jobs complétés
         removeOnFail: {
-          age: 7 * 24 * 3600, // Garder les jobs échoués pendant 7 jours
+          age: 7 * 24 * 3600, // Garder les jobs échoués pendant 7 jours pour le debugging
         },
       },
     });

@@ -81,7 +81,7 @@ export async function invalidateServicesCache(): Promise<void> {
  */
 export async function invalidateVehicleAvailabilityCache(vehicleId: string): Promise<void> {
   // Invalider toutes les clés de disponibilité pour ce véhicule (toutes les dates)
-  const { deleteCacheByPrefix } = await import("./cache");
-  await deleteCacheByPrefix(`vehicle:availability:${vehicleId}`);
+  const { deleteCachePattern } = await import("./cache");
+  await deleteCachePattern(`vehicle:availability:${vehicleId}:*`);
 }
 

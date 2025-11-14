@@ -259,10 +259,19 @@ export async function cancelClientBookingAction(
         policy: cancellationPolicy,
       });
 
-      if (!emailResult.success && !emailResult.skipped) {
+      if (emailResult.skipped) {
         console.warn(
-          `[Client Booking] Échec de l'envoi de l'email de demande d'annulation pour la réservation ${booking.reference}:`,
+          `[Client Booking] ⚠️  Email de demande d'annulation ignoré pour la réservation ${booking.reference} (credentials non configurés). Vérifiez GMAIL_USER et GMAIL_PASSWORD dans .env`,
+        );
+      } else if (!emailResult.success) {
+        console.warn(
+          `[Client Booking] ❌ Échec de l'envoi de l'email de demande d'annulation pour la réservation ${booking.reference}:`,
           emailResult.error ?? "Erreur inconnue",
+        );
+      } else {
+        console.log(
+          `[Client Booking] ✅ Email de demande d'annulation envoyé pour la réservation ${booking.reference}`,
+          emailResult.queued ? "(mis en queue)" : "(envoyé directement)",
         );
       }
     }

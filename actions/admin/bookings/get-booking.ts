@@ -70,6 +70,12 @@ export interface BookingDetail {
   remainingAmount: number;
   serviceIds: string[];
   notes: string | null;
+  cancellationRequested: boolean;
+  cancellationReason: string | null;
+  cancellationRequestedAt: string | null;
+  cancellationRequestedRefundRate: number | null;
+  cancellationPreviousStatus: BookingStatus | null;
+  cancelledAt: string | null;
   createdAt: string;
   updatedAt: string;
   user: BookingDetailUser;
@@ -135,6 +141,12 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
         remainingAmount: true,
         serviceIds: true,
         notes: true,
+        cancellationRequested: true,
+        cancellationReason: true,
+        cancellationRequestedAt: true,
+        cancellationRequestedRefundRate: true,
+        cancellationPreviousStatus: true,
+        cancelledAt: true,
         createdAt: true,
         updatedAt: true,
         user: {
@@ -220,6 +232,14 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
     const explicitPublicId = booking.user.driverLicensePublicId ?? null;
     const fallbackPublicId = userAsset ? `${userAsset.publicId}.${userAsset.format}` : null;
 
+    // Helper pour convertir en Date si nécessaire (cas du cache qui désérialise en string)
+    const toDate = (value: Date | string): Date => {
+      if (value instanceof Date) {
+        return value;
+      }
+      return new Date(value);
+    };
+
     const detail: BookingDetail = {
       id: booking.id,
       reference: booking.reference,
@@ -228,15 +248,23 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
       vehicleId: booking.vehicleId,
       pickupLocationId: booking.pickupLocationId,
       returnLocationId: booking.returnLocationId,
-      startDate: booking.startDate.toISOString(),
-      endDate: booking.endDate.toISOString(),
+      startDate: toDate(booking.startDate).toISOString(),
+      endDate: toDate(booking.endDate).toISOString(),
       totalPrice: booking.totalPrice,
       depositPaid: booking.depositPaid,
       remainingAmount: booking.remainingAmount,
       serviceIds: booking.serviceIds,
       notes: booking.notes ?? null,
-      createdAt: booking.createdAt.toISOString(),
-      updatedAt: booking.updatedAt.toISOString(),
+      cancellationRequested: booking.cancellationRequested ?? false,
+      cancellationReason: booking.cancellationReason ?? null,
+      cancellationRequestedAt: booking.cancellationRequestedAt
+        ? toDate(booking.cancellationRequestedAt).toISOString()
+        : null,
+      cancellationRequestedRefundRate: booking.cancellationRequestedRefundRate ?? null,
+      cancellationPreviousStatus: booking.cancellationPreviousStatus ?? null,
+      cancelledAt: booking.cancelledAt ? toDate(booking.cancelledAt).toISOString() : null,
+      createdAt: toDate(booking.createdAt).toISOString(),
+      updatedAt: toDate(booking.updatedAt).toISOString(),
       user: {
         id: booking.user.id,
         name: booking.user.name,
@@ -248,9 +276,9 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
         driverLicensePublicId: explicitPublicId ?? fallbackPublicId,
         driverLicenseUploadCount: booking.user.driverLicenseUploadCount ?? 0,
         driverLicenseLastUploadedAt: booking.user.driverLicenseLastUploadedAt
-          ? booking.user.driverLicenseLastUploadedAt.toISOString()
+          ? toDate(booking.user.driverLicenseLastUploadedAt).toISOString()
           : null,
-        deletedAt: booking.user.deletedAt ? booking.user.deletedAt.toISOString() : null,
+        deletedAt: booking.user.deletedAt ? toDate(booking.user.deletedAt).toISOString() : null,
       },
       vehicle: {
         id: booking.vehicle.id,
