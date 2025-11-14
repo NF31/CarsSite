@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cancelClientBookingAction } from "@/actions/client/bookings/cancel-booking";
 import { useFormStatus } from "react-dom";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export type CancelBookingDialogProps = {
   bookingId: string;
@@ -100,6 +102,7 @@ export function CancelBookingDialog({
   cancellationPolicy,
   cancellationState,
 }: CancelBookingDialogProps) {
+  const router = useRouter();
   const initialState = useMemo<CancelBookingState>(
     () => ({
       success: false,
@@ -137,9 +140,28 @@ export function CancelBookingDialog({
 
   useEffect(() => {
     if (state.success) {
+      // Fermer le dialog d'abord
       setOpen(false);
+      // Afficher le toast APRÈS la fermeture du dialog, sur la page
+      // Utiliser setTimeout pour s'assurer que le dialog est fermé avant d'afficher le toast
+      setTimeout(() => {
+        toast.success("Demande d'annulation envoyée", {
+          description: "Votre demande d'annulation a été envoyée avec succès. Elle sera traitée dans les plus brefs délais. Vous recevrez un email de confirmation une fois l'annulation validée.",
+          duration: 5000,
+        });
+        // Rafraîchir la page APRÈS un délai pour laisser le toast s'afficher
+        setTimeout(() => {
+          router.refresh();
+        }, 1000);
+      }, 150);
+    } else if (state.error) {
+      // Pour les erreurs, on peut afficher le toast directement car le dialog reste ouvert
+      toast.error("Erreur lors de l'annulation", {
+        description: state.error,
+        duration: 5000,
+      });
     }
-  }, [state.success]);
+  }, [state.success, state.error, router]);
 
   useEffect(() => {
     if (!open) {
