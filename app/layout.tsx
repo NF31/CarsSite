@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/providers/session-provider";
 import { MotionProvider } from "@/components/providers/motion-provider";
 import { ConditionalHeaderFooter } from "@/components/layout/conditional-header-footer";
 import { FullCalendarStyles } from "@/components/providers/fullcalendar-styles";
+import { ToasterProvider } from "@/components/providers/toaster-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
             <ConditionalHeaderFooter>{children}</ConditionalHeaderFooter>
           </AuthProvider>
         </MotionProvider>
+        <ToasterProvider />
       </body>
     </html>
   );

@@ -446,7 +446,7 @@ export async function sendBookingUpdateEmail({
     [BookingStatus.PENDING]:
       "Votre demande de modification a bien été prise en compte et reste en attente de validation. Nous reviendrons vers vous sous peu.",
     [BookingStatus.CONFIRMED]:
-      "Bonne nouvelle ! Nous avons validé votre demande de modification. Les nouvelles dates ainsi que les informations ci-dessous sont désormais confirmées.",
+      "Bonne nouvelle ! Votre réservation a été confirmée. Toutes les informations ci-dessous sont désormais validées. Votre véhicule vous attend pour la période indiquée.",
     [BookingStatus.IN_PROGRESS]:
       "Les nouvelles dates de votre réservation ont été intégrées. Votre véhicule vous attend pour la période indiquée ci-dessous.",
     [BookingStatus.COMPLETED]:
@@ -478,12 +478,12 @@ export async function sendBookingUpdateEmail({
       ctaMutedLabel: "Besoin d'aide ? Répondez directement à ce message.",
     },
     [BookingStatus.CONFIRMED]: {
-      title: "Votre demande est validée !",
-      subtitle: "Les nouvelles dates sont confirmées, retrouvez le détail ci-dessous.",
-      badge: "Demande acceptée",
+      title: "Votre réservation est confirmée !",
+      subtitle: "Toutes les informations sont validées, retrouvez le détail ci-dessous.",
+      badge: "Réservation confirmée",
       gradientFrom: "#0ea5e9",
       gradientTo: "#0284c7",
-      ctaLabel: "Voir la réservation mise à jour",
+      ctaLabel: "Voir ma réservation",
     },
     [BookingStatus.IN_PROGRESS]: {
       title: "Votre trajet démarre bientôt",

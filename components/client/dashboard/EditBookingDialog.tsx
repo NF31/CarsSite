@@ -10,6 +10,7 @@ import {
   useTransition,
 } from "react";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import { checkClientBookingAvailabilityAction } from "@/actions/client/bookings/
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface EditBookingDialogProps {
   bookingId: string;
@@ -54,6 +56,7 @@ export function EditBookingDialog({
   endDate,
   disabled = false,
 }: EditBookingDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const initialState = useMemo(() => ({ success: false, error: undefined as string | undefined }), []);
   const [state, action] = useActionState(updateClientBookingAction, initialState);
@@ -90,13 +93,31 @@ const [isCheckingAvailability, startAvailabilityTransition] = useTransition();
   }, [open, startDate, endDate]);
 
   useEffect(() => {
-    if (!state.success) {
-      return;
+    if (state.success) {
+      // Fermer le dialog d'abord
+      startTransition(() => {
+        setOpen(false);
+      });
+      // Afficher le toast APRÈS la fermeture du dialog, sur la page
+      // Utiliser setTimeout pour s'assurer que le dialog est fermé avant d'afficher le toast
+      setTimeout(() => {
+        toast.success("Demande de modification envoyée", {
+          description: "Votre demande de modification de dates a été envoyée avec succès. Elle sera traitée dans les plus brefs délais. Vous recevrez un email de confirmation une fois la modification validée.",
+          duration: 5000,
+        });
+        // Rafraîchir la page APRÈS un délai pour laisser le toast s'afficher
+        setTimeout(() => {
+          router.refresh();
+        }, 1000);
+      }, 150);
+    } else if (state.error) {
+      // Pour les erreurs, on peut afficher le toast directement car le dialog reste ouvert
+      toast.error("Erreur lors de la modification", {
+        description: state.error,
+        duration: 5000,
+      });
     }
-    startTransition(() => {
-      setOpen(false);
-    });
-  }, [state.success]);
+  }, [state.success, state.error, router]);
 
   useEffect(() => {
     if (!open) {

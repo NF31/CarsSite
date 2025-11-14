@@ -32,50 +32,20 @@ type UpdateBookingResult =
       fieldErrors?: Record<string, string[]>;
     };
 
+// Fonction désactivée : ne pas gérer automatiquement le statut RESERVED/AVAILABLE
+// La disponibilité est gérée par les réservations existantes via le filtre de dates
+// Le statut du véhicule (AVAILABLE/MAINTENANCE/UNAVAILABLE) reste indépendant des réservations
 async function releaseVehicleIfAvailableCandidate(vehicleId: string, excludeBookingId: string) {
-  const now = new Date();
-  const hasBlockingBooking = await prisma.booking.findFirst({
-    where: {
-      vehicleId,
-      id: {
-        not: excludeBookingId,
-      },
-      status: {
-        in: [BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
-      },
-      endDate: {
-        gt: now,
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!hasBlockingBooking) {
-    await prisma.vehicle.update({
-      where: { id: vehicleId },
-      data: { status: VehicleStatus.AVAILABLE },
-    });
-  }
+  // Ne rien faire - la disponibilité est gérée par les dates de réservation
+  return;
 }
 
+// Fonction désactivée : ne pas changer automatiquement le statut du véhicule en RESERVED
+// La disponibilité est gérée par les réservations existantes via le filtre de dates
+// Le statut du véhicule (AVAILABLE/MAINTENANCE/UNAVAILABLE) reste indépendant des réservations
 async function reserveVehicleIfNeeded(vehicleId: string, bookingStatus: BookingStatus) {
-  if (![BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS].includes(bookingStatus)) {
-    return;
-  }
-
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
-    select: { status: true },
-  });
-
-  if (vehicle?.status === VehicleStatus.AVAILABLE) {
-    await prisma.vehicle.update({
-      where: { id: vehicleId },
-      data: { status: VehicleStatus.RESERVED },
-    });
-  }
+  // Ne rien faire - la disponibilité est gérée par les dates de réservation
+  return;
 }
 
 export async function updateBookingAction(
@@ -342,11 +312,15 @@ export async function updateBookingAction(
 
       if (existingBooking.vehicleId !== data.vehicleId) {
         await releaseVehicleIfAvailableCandidate(existingBooking.vehicleId, existingBooking.id);
-      } else if (![BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS].includes(data.status)) {
+      } else if (
+        data.status !== BookingStatus.CONFIRMED &&
+        data.status !== BookingStatus.IN_PROGRESS
+      ) {
         await releaseVehicleIfAvailableCandidate(existingBooking.vehicleId, existingBooking.id);
       }
 
-      await reserveVehicleIfNeeded(data.vehicleId, data.status);
+      // Ne pas appeler reserveVehicleIfNeeded car le statut du véhicule n'est plus géré automatiquement
+      // await reserveVehicleIfNeeded(data.vehicleId, data.status);
 
       // Invalider le cache des réservations et de disponibilité
       const { invalidateBookingCache, invalidateVehicleAvailabilityCache } = await import("@/lib/cache-invalidation");
@@ -387,16 +361,21 @@ export async function updateBookingAction(
             return: returnLocation.name,
           },
         });
-        if (!emailResult.success) {
+        if (emailResult.skipped) {
           console.warn(
-            "⚠️  Envoi de l'email de confirmation échoué pour la réservation",
+            `[Admin Bookings] ⚠️  Email de mise à jour ignoré pour la réservation ${updated.reference} (credentials non configurés). Vérifiez GMAIL_USER et GMAIL_PASSWORD dans .env`,
+          );
+        } else if (!emailResult.success) {
+          console.warn(
+            "[Admin Bookings] ❌ Échec de l'envoi de l'email de mise à jour pour la réservation",
             updated.reference,
-            emailResult.error ?? "raison inconnue"
+            emailResult.error ?? "raison inconnue",
           );
         } else {
-          console.log("[Bookings] Email de confirmation envoyé (édition)", {
+          console.log("[Admin Bookings] ✅ Email de mise à jour envoyé", {
             reference: updated.reference,
             messageId: emailResult.messageId,
+            queued: emailResult.queued,
           });
         }
       }

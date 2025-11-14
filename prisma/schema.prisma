@@ -123,6 +123,7 @@ model User {
   driverLicensePublicId String?
   driverLicenseUploadCount Int @default(0)
   driverLicenseLastUploadedAt DateTime?
+  termsAcceptedAt    DateTime? // Date d'acceptation des CGV et politique de confidentialité
   lockedUntil         DateTime? // Verrouillage temporaire après échecs
   failedLoginAttempts Int       @default(0) // Nombre d'échecs consécutifs
   deletedAt           DateTime? // Soft delete pour conformité RGPD
@@ -243,6 +244,7 @@ model Booking {
   returnLocationId  String
   totalPrice        Float
   depositPaid       Float         @default(0)
+  securityDepositPaid Float       @default(0) // Caution de garantie payée (séparée de l'acompte)
   remainingAmount   Float
   status            BookingStatus @default(PENDING)
   serviceIds        String[]      @default([]) // Array of Service IDs
