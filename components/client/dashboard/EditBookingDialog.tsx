@@ -14,8 +14,9 @@ import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateClientBookingAction } from "@/actions/client/bookings/update-booking";
+import { updateClientBookingAction, UpdateBookingResult } from "@/actions/client/bookings/update-booking";
 import { checkClientBookingAvailabilityAction } from "@/actions/client/bookings/check-availability";
+import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,11 @@ interface EditBookingDialogProps {
   bookingId: string;
   startDate: string;
   endDate: string;
+  totalPrice: number;
+  vehicleId: string;
+  serviceIds: string[];
+  depositPaid: number;
+  securityDepositPaid?: number;
   disabled?: boolean;
 }
 
@@ -54,21 +60,33 @@ export function EditBookingDialog({
   bookingId,
   startDate,
   endDate,
+  totalPrice: currentTotalPrice,
+  vehicleId,
+  serviceIds,
+  depositPaid,
+  securityDepositPaid = 0,
   disabled = false,
 }: EditBookingDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const initialState = useMemo(() => ({ success: false, error: undefined as string | undefined }), []);
+  const initialState = useMemo<UpdateBookingResult>(() => ({ success: false, error: undefined }), []);
   const [state, action] = useActionState(updateClientBookingAction, initialState);
-const [availabilityState, setAvailabilityState] = useState<
-  | { status: "idle" }
-  | { status: "checking" }
-  | { status: "available" }
-  | { status: "booking_conflict"; message: string }
-  | { status: "maintenance_conflict"; message: string }
-  | { status: "error"; message: string }
->({ status: "idle" });
-const [isCheckingAvailability, startAvailabilityTransition] = useTransition();
+  const [availabilityState, setAvailabilityState] = useState<
+    | { status: "idle" }
+    | { status: "checking" }
+    | { status: "available" }
+    | { status: "booking_conflict"; message: string }
+    | { status: "maintenance_conflict"; message: string }
+    | { status: "error"; message: string }
+  >({ status: "idle" });
+  const [isCheckingAvailability, startAvailabilityTransition] = useTransition();
+  const [priceCalculation, setPriceCalculation] = useState<{
+    totalPrice: number;
+    remainingAmount: number;
+    newDownPayment: number;
+    depositDifference: number;
+  } | null>(null);
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const scheduleAvailabilityUpdate = useCallback(
     (nextState: typeof availabilityState) => {
       startAvailabilityTransition(() => {
@@ -84,13 +102,86 @@ const [isCheckingAvailability, startAvailabilityTransition] = useTransition();
 
   useEffect(() => {
     if (!open) {
+      setPriceCalculation(null);
       return;
     }
     startTransition(() => {
       setStartValue(formatDateTimeLocal(startDate));
       setEndValue(formatDateTimeLocal(endDate));
+      setPriceCalculation(null);
     });
   }, [open, startDate, endDate]);
+
+  // Calculer le nouveau prix quand les dates changent
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const start = startValue ? new Date(startValue) : null;
+    const end = endValue ? new Date(endValue) : null;
+
+    if (!start || Number.isNaN(start.getTime()) || !end || Number.isNaN(end.getTime())) {
+      setPriceCalculation(null);
+      return;
+    }
+
+    if (end <= start) {
+      setPriceCalculation(null);
+      return;
+    }
+
+    const originalStart = formatDateTimeLocal(startDate);
+    const originalEnd = formatDateTimeLocal(endDate);
+    
+    // Si les dates n'ont pas changé, ne pas calculer
+    if (startValue === originalStart && endValue === originalEnd) {
+      setPriceCalculation(null);
+      return;
+    }
+
+    // Calculer le nouveau prix
+    setIsCalculatingPrice(true);
+    const calculatePrice = async () => {
+      try {
+        const startHours = start.getHours().toString().padStart(2, "0");
+        const startMinutes = start.getMinutes().toString().padStart(2, "0");
+        const endHours = end.getHours().toString().padStart(2, "0");
+        const endMinutes = end.getMinutes().toString().padStart(2, "0");
+
+        const result = await calculateBookingPriceAction({
+          vehicleId,
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          startTime: `${startHours}:${startMinutes}`,
+          endTime: `${endHours}:${endMinutes}`,
+          serviceIds: serviceIds || [],
+        });
+
+        if (result.success && result.data) {
+          const newTotalPrice = result.data.totalPrice;
+          const newDownPayment = Math.round(newTotalPrice * 0.3 * 100) / 100;
+          const newRemainingAmount = Math.round((newTotalPrice - newDownPayment) * 100) / 100;
+          const depositDifference = newDownPayment - depositPaid;
+          setPriceCalculation({
+            totalPrice: newTotalPrice,
+            remainingAmount: newRemainingAmount,
+            newDownPayment,
+            depositDifference,
+          });
+        } else {
+          setPriceCalculation(null);
+        }
+      } catch (error) {
+        console.error("Erreur lors du calcul du prix", error);
+        setPriceCalculation(null);
+      } finally {
+        setIsCalculatingPrice(false);
+      }
+    };
+
+    calculatePrice();
+  }, [open, startValue, endValue, vehicleId, serviceIds, depositPaid, startDate, endDate]);
 
   useEffect(() => {
     if (state.success) {
@@ -98,14 +189,14 @@ const [isCheckingAvailability, startAvailabilityTransition] = useTransition();
       startTransition(() => {
         setOpen(false);
       });
+      
       // Afficher le toast APRÈS la fermeture du dialog, sur la page
-      // Utiliser setTimeout pour s'assurer que le dialog est fermé avant d'afficher le toast
       setTimeout(() => {
+        // Toujours afficher le même message : la demande est en attente de validation admin
         toast.success("Demande de modification envoyée", {
-          description: "Votre demande de modification de dates a été envoyée avec succès. Elle sera traitée dans les plus brefs délais. Vous recevrez un email de confirmation une fois la modification validée.",
+          description: "Votre demande de modification de dates a été envoyée avec succès. Elle sera traitée par un administrateur dans les plus brefs délais. Vous recevrez un email de confirmation une fois la modification validée.",
           duration: 5000,
         });
-        // Rafraîchir la page APRÈS un délai pour laisser le toast s'afficher
         setTimeout(() => {
           router.refresh();
         }, 1000);
@@ -117,7 +208,7 @@ const [isCheckingAvailability, startAvailabilityTransition] = useTransition();
         duration: 5000,
       });
     }
-  }, [state.success, state.error, router]);
+  }, [state.success, state.error, state.requiresPayment, state.paymentUrl, state.refundAmount, router]);
 
   useEffect(() => {
     if (!open) {
@@ -309,6 +400,205 @@ const [isCheckingAvailability, startAvailabilityTransition] = useTransition();
               />
             </div>
             <div className={availabilityClassName}>{availabilityMessage}</div>
+            
+            {/* Affichage de la comparaison des prix */}
+            {priceCalculation && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Prix actuel :</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {new Intl.NumberFormat("fr-FR", {
+                      style: "currency",
+                      currency: "EUR",
+                    }).format(currentTotalPrice)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Nouveau prix :</span>
+                  <span className="text-sm font-semibold text-blue-900">
+                    {isCalculatingPrice ? (
+                      <span className="text-muted-foreground">Calcul en cours...</span>
+                    ) : (
+                      new Intl.NumberFormat("fr-FR", {
+                        style: "currency",
+                        currency: "EUR",
+                      }).format(priceCalculation.totalPrice)
+                    )}
+                  </span>
+                </div>
+                {!isCalculatingPrice && (
+                  <>
+                    <div className="border-t border-blue-200 pt-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Acompte actuel (30%) :</span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {new Intl.NumberFormat("fr-FR", {
+                            style: "currency",
+                            currency: "EUR",
+                          }).format(depositPaid)}
+                        </span>
+                      </div>
+                      {securityDepositPaid > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">Caution déjà payée :</span>
+                          <span className="text-sm font-semibold text-green-600">
+                            {new Intl.NumberFormat("fr-FR", {
+                              style: "currency",
+                              currency: "EUR",
+                            }).format(securityDepositPaid)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Nouvel acompte (30%) :</span>
+                        <span className="text-sm font-semibold text-blue-900">
+                          {new Intl.NumberFormat("fr-FR", {
+                            style: "currency",
+                            currency: "EUR",
+                          }).format(priceCalculation.newDownPayment)}
+                        </span>
+                      </div>
+                      {priceCalculation.depositDifference !== 0 && (
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-sm font-medium text-gray-700">Différence d'acompte :</span>
+                          <span
+                            className={cn(
+                              "text-sm font-semibold",
+                              priceCalculation.depositDifference > 0
+                                ? "text-red-600"
+                                : "text-green-600"
+                            )}
+                          >
+                            {priceCalculation.depositDifference > 0 ? "+" : ""}
+                            {new Intl.NumberFormat("fr-FR", {
+                              style: "currency",
+                              currency: "EUR",
+                            }).format(priceCalculation.depositDifference)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {priceCalculation.depositDifference < 0 && (
+                      <div className="rounded-md bg-green-50 p-3 border border-green-200">
+                        <p className="text-xs text-green-700 font-medium mb-1">
+                          💰 Remboursement prévu
+                        </p>
+                        <p className="text-xs text-green-600">
+                          Un remboursement de {Math.abs(priceCalculation.depositDifference).toFixed(2)}€ sera effectué sous 5-10 jours ouvrés.
+                        </p>
+                      </div>
+                    )}
+                    {priceCalculation.depositDifference > 0 && (
+                      <div className="rounded-md bg-amber-50 p-3 border border-amber-200">
+                        <p className="text-xs text-amber-700 font-medium mb-1">
+                          💳 Paiement supplémentaire requis
+                        </p>
+                        <p className="text-xs text-amber-600">
+                          Vous avez déjà payé {depositPaid.toFixed(2)}€ d'acompte. Seule la différence de {priceCalculation.depositDifference.toFixed(2)}€ sera demandée (pas le nouvel acompte en entier).
+                          {securityDepositPaid > 0 && (
+                            <span className="block mt-1 text-amber-700 font-medium">
+                              ℹ️ La caution de garantie ({securityDepositPaid.toFixed(2)}€) a déjà été payée et ne sera pas redemandée.
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                    <div className="border-t border-blue-200 pt-2 space-y-3">
+                      {/* Ancien solde */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600">Ancien solde à payer :</span>
+                        <span className="text-sm text-gray-700">
+                          {new Intl.NumberFormat("fr-FR", {
+                            style: "currency",
+                            currency: "EUR",
+                          }).format(currentTotalPrice - depositPaid)}
+                        </span>
+                      </div>
+                      
+                      {/* Nouveau solde */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Nouveau solde à payer :</span>
+                        <span className="font-semibold text-blue-900">
+                          {new Intl.NumberFormat("fr-FR", {
+                            style: "currency",
+                            currency: "EUR",
+                          }).format(priceCalculation.remainingAmount)}
+                        </span>
+                      </div>
+                      
+                      {/* Différence de solde */}
+                      {(() => {
+                        const oldRemainingAmount = currentTotalPrice - depositPaid;
+                        const newRemainingAmount = priceCalculation.remainingAmount;
+                        const remainingDifference = newRemainingAmount - oldRemainingAmount;
+                        const roundedDifference = Math.round(remainingDifference * 100) / 100;
+                        
+                        if (roundedDifference !== 0) {
+                          return (
+                            <div className="flex items-center justify-between pt-1 border-t border-gray-200">
+                              <span className="text-sm font-medium text-gray-700">Différence de solde :</span>
+                              <span
+                                className={cn(
+                                  "text-sm font-semibold",
+                                  roundedDifference > 0 ? "text-red-600" : "text-green-600"
+                                )}
+                              >
+                                {roundedDifference > 0 ? "+" : ""}
+                                {new Intl.NumberFormat("fr-FR", {
+                                  style: "currency",
+                                  currency: "EUR",
+                                }).format(roundedDifference)}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      
+                      {/* Explication */}
+                      {(() => {
+                        const oldRemainingAmount = currentTotalPrice - depositPaid;
+                        const newRemainingAmount = priceCalculation.remainingAmount;
+                        const remainingDifference = newRemainingAmount - oldRemainingAmount;
+                        const roundedDifference = Math.round(remainingDifference * 100) / 100;
+                        
+                        if (roundedDifference > 0) {
+                          return (
+                            <div className="rounded-md bg-amber-50 p-3 border border-amber-200">
+                              <p className="text-xs text-amber-700 font-medium mb-1">
+                                ⚠️ Solde à payer augmenté
+                              </p>
+                              <p className="text-xs text-amber-600">
+                                Vous devrez payer {Math.abs(roundedDifference).toFixed(2)}€ de plus à la remise du véhicule qu'initialement prévu.
+                              </p>
+                            </div>
+                          );
+                        } else if (roundedDifference < 0) {
+                          return (
+                            <div className="rounded-md bg-green-50 p-3 border border-green-200">
+                              <p className="text-xs text-green-700 font-medium mb-1">
+                                ✅ Solde à payer réduit
+                              </p>
+                              <p className="text-xs text-green-600">
+                                Vous paierez {Math.abs(roundedDifference).toFixed(2)}€ de moins à la remise du véhicule qu'initialement prévu.
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                    {priceCalculation.totalPrice === currentTotalPrice && priceCalculation.depositDifference === 0 && (
+                      <div className="rounded-md bg-green-50 p-2 border border-green-200">
+                        <p className="text-xs text-green-700 text-center font-medium">
+                          Le prix et l'acompte restent identiques
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
           {state.error ? (
             <p className="text-sm font-medium text-red-600">{state.error}</p>

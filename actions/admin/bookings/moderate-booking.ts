@@ -90,6 +90,288 @@ function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+async function handleModificationRequest(
+  booking: BookingModerationPayload & {
+    modificationRequested?: boolean;
+    modificationRequestedAt?: Date | null;
+    originalStartDate?: Date | null;
+    originalEndDate?: Date | null;
+    originalTotalPrice?: number | null;
+    originalDepositPaid?: number | null;
+    modificationDepositDifference?: number | null;
+    securityDepositPaid?: number | null;
+  },
+  action: "approve" | "reject",
+  emailModule: EmailModule,
+): Promise<ModerateBookingResult> {
+  const { createRefundAction } = await import("@/actions/public/payments/create-refund");
+  const { createCheckoutSessionAction } = await import("@/actions/public/payments/create-checkout-session");
+
+  if (action === "approve") {
+    // Admin accepte la modification → déclencher les actions Stripe
+    const depositDifference = booking.modificationDepositDifference ?? 0;
+    const securityDepositPaid = booking.securityDepositPaid ?? 0;
+    let paymentUrl: string | undefined;
+
+    // Si nouveau prix < ancien prix → créer un remboursement
+    if (depositDifference < 0 && booking.depositPaid && booking.depositPaid > 0) {
+      const refundAmount = Math.abs(depositDifference);
+      const refundResult = await createRefundAction({
+        bookingId: booking.id,
+        amount: refundAmount,
+        reason: "booking_modification",
+      });
+
+      if (!refundResult.success) {
+        console.error("[Admin Moderation] Erreur lors du remboursement:", refundResult.error);
+        return {
+          success: false,
+          error: `Erreur lors du remboursement: ${refundResult.error}`,
+        };
+      }
+      console.log(`[Admin Moderation] ✅ Remboursement créé: ${refundAmount}€`);
+    }
+
+    // Si nouveau prix > ancien prix → créer une session de paiement
+    if (depositDifference > 0) {
+      const cautionInfo = securityDepositPaid > 0 
+        ? ` (la caution de ${securityDepositPaid.toFixed(2)}€ a déjà été payée et n'est pas incluse)`
+        : "";
+      
+      const paymentResult = await createCheckoutSessionAction({
+        bookingId: booking.id,
+        amount: depositDifference,
+        description: `Acompte supplémentaire pour la modification de dates - Réservation ${booking.reference}${cautionInfo}`,
+      });
+
+      if (!paymentResult.success || !paymentResult.url) {
+        console.error("[Admin Moderation] Erreur lors de la création de la session de paiement:", paymentResult.error);
+        return {
+          success: false,
+          error: `Erreur lors de la création de la session de paiement: ${paymentResult.error}`,
+        };
+      }
+      paymentUrl = paymentResult.url;
+      console.log(`[Admin Moderation] ✅ Session de paiement créée pour: ${depositDifference}€`);
+    }
+
+    // Mettre à jour la réservation : valider la modification et nettoyer les champs de demande
+    const updated = await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        modificationRequested: false,
+        modificationRequestedAt: null,
+        originalStartDate: null,
+        originalEndDate: null,
+        originalTotalPrice: null,
+        originalDepositPaid: null,
+        modificationDepositDifference: null,
+        // Le statut reste PENDING si un paiement est nécessaire, sinon CONFIRMED
+        status: depositDifference > 0 ? BookingStatus.PENDING : BookingStatus.CONFIRMED,
+      } as Prisma.BookingUpdateInput,
+      select: {
+        startDate: true,
+        endDate: true,
+        totalPrice: true,
+        depositPaid: true,
+        remainingAmount: true,
+        status: true,
+      },
+    });
+
+    // Envoyer un email de confirmation
+    if (booking.user?.email && booking.user.name) {
+      const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
+      const bookingPeriod = `${format(
+        updated.startDate,
+        "dd MMMM yyyy 'à' HH:mm",
+        { locale: fr },
+      )} → ${format(updated.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
+
+      // Préparer les informations de modification pour l'email
+      const modificationInfo: {
+        refundAmount?: number;
+        additionalPaymentAmount?: number;
+        paymentUrl?: string;
+        securityDepositPaid?: number;
+      } = {};
+
+      if (depositDifference < 0) {
+        // Remboursement
+        modificationInfo.refundAmount = Math.abs(depositDifference);
+      } else if (depositDifference > 0) {
+        // Paiement supplémentaire
+        modificationInfo.additionalPaymentAmount = depositDifference;
+        if (paymentUrl) {
+          modificationInfo.paymentUrl = paymentUrl;
+          console.log(`[Admin Moderation] 📧 URL de paiement ajoutée à modificationInfo: ${paymentUrl}`);
+        } else {
+          console.warn(`[Admin Moderation] ⚠️  paymentUrl est undefined alors que depositDifference > 0`);
+        }
+      }
+
+      // Ajouter la caution si elle a été payée
+      if (securityDepositPaid > 0) {
+        modificationInfo.securityDepositPaid = securityDepositPaid;
+      }
+
+      console.log(`[Admin Moderation] 📧 modificationInfo pour l'email:`, JSON.stringify(modificationInfo, null, 2));
+      console.log(`[Admin Moderation] 📧 depositDifference: ${depositDifference}, refundAmount: ${modificationInfo.refundAmount}, additionalPaymentAmount: ${modificationInfo.additionalPaymentAmount}`);
+
+      // Toujours passer modificationInfo si on a un remboursement ou un paiement supplémentaire
+      // Même si seulement securityDepositPaid est présent, on le passe pour info
+      const shouldIncludeModificationInfo = 
+        modificationInfo.refundAmount || 
+        modificationInfo.additionalPaymentAmount || 
+        modificationInfo.securityDepositPaid;
+
+      const emailResult = await emailModule.sendBookingUpdateEmail({
+        to: booking.user.email,
+        name: booking.user.name,
+        greeting,
+        booking: {
+          reference: booking.reference,
+          totalPrice: updated.totalPrice ?? 0,
+          depositPaid: updated.depositPaid ?? 0,
+          remainingAmount: updated.remainingAmount ?? 0,
+          startDate: updated.startDate,
+          endDate: updated.endDate,
+          status: updated.status,
+          period: bookingPeriod,
+        },
+        vehicle: {
+          label: booking.vehicle
+            ? `${booking.vehicle.brand} ${booking.vehicle.model}`
+            : "Véhicule",
+          licensePlate: booking.vehicle?.licensePlate ?? "ND",
+        },
+        locations: {
+          pickup: booking.pickupLocation?.name ?? "Agence de départ",
+          return: booking.returnLocation?.name ?? "Agence de retour",
+        },
+        modificationInfo: shouldIncludeModificationInfo ? modificationInfo : undefined,
+      });
+
+      if (emailResult.skipped) {
+        console.warn(
+          `[Admin Moderation] ⚠️  Email de modification ignoré pour la réservation ${booking.reference}`,
+        );
+      } else if (!emailResult.success) {
+        console.warn(
+          `[Admin Moderation] ❌ Échec de l'envoi de l'email de modification pour la réservation ${booking.reference}:`,
+          emailResult.error ?? "Erreur inconnue",
+        );
+      } else {
+        console.log(
+          `[Admin Moderation] ✅ Email de modification envoyé pour la réservation ${booking.reference}`,
+        );
+      }
+    }
+
+    // Si un paiement est nécessaire, l'URL est déjà incluse dans l'email envoyé au client
+    if (paymentUrl) {
+      console.log(`[Admin Moderation] 🔗 URL de paiement créée et envoyée au client par email: ${paymentUrl}`);
+    }
+
+    return {
+      success: true,
+    };
+  } else {
+    // Admin refuse la modification → restaurer les dates originales
+    if (!booking.originalStartDate || !booking.originalEndDate) {
+      return {
+        success: false,
+        error: "Impossible de restaurer les dates originales. Les données sont manquantes.",
+      };
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        // Restaurer les dates et prix originaux
+        startDate: booking.originalStartDate,
+        endDate: booking.originalEndDate,
+        totalPrice: booking.originalTotalPrice ?? booking.totalPrice ?? 0,
+        depositPaid: booking.originalDepositPaid ?? booking.depositPaid ?? 0,
+        remainingAmount: (booking.originalTotalPrice ?? booking.totalPrice ?? 0) - (booking.originalDepositPaid ?? booking.depositPaid ?? 0),
+        // Nettoyer les champs de demande
+        modificationRequested: false,
+        modificationRequestedAt: null,
+        originalStartDate: null,
+        originalEndDate: null,
+        originalTotalPrice: null,
+        originalDepositPaid: null,
+        modificationDepositDifference: null,
+        // Restaurer le statut précédent (probablement CONFIRMED)
+        status: BookingStatus.CONFIRMED,
+      } as Prisma.BookingUpdateInput,
+      select: {
+        startDate: true,
+        endDate: true,
+        totalPrice: true,
+        depositPaid: true,
+        remainingAmount: true,
+        status: true,
+      },
+    });
+
+    // Envoyer un email de refus
+    if (booking.user?.email && booking.user.name) {
+      const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
+      const bookingPeriod = `${format(
+        updated.startDate,
+        "dd MMMM yyyy 'à' HH:mm",
+        { locale: fr },
+      )} → ${format(updated.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
+
+      const emailResult = await emailModule.sendBookingUpdateEmail({
+        to: booking.user.email,
+        name: booking.user.name,
+        greeting,
+        booking: {
+          reference: booking.reference,
+          totalPrice: updated.totalPrice ?? 0,
+          depositPaid: updated.depositPaid ?? 0,
+          remainingAmount: updated.remainingAmount ?? 0,
+          startDate: updated.startDate,
+          endDate: updated.endDate,
+          status: updated.status,
+          period: bookingPeriod,
+        },
+        vehicle: {
+          label: booking.vehicle
+            ? `${booking.vehicle.brand} ${booking.vehicle.model}`
+            : "Véhicule",
+          licensePlate: booking.vehicle?.licensePlate ?? "ND",
+        },
+        locations: {
+          pickup: booking.pickupLocation?.name ?? "Agence de départ",
+          return: booking.returnLocation?.name ?? "Agence de retour",
+        },
+      });
+
+      if (emailResult.skipped) {
+        console.warn(
+          `[Admin Moderation] ⚠️  Email de refus ignoré pour la réservation ${booking.reference}`,
+        );
+      } else if (!emailResult.success) {
+        console.warn(
+          `[Admin Moderation] ❌ Échec de l'envoi de l'email de refus pour la réservation ${booking.reference}:`,
+          emailResult.error ?? "Erreur inconnue",
+        );
+      } else {
+        console.log(
+          `[Admin Moderation] ✅ Email de refus envoyé pour la réservation ${booking.reference}`,
+        );
+      }
+    }
+
+    return {
+      success: true,
+    };
+  }
+}
+
 export async function moderateBookingStatusAction(
   rawInput: z.input<typeof moderateSchema>,
 ): Promise<ModerateBookingResult> {
@@ -148,7 +430,16 @@ export async function moderateBookingStatusAction(
           },
         },
       },
-    })) as BookingModerationPayload | null;
+    })) as (BookingModerationPayload & {
+      modificationRequested?: boolean;
+      modificationRequestedAt?: Date | null;
+      originalStartDate?: Date | null;
+      originalEndDate?: Date | null;
+      originalTotalPrice?: number | null;
+      originalDepositPaid?: number | null;
+      modificationDepositDifference?: number | null;
+      securityDepositPaid?: number | null;
+    }) | null;
 
     if (!booking) {
       return {
@@ -160,12 +451,19 @@ export async function moderateBookingStatusAction(
     const emailModule = (await import("@/lib/email")) as unknown as EmailModule;
 
     const isCancellationRequest = booking.cancellationRequested;
+    const isModificationRequest = booking.modificationRequested === true;
 
-    if (!isCancellationRequest && booking.status !== BookingStatus.PENDING) {
+    // Vérifier que la réservation est en attente de traitement
+    if (!isCancellationRequest && !isModificationRequest && booking.status !== BookingStatus.PENDING) {
       return {
         success: false,
         error: "Cette réservation a déjà été traitée.",
       };
+    }
+
+    // Gérer les demandes de modification de dates
+    if (isModificationRequest) {
+      return await handleModificationRequest(booking, action, emailModule);
     }
 
     if (isCancellationRequest) {
@@ -192,6 +490,27 @@ export async function moderateBookingStatusAction(
           typeof cancellationPolicySetting?.value === "string"
             ? cancellationPolicySetting.value
             : defaultPolicy;
+
+        // Créer le remboursement Stripe si un remboursement est dû
+        if (refundAmount > 0 && depositPaid > 0) {
+          const { createRefundAction } = await import("@/actions/public/payments/create-refund");
+          const refundResult = await createRefundAction({
+            bookingId: booking.id,
+            amount: refundAmount,
+            reason: "cancellation",
+          });
+
+          if (!refundResult.success) {
+            console.error("[Admin Moderation] Erreur lors du remboursement d'annulation:", refundResult.error);
+            return {
+              success: false,
+              error: `Erreur lors du remboursement: ${refundResult.error}`,
+            };
+          }
+          console.log(`[Admin Moderation] ✅ Remboursement d'annulation créé: ${refundAmount}€ (${(refundRate * 100).toFixed(0)}%)`);
+        } else if (refundAmount === 0 && depositPaid > 0) {
+          console.log(`[Admin Moderation] ℹ️  Aucun remboursement dû pour cette annulation (taux: ${(refundRate * 100).toFixed(0)}%)`);
+        }
 
         const updated = await prisma.$transaction(async (tx) => {
           const updatedBooking = await tx.booking.update({
@@ -285,7 +604,6 @@ export async function moderateBookingStatusAction(
           } else {
             console.log(
               `[Admin Bookings] ✅ Email d'annulation envoyé pour la réservation ${booking.reference}`,
-              emailResult.queued ? "(mis en queue)" : "(envoyé directement)",
             );
           }
         }
@@ -355,7 +673,6 @@ export async function moderateBookingStatusAction(
           } else {
             console.log(
               `[Admin Bookings] ✅ Email de refus d'annulation envoyé pour la réservation ${booking.reference}`,
-              emailResult.queued ? "(mis en queue)" : "(envoyé directement)",
             );
           }
         }
@@ -395,11 +712,9 @@ export async function moderateBookingStatusAction(
           greeting,
           booking: {
             reference: booking.reference,
-            totalPrice: booking.totalPrice ?? 0,
-            depositPaid: booking.depositPaid ?? 0,
-            remainingAmount:
-              booking.remainingAmount ??
-              Math.max((booking.totalPrice ?? 0) - (booking.depositPaid ?? 0), 0),
+            totalPrice: updated.totalPrice ?? 0,
+            depositPaid: updated.depositPaid ?? 0,
+            remainingAmount: updated.remainingAmount ?? 0,
             startDate: updated.startDate,
             endDate: updated.endDate,
             status: updated.status,
@@ -429,7 +744,6 @@ export async function moderateBookingStatusAction(
         } else {
           console.log(
             `[Admin Bookings] ✅ Email de modération envoyé pour la réservation ${booking.reference}`,
-            emailResult.queued ? "(mis en queue)" : "(envoyé directement)",
           );
         }
       }
