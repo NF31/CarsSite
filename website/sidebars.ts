@@ -60,6 +60,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'workflows-detailed',
         'workflow-modification-dates',
+        'explication-calcul-modification-dates',
         'account-deletion-process',
       ],
     },
