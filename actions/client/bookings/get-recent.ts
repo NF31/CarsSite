@@ -40,6 +40,27 @@ export interface ClientRecentBooking {
   cancellationRequestedAt: string | null;
   cancellationRequestedRefundRate: number | null;
   depositPaid: number;
+  totalPrice: number;
+  remainingAmount: number;
+  vehicleId: string;
+  serviceIds: string[];
+  pickupLocation: {
+    name: string;
+    city: string;
+    address: string | null;
+  } | null;
+  returnLocation: {
+    name: string;
+    city: string;
+    address: string | null;
+  } | null;
+  services: Array<{
+    id: string;
+    name: string;
+    price: number;
+  }>;
+  notes: string | null;
+  createdAt: string;
   vehicle: {
     brand: string;
     model: string;
@@ -117,6 +138,20 @@ export async function getClientRecentBookingsAction(
               licensePlate: true,
             },
           },
+          pickupLocation: {
+            select: {
+              name: true,
+              city: true,
+              address: true,
+            },
+          },
+          returnLocation: {
+            select: {
+              name: true,
+              city: true,
+              address: true,
+            },
+          },
           invoices: {
             select: {
               id: true,
@@ -154,6 +189,20 @@ export async function getClientRecentBookingsAction(
                   licensePlate: true,
                 },
               },
+              pickupLocation: {
+                select: {
+                  name: true,
+                  city: true,
+                  address: true,
+                },
+              },
+              returnLocation: {
+                select: {
+                  name: true,
+                  city: true,
+                  address: true,
+                },
+              },
               invoices: {
                 select: {
                   id: true,
@@ -169,6 +218,29 @@ export async function getClientRecentBookingsAction(
             skip: normalizedSkip,
             take: limit,
           });
+
+    // Récupérer les services pour toutes les réservations
+    const allServiceIds = new Set<string>();
+    bookingsForPage.forEach((booking) => {
+      booking.serviceIds.forEach((id) => allServiceIds.add(id));
+    });
+
+    const servicesMap = new Map<string, { id: string; name: string; price: number }>();
+    if (allServiceIds.size > 0) {
+      const services = await prisma.service.findMany({
+        where: {
+          id: { in: Array.from(allServiceIds) },
+        },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+        },
+      });
+      services.forEach((service) => {
+        servicesMap.set(service.id, service);
+      });
+    }
 
     const data: ClientRecentBooking[] = bookingsForPage.map((booking) => {
       const derivedStatus = deriveBookingStatus(
@@ -191,6 +263,29 @@ export async function getClientRecentBookingsAction(
           : null,
         cancellationRequestedRefundRate: booking.cancellationRequestedRefundRate ?? null,
         depositPaid: booking.depositPaid ?? 0,
+        totalPrice: booking.totalPrice,
+        remainingAmount: booking.remainingAmount,
+        vehicleId: booking.vehicleId,
+        serviceIds: booking.serviceIds,
+        pickupLocation: booking.pickupLocation
+          ? {
+              name: booking.pickupLocation.name,
+              city: booking.pickupLocation.city,
+              address: booking.pickupLocation.address,
+            }
+          : null,
+        returnLocation: booking.returnLocation
+          ? {
+              name: booking.returnLocation.name,
+              city: booking.returnLocation.city,
+              address: booking.returnLocation.address,
+            }
+          : null,
+        services: booking.serviceIds
+          .map((serviceId) => servicesMap.get(serviceId))
+          .filter((service): service is { id: string; name: string; price: number } => service !== undefined),
+        notes: booking.notes,
+        createdAt: booking.createdAt.toISOString(),
         vehicle: booking.vehicle
           ? {
               brand: booking.vehicle.brand,
