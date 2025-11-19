@@ -22,6 +22,9 @@ interface BookingClientPageProps {
   initialReturnLocation?: string;
   initialPickupPlaceId?: string;
   initialReturnPlaceId?: string;
+  initialStep?: number; // Étape initiale (1-4)
+  initialServiceIds?: string[]; // IDs des services pré-sélectionnés
+  existingBookingId?: string; // ID de la réservation existante si on revient depuis la page de paiement
 }
 
 type BookingStep = 1 | 2 | 3 | 4;
@@ -62,11 +65,33 @@ export function BookingClientPage({
   initialReturnLocation = "",
   initialPickupPlaceId = "",
   initialReturnPlaceId = "",
+  initialStep,
+  initialServiceIds = [],
+  existingBookingId,
 }: BookingClientPageProps) {
   const { data: session, status } = useSession();
-  const [currentStep, setCurrentStep] = useState<BookingStep>(1);
+  
+  // Log client pour déboguer les props reçues
+  useEffect(() => {
+    console.log("🔍 [BookingClientPage - CLIENT] Props reçues:", {
+      timestamp: new Date().toISOString(),
+      existingBookingId: existingBookingId || "UNDEFINED",
+      existingBookingIdType: typeof existingBookingId,
+      existingBookingIdLength: existingBookingId?.length || 0,
+      existingBookingIdValue: existingBookingId,
+      initialStep: initialStep || "UNDEFINED",
+      vehicleId: vehicle?.id || "UNDEFINED",
+      willPassToStep4: {
+        existingBookingId: existingBookingId || undefined,
+      },
+    });
+  }, [existingBookingId, initialStep, vehicle]);
+  // Initialiser à l'étape spécifiée ou à l'étape 1 par défaut
+  const [currentStep, setCurrentStep] = useState<BookingStep>(
+    (initialStep && initialStep >= 1 && initialStep <= 4) ? (initialStep as BookingStep) : 1
+  );
   const [bookingData, setBookingData] = useState<BookingData>({
-    vehicleId: vehicle.id,
+    vehicleId: vehicle?.id || "",
     startDate: initialStartDate,
     endDate: initialEndDate,
     startTime: initialStartTime,
@@ -75,7 +100,7 @@ export function BookingClientPage({
     returnLocation: initialReturnLocation,
     pickupPlaceId: initialPickupPlaceId,
     returnPlaceId: initialReturnPlaceId,
-    selectedServiceIds: [],
+    selectedServiceIds: initialServiceIds, // Pré-remplir avec les services depuis l'URL
     customerName: "",
     customerEmail: "",
     customerPhone: "",
@@ -256,6 +281,7 @@ export function BookingClientPage({
               bookingData={bookingData}
               updateBookingData={updateBookingData}
               onPrevious={handlePrevious}
+              existingBookingId={existingBookingId}
             />
           )}
         </CardContent>
