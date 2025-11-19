@@ -7,8 +7,9 @@ import { redirect } from "next/navigation";
 
 export interface CreateCheckoutSessionInput {
   bookingId: string;
-  amount: number; // Montant en centimes (acompte + caution)
+  amount: number; // Montant en euros (acompte + caution)
   description: string;
+  paymentType?: "deposit" | "full" | "authorization"; // Type de paiement
 }
 
 export interface CreateCheckoutSessionResult {
@@ -75,8 +76,11 @@ export async function createCheckoutSessionAction(
       };
     }
 
+    const paymentType = input.paymentType || "full";
+    const isAuthorization = paymentType === "authorization";
+    
     // Créer la session de paiement Stripe avec personnalisation aux couleurs du site
-    const checkoutSession = await stripe.checkout.sessions.create({
+    const checkoutSessionConfig: any = {
       payment_method_types: ["card"],
       line_items: [
         {
@@ -104,23 +108,22 @@ export async function createCheckoutSessionAction(
         bookingId: booking.id,
         userId: session.user.id,
         bookingReference: booking.reference,
+        paymentType: paymentType,
       },
-      // Note: La personnalisation des couleurs doit être configurée dans Stripe Dashboard
-      // Dashboard > Settings > Branding
-      // Couleurs à utiliser:
-      // - Primary Color: #3B82F6 (Bleu)
-      // - Accent Color: #10B981 (Vert)
-      // - Background: #FFFFFF (Blanc)
-      // - Text: #111827 (Gris foncé)
       custom_text: {
         submit: {
-          message: "En cliquant sur ce bouton, vous confirmez votre paiement sécurisé.",
+          message: isAuthorization 
+            ? "En cliquant sur ce bouton, vous confirmez l'empreinte bancaire (aucun débit ne sera effectué)."
+            : "En cliquant sur ce bouton, vous confirmez votre paiement sécurisé.",
         },
       },
       payment_intent_data: {
         description: `Paiement pour la réservation ${booking.reference}`,
+        capture_method: isAuthorization ? "manual" : "automatic", // Pour l'empreinte, on ne capture pas immédiatement
       },
-    });
+    };
+
+    const checkoutSession = await stripe.checkout.sessions.create(checkoutSessionConfig);
 
     return {
       success: true,
