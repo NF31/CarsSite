@@ -28,6 +28,7 @@ import {
   X,
   Loader2,
   Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { AdminSidebarMobile } from "./AdminSidebar";
 import type { Session } from "next-auth";
@@ -43,6 +44,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
   dateStyle: "medium",
   timeStyle: "short",
 });
+const currencyFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+});
 
 function formatDateTime(value: string) {
   const date = new Date(value);
@@ -50,6 +55,13 @@ function formatDateTime(value: string) {
     return "-";
   }
   return dateTimeFormatter.format(date);
+}
+
+function formatCurrency(value?: number | null) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "—";
+  }
+  return currencyFormatter.format(value);
 }
 
 function truncateReference(reference: string) {
@@ -60,7 +72,7 @@ function truncateReference(reference: string) {
 }
 
 type NavbarNotificationItem = BookingNotificationItem & {
-  type?: "creation" | "modification" | "cancellation";
+  type?: "creation" | "modification" | "cancellation" | "payment";
   cancellationReason?: string | null;
   cancellationRequestedAt?: string | null;
   cancellationRefundRate?: number | null;
@@ -95,11 +107,15 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
     }
   };
 
-  const notificationCount = pendingBookings.length;
-  const hiddenNotifications =
-    Math.max(0, (bookingNotifications?.totalPending ?? 0) - pendingBookings.length) || 0;
+const notificationCount = pendingBookings.length;
+const hiddenNotifications =
+  Math.max(
+    0,
+    (bookingNotifications?.totalPending ?? 0) -
+      pendingBookings.filter((item) => item.requiresAction !== false).length,
+  ) || 0;
 
-  const handleModeration = (bookingId: string, action: "approve" | "reject") => {
+const handleModeration = (bookingId: string, action: "approve" | "reject") => {
     setActionError(null);
     setActiveBookingId(bookingId);
     startModerate(async () => {
@@ -111,7 +127,11 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
       }
       setPendingBookings((previous) => previous.filter((item) => item.id !== bookingId));
       setActiveBookingId(null);
-    });
+  });
+};
+
+const handleDismiss = (bookingId: string) => {
+  setPendingBookings((previous) => previous.filter((item) => item.id !== bookingId));
   };
 
   return (
@@ -196,6 +216,15 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                   <div className="space-y-3 px-2 py-2">
                     {pendingBookings.map((booking) => {
                       const isProcessing = isModerating && activeBookingId === booking.id;
+                      const requiresAction = booking.requiresAction !== false;
+                      const isCancellation = booking.type === "cancellation";
+                      const isPaymentNotification = booking.type === "payment";
+                      const badgeLabel = isCancellation
+                        ? "Annulation demandée"
+                        : isPaymentNotification
+                        ? "Paiement reçu"
+                        : "Validation requise";
+
                       return (
                         <div
                           key={booking.id}
@@ -211,12 +240,14 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                                   {truncateReference(booking.reference)}
                                 </Badge>
                                 <Badge
-                                  variant={booking.type === "cancellation" ? "destructive" : "secondary"}
-                                  className="text-[10px]"
+                                  variant={isCancellation ? "destructive" : "secondary"}
+                                  className={`text-[10px] ${
+                                    isPaymentNotification
+                                      ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                      : ""
+                                  }`}
                                 >
-                                  {booking.type === "cancellation"
-                                    ? "Annulation demandée"
-                                    : "Validation requise"}
+                                  {badgeLabel}
                                 </Badge>
                               </div>
                               {booking.userEmail ? (
@@ -243,7 +274,7 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                               {booking.vehiclePlate ? ` • ${booking.vehiclePlate}` : ""}
                             </p>
                           </div>
-                          {booking.type === "cancellation" ? (
+                          {isCancellation ? (
                             <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                               <p className="font-semibold">Annulation à valider</p>
                               {booking.cancellationRequestedAt ? (
@@ -258,7 +289,7 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                                 </p>
                               ) : null}
                               <p className="mt-1">
-                                Acompte : {booking.depositPaid ? `${booking.depositPaid.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}` : "—"}.
+                                Acompte : {formatCurrency(booking.depositPaid)}.
                                 {booking.cancellationRefundRate === 1
                                   ? " Remboursement estimé : 100%."
                                   : booking.cancellationRefundRate === 0.5
@@ -266,36 +297,65 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
                                   : " Aucun remboursement estimé."}
                               </p>
                             </div>
+                          ) : isPaymentNotification ? (
+                            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                              <p className="font-semibold flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Paiement confirmé automatiquement
+                              </p>
+                              <p className="mt-1">
+                                Acompte reçu : {formatCurrency(booking.depositPaid)}.
+                              </p>
+                              <p className="mt-1 text-emerald-700">
+                                La réservation est déjà confirmée, aucune action requise.
+                              </p>
+                            </div>
                           ) : null}
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              disabled={isProcessing}
-                              onClick={() => handleModeration(booking.id, "reject")}
-                              className="inline-flex items-center gap-1"
-                            >
-                              {isProcessing ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <X className="h-3.5 w-3.5" />
-                              )}
-                              {booking.type === "cancellation" ? "Rejeter la demande" : "Refuser"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              disabled={isProcessing}
-                              onClick={() => handleModeration(booking.id, "approve")}
-                              className="inline-flex items-center gap-1"
-                            >
-                              {isProcessing ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
+                          {requiresAction ? (
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={isProcessing}
+                                onClick={() => handleModeration(booking.id, "reject")}
+                                className="inline-flex items-center gap-1"
+                              >
+                                {isProcessing ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <X className="h-3.5 w-3.5" />
+                                )}
+                                {booking.type === "cancellation" ? "Rejeter la demande" : "Refuser"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                disabled={isProcessing}
+                                onClick={() => handleModeration(booking.id, "approve")}
+                                className="inline-flex items-center gap-1"
+                              >
+                                {isProcessing ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Check className="h-3.5 w-3.5" />
+                                )}
+                                {booking.type === "cancellation"
+                                  ? "Confirmer l'annulation"
+                                  : "Valider"}
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="mt-3 flex justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                                onClick={() => handleDismiss(booking.id)}
+                              >
                                 <Check className="h-3.5 w-3.5" />
-                              )}
-                              {booking.type === "cancellation" ? "Confirmer l'annulation" : "Valider"}
-                            </Button>
-                          </div>
+                                Marquer comme lu
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

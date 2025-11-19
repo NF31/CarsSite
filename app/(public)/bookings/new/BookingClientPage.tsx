@@ -42,7 +42,7 @@ interface BookingData {
   customerPhone: string;
   driverLicenseUrl?: string;
   acceptedTerms: boolean;
-  payNow: boolean; // Si true, payer l'acompte maintenant
+  paymentOption: "deposit" | "deposit_and_deposit" | "on_site"; // deposit = acompte seulement, deposit_and_deposit = acompte + caution maintenant, on_site = sur place avec empreinte
 }
 
 const STEPS = [
@@ -81,7 +81,7 @@ export function BookingClientPage({
     customerPhone: "",
     driverLicenseUrl: undefined,
     acceptedTerms: false,
-    payNow: false, // Par défaut, ne pas payer maintenant
+    paymentOption: "deposit", // Par défaut, acompte seulement (recommandé)
   });
   const [userDataLoaded, setUserDataLoaded] = useState(false);
   const [isTermsAlreadyAccepted, setIsTermsAlreadyAccepted] = useState(false);

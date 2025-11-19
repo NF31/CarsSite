@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CreditCard, Shield, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 
 interface PaymentPageClientProps {
   booking: {
@@ -28,10 +26,11 @@ interface PaymentPageClientProps {
     totalToPay: number;
     remainingAmount: number;
   };
+  paymentType?: string; // "deposit" | "full" | "authorization"
+  paymentDescription?: string;
 }
 
-export function PaymentPageClient({ booking, paymentDetails }: PaymentPageClientProps) {
-  const router = useRouter();
+export function PaymentPageClient({ booking, paymentDetails, paymentType = "full", paymentDescription }: PaymentPageClientProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,12 +39,13 @@ export function PaymentPageClient({ booking, paymentDetails }: PaymentPageClient
     setError(null);
 
     try {
-      const description = `Acompte et caution pour la réservation ${booking.reference} - ${booking.vehicle.brand} ${booking.vehicle.model}`;
+      const description = paymentDescription || `Paiement pour la réservation ${booking.reference} - ${booking.vehicle.brand} ${booking.vehicle.model}`;
 
       const result = await createCheckoutSessionAction({
         bookingId: booking.id,
         amount: paymentDetails.totalToPay,
         description,
+        paymentType: paymentType as "deposit" | "full" | "authorization",
       });
 
       if (result.success && result.url) {
@@ -142,29 +142,89 @@ export function PaymentPageClient({ booking, paymentDetails }: PaymentPageClient
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b">
-                      <span className="text-sm text-muted-foreground">Acompte (30%)</span>
-                      <span className="font-semibold">{paymentDetails.downPayment.toFixed(2)}€</span>
-                    </div>
-                    {paymentDetails.securityDeposit > 0 && (
+                  {paymentType === "deposit" && (
+                    <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-4 w-4 text-amber-600" />
-                          <span className="text-sm text-muted-foreground">Caution de garantie</span>
+                        <span className="text-sm text-muted-foreground">Acompte (30%)</span>
+                        <span className="font-semibold">{paymentDetails.downPayment.toFixed(2)}€</span>
+                      </div>
+                      {paymentDetails.securityDeposit > 0 && (
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm text-muted-foreground">Caution de garantie</span>
+                            <span className="text-xs text-muted-foreground">(bloquée plus tard)</span>
+                          </div>
+                          <span className="font-semibold text-muted-foreground">
+                            {paymentDetails.securityDeposit.toFixed(2)}€
+                          </span>
                         </div>
-                        <span className="font-semibold text-amber-600">
-                          {paymentDetails.securityDeposit.toFixed(2)}€
+                      )}
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="text-base font-semibold">Total à payer maintenant</span>
+                        <span className="text-2xl font-bold text-primary">
+                          {paymentDetails.totalToPay.toFixed(2)}€
                         </span>
                       </div>
-                    )}
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-base font-semibold">Total à payer maintenant</span>
-                      <span className="text-2xl font-bold text-primary">
-                        {paymentDetails.totalToPay.toFixed(2)}€
-                      </span>
                     </div>
-                  </div>
+                  )}
+                  {paymentType === "full" && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-sm text-muted-foreground">Acompte (30%)</span>
+                        <span className="font-semibold">{paymentDetails.downPayment.toFixed(2)}€</span>
+                      </div>
+                      {paymentDetails.securityDeposit > 0 && (
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm text-muted-foreground">Caution de garantie</span>
+                          </div>
+                          <span className="font-semibold text-amber-600">
+                            {paymentDetails.securityDeposit.toFixed(2)}€
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="text-base font-semibold">Total à payer maintenant</span>
+                        <span className="text-2xl font-bold text-primary">
+                          {paymentDetails.totalToPay.toFixed(2)}€
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {paymentType === "authorization" && (
+                    <div className="space-y-3">
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
+                        <p className="text-sm font-semibold text-blue-800 mb-2">⚠️ Empreinte bancaire uniquement</p>
+                        <p className="text-xs text-blue-700">
+                          Aucun débit ne sera effectué. Le montant sera simplement bloqué sur votre carte et libéré après restitution sans dégâts.
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-sm text-muted-foreground">Acompte (30%)</span>
+                        <span className="font-semibold text-muted-foreground">0,00€</span>
+                        <span className="text-xs text-muted-foreground">(sur place)</span>
+                      </div>
+                      {paymentDetails.securityDeposit > 0 && (
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm text-muted-foreground">Caution de garantie (empreinte)</span>
+                          </div>
+                          <span className="font-semibold text-amber-600">
+                            {paymentDetails.securityDeposit.toFixed(2)}€
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="text-base font-semibold">Montant à bloquer</span>
+                        <span className="text-2xl font-bold text-primary">
+                          {paymentDetails.totalToPay.toFixed(2)}€
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {paymentDetails.remainingAmount > 0 && (
                     <Alert className="mt-4 bg-blue-50 border-blue-200">
                       <AlertCircle className="h-4 w-4 text-blue-600" />
@@ -198,7 +258,17 @@ export function PaymentPageClient({ booking, paymentDetails }: PaymentPageClient
                 {isProcessing ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Redirection vers le paiement...
+                    {paymentType === "authorization" ? "Redirection vers l'empreinte..." : "Redirection vers le paiement..."}
+                  </>
+                ) : paymentType === "deposit" ? (
+                  <>
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Payer l&apos;acompte {paymentDetails.totalToPay.toFixed(2)}€
+                  </>
+                ) : paymentType === "authorization" ? (
+                  <>
+                    <Shield className="mr-2 h-5 w-5" />
+                    Confirmer l&apos;empreinte {paymentDetails.totalToPay.toFixed(2)}€
                   </>
                 ) : (
                   <>
