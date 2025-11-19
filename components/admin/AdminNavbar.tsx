@@ -34,6 +34,7 @@ import { AdminSidebarMobile } from "./AdminSidebar";
 import type { Session } from "next-auth";
 import type { AdminNotificationData, BookingNotificationItem } from "@/lib/admin/notifications";
 import { moderateBookingStatusAction } from "@/actions/admin/bookings";
+import { markNotificationAsViewedAction } from "@/actions/admin/notifications/mark-as-viewed";
 
 interface AdminNavbarProps {
   session: Session;
@@ -88,6 +89,7 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
   const [isModerating, startModerate] = useTransition();
+  const [isMarkingAsViewed, startMarkAsViewed] = useTransition();
 
   const getInitials = (name: string) => {
     return name
@@ -107,6 +109,8 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
     }
   };
 
+// Les notifications déjà vues sont filtrées côté serveur dans getAdminNotificationData
+// Donc pendingBookings contient déjà uniquement les notifications non vues
 const notificationCount = pendingBookings.length;
 const hiddenNotifications =
   Math.max(
@@ -125,14 +129,41 @@ const handleModeration = (bookingId: string, action: "approve" | "reject") => {
         setActiveBookingId(null);
         return;
       }
+      // Marquer comme vue dans la base de données
+      await markNotificationAsViewedAction(bookingId);
       setPendingBookings((previous) => previous.filter((item) => item.id !== bookingId));
       setActiveBookingId(null);
   });
 };
 
 const handleDismiss = (bookingId: string) => {
-  setPendingBookings((previous) => previous.filter((item) => item.id !== bookingId));
-  };
+  setActiveBookingId(bookingId);
+  startMarkAsViewed(async () => {
+    const result = await markNotificationAsViewedAction(bookingId);
+    if (result.success) {
+      // Retirer de la liste affichée
+      setPendingBookings((previous) => previous.filter((item) => item.id !== bookingId));
+    } else {
+      console.error("[Admin Navbar] Erreur lors du marquage de la notification comme vue:", result.error);
+    }
+    setActiveBookingId(null);
+  });
+};
+
+const handleViewNotification = (bookingId: string) => {
+  // Marquer automatiquement comme vue quand on clique sur "Voir"
+  setActiveBookingId(bookingId);
+  startMarkAsViewed(async () => {
+    const result = await markNotificationAsViewedAction(bookingId);
+    if (result.success) {
+      // Retirer de la liste affichée
+      setPendingBookings((previous) => previous.filter((item) => item.id !== bookingId));
+    } else {
+      console.error("[Admin Navbar] Erreur lors du marquage de la notification comme vue:", result.error);
+    }
+    setActiveBookingId(null);
+  });
+};
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -256,9 +287,10 @@ const handleDismiss = (bookingId: string) => {
                             </div>
                             <Link
                               href={`/admin/bookings/${booking.id}`}
-                              className="text-xs text-primary underline-offset-2 hover:underline"
+                              className="text-xs text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                              onClick={() => handleViewNotification(booking.id)}
                             >
-                              Voir
+                              {isMarkingAsViewed && activeBookingId === booking.id ? "Marquage..." : "Voir"}
                             </Link>
                           </div>
                           <div className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
@@ -350,9 +382,14 @@ const handleDismiss = (bookingId: string) => {
                                 size="sm"
                                 className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
                                 onClick={() => handleDismiss(booking.id)}
+                                disabled={isMarkingAsViewed && activeBookingId === booking.id}
                               >
-                                <Check className="h-3.5 w-3.5" />
-                                Marquer comme lu
+                                {isMarkingAsViewed && activeBookingId === booking.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Check className="h-3.5 w-3.5" />
+                                )}
+                                {isMarkingAsViewed && activeBookingId === booking.id ? "Marquage..." : "Marquer comme lu"}
                               </Button>
                             </div>
                           )}

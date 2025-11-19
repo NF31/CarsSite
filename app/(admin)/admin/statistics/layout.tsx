@@ -26,7 +26,7 @@ export default async function AdminStatisticsLayout({ children }: { children: Re
     redirect("/dashboard");
   }
 
-  const bookingNotifications = await getAdminNotificationData();
+  const bookingNotifications = await getAdminNotificationData(session.user.id);
 
   return (
     <div className="flex min-h-screen flex-col">
