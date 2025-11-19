@@ -31,7 +31,7 @@ export default async function AdminDashboardLayout({
     redirect("/dashboard");
   }
 
-  const bookingNotifications = await getAdminNotificationData();
+  const bookingNotifications = await getAdminNotificationData(session.user.id);
 
   return (
     <div className="flex min-h-screen flex-col">

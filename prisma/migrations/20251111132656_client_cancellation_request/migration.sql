@@ -11,4 +11,5 @@ ADD COLUMN     "cancellationRequestedAt" TIMESTAMP(3),
 ADD COLUMN     "cancellationRequestedRefundRate" DOUBLE PRECISION;
 
 -- AlterTable
-ALTER TABLE "invoices" DROP COLUMN "pdfPublicId";
+-- ALTER TABLE "invoices" DROP COLUMN "pdfPublicId";
+-- Commenté temporairement : la colonne n'existe pas dans la base de données
