@@ -446,7 +446,7 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                 {booking.depositPaid === 0 && derivedStatus === BookingStatus.PENDING && (
                   <>
                     <Button asChild className="w-full" size="lg">
-                      <Link href={`/bookings/payment?bookingId=${booking.id}`}>
+                      <Link href={`/bookings/payment?bookingId=${booking.id}&type=deposit`}>
                         <CreditCard className="mr-2 h-4 w-4" />
                         Payer maintenant
                       </Link>

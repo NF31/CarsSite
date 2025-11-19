@@ -4,8 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, CreditCard, ArrowRight } from "lucide-react";
+import { CheckCircle2, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
+import { BookingStatus } from "@prisma/client";
 
 interface PaymentSuccessPageProps {
   searchParams: Promise<{
@@ -24,14 +26,21 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
   const { session_id, booking_id } = await searchParams;
 
   let booking = null;
+  let stripeSession = null;
+  let actualDepositPaid = 0;
+  let actualSecurityDepositPaid = 0;
+  let expectedSecurityDeposit = 0; // Montant de la caution attendue (même si pas encore payée)
+  let paymentType: "deposit" | "full" | "authorization" = "full";
 
   if (session_id) {
-    // Récupérer la session Stripe pour obtenir le bookingId
+    // Récupérer la session Stripe pour obtenir le bookingId et le montant payé
     try {
-      const stripeSession = await stripe.checkout.sessions.retrieve(session_id);
+      stripeSession = await stripe.checkout.sessions.retrieve(session_id);
       const bookingIdFromMetadata = stripeSession.metadata?.bookingId;
+      paymentType = (stripeSession.metadata?.paymentType as "deposit" | "full" | "authorization") || "full";
 
       if (bookingIdFromMetadata) {
+        // Récupérer la réservation avec les paiements associés
         booking = await prisma.booking.findUnique({
           where: { id: bookingIdFromMetadata },
           select: {
@@ -41,20 +50,215 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
             securityDepositPaid: true,
             totalPrice: true,
             remainingAmount: true,
+            startDate: true,
+            endDate: true,
+            serviceIds: true,
+            status: true,
             vehicle: {
               select: {
+                id: true,
                 brand: true,
                 model: true,
                 deposit: true,
               },
             },
+            payments: {
+              where: {
+                status: "COMPLETED",
+                method: "STRIPE",
+              },
+              select: {
+                id: true,
+                amount: true,
+                transactionId: true,
+                metadata: true,
+                createdAt: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+              take: 1, // Prendre le paiement le plus récent
+            },
           },
         });
+
+        if (booking) {
+          // Calculer les montants attendus depuis la réservation
+          const extractTime = (date: Date) => {
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+          };
+
+          const startTime = extractTime(booking.startDate);
+          const endTime = extractTime(booking.endDate);
+
+          const priceResult = await calculateBookingPriceAction({
+            vehicleId: booking.vehicle.id,
+            startDate: booking.startDate.toISOString(),
+            endDate: booking.endDate.toISOString(),
+            startTime,
+            endTime,
+            serviceIds: booking.serviceIds,
+          });
+
+          if (priceResult.success && priceResult.data) {
+            const { deposit: downPayment, securityDeposit } = priceResult.data;
+            expectedSecurityDeposit = securityDeposit; // Stocker le montant de la caution attendue
+            const amountPaid = stripeSession.amount_total ? stripeSession.amount_total / 100 : 0;
+
+            // PRIORITÉ 1 : Récupérer le montant depuis la table Payment (source de vérité)
+            if (booking.payments && booking.payments.length > 0) {
+              const latestPayment = booking.payments[0];
+              const paymentMetadata = latestPayment.metadata as {
+                paymentType?: string;
+                downPayment?: number;
+                securityDeposit?: number;
+              } | null;
+              
+              console.log(`[Payment Success] 💳 Récupération du montant depuis la table Payment`, {
+                bookingId: booking.id,
+                paymentId: latestPayment.id,
+                paymentAmount: `${latestPayment.amount.toFixed(2)}€`,
+                paymentType: paymentMetadata?.paymentType || "unknown",
+                downPaymentInMetadata: paymentMetadata?.downPayment ? `${paymentMetadata.downPayment.toFixed(2)}€` : "N/A",
+                securityDepositInMetadata: paymentMetadata?.securityDeposit ? `${paymentMetadata.securityDeposit.toFixed(2)}€` : "N/A",
+                timestamp: new Date().toISOString(),
+              });
+
+              // Utiliser les métadonnées du paiement pour déterminer ce qui a été payé
+              if (paymentMetadata?.paymentType === "deposit") {
+                // Acompte seulement - le montant dans Payment correspond à l'acompte
+                actualDepositPaid = latestPayment.amount;
+                actualSecurityDepositPaid = 0;
+              } else if (paymentMetadata?.paymentType === "authorization") {
+                // Empreinte bancaire - le montant dans Payment correspond à la caution bloquée
+                actualDepositPaid = 0;
+                actualSecurityDepositPaid = latestPayment.amount;
+              } else {
+                // Paiement complet - utiliser les métadonnées ou calculer
+                actualDepositPaid = paymentMetadata?.downPayment || downPayment;
+                actualSecurityDepositPaid = paymentMetadata?.securityDeposit || securityDeposit;
+              }
+            } else {
+              // PRIORITÉ 2 : Utiliser le montant depuis la session Stripe si pas de Payment enregistré
+              console.log(`[Payment Success] ⚠️ Aucun paiement trouvé dans la table Payment, utilisation de la session Stripe`, {
+                bookingId: booking.id,
+                amountFromStripe: `${amountPaid.toFixed(2)}€`,
+                paymentType,
+                timestamp: new Date().toISOString(),
+              });
+
+              // Déterminer ce qui a été réellement payé selon le type de paiement
+              if (paymentType === "deposit") {
+                // Acompte seulement
+                actualDepositPaid = amountPaid;
+                actualSecurityDepositPaid = 0;
+              } else if (paymentType === "authorization") {
+                // Empreinte bancaire (caution bloquée)
+                actualDepositPaid = 0;
+                actualSecurityDepositPaid = amountPaid;
+              } else {
+                // Paiement complet (acompte + caution)
+                actualDepositPaid = downPayment;
+                actualSecurityDepositPaid = securityDeposit;
+              }
+            }
+
+            // PRIORITÉ 3 : Vérifier si booking.depositPaid est déjà mis à jour (par le webhook)
+            // Si oui, l'utiliser comme source de vérité finale
+            if (booking.depositPaid > 0 && paymentType === "deposit") {
+              console.log(`[Payment Success] ✅ Utilisation de booking.depositPaid (déjà mis à jour par le webhook)`, {
+                bookingId: booking.id,
+                depositPaidFromBooking: `${booking.depositPaid.toFixed(2)}€`,
+                depositPaidFromPayment: `${actualDepositPaid.toFixed(2)}€`,
+                match: booking.depositPaid === actualDepositPaid ? "✅ Oui" : "❌ Non",
+                timestamp: new Date().toISOString(),
+              });
+              // Utiliser booking.depositPaid comme source de vérité si disponible
+              actualDepositPaid = booking.depositPaid;
+            }
+
+            // Si le webhook n'a pas encore mis à jour la réservation, mettre à jour maintenant
+            if (booking.depositPaid === 0 && actualDepositPaid > 0) {
+              console.log(`[Payment Success] 🔄 Mise à jour de la réservation depuis la page de succès`, {
+                bookingId: booking.id,
+                previousDepositPaid: booking.depositPaid,
+                newDepositPaid: actualDepositPaid,
+                paymentType,
+                timestamp: new Date().toISOString(),
+              });
+
+              const updateData: {
+                depositPaid?: number;
+                securityDepositPaid?: number;
+                remainingAmount: number;
+                status?: BookingStatus;
+              } = {
+                remainingAmount: priceResult.data.remainingAmount,
+              };
+
+              if (paymentType === "deposit") {
+                updateData.depositPaid = actualDepositPaid;
+                updateData.status = BookingStatus.CONFIRMED;
+              } else if (paymentType === "authorization") {
+                updateData.securityDepositPaid = actualSecurityDepositPaid;
+                updateData.status = BookingStatus.PENDING;
+              } else {
+                updateData.depositPaid = actualDepositPaid;
+                updateData.securityDepositPaid = actualSecurityDepositPaid;
+                updateData.status = BookingStatus.CONFIRMED;
+              }
+
+              await prisma.booking.update({
+                where: { id: booking.id },
+                data: updateData,
+              });
+
+              // Recharger la réservation mise à jour
+              booking = await prisma.booking.findUnique({
+                where: { id: booking.id },
+                select: {
+                  id: true,
+                  reference: true,
+                  depositPaid: true,
+                  securityDepositPaid: true,
+                  totalPrice: true,
+                  remainingAmount: true,
+                  vehicle: {
+                    select: {
+                      brand: true,
+                      model: true,
+                      deposit: true,
+                    },
+                  },
+                },
+              });
+            } else {
+              // Utiliser les valeurs de la réservation si elles sont déjà mises à jour
+              // Mais vérifier d'abord si on a un paiement enregistré qui est plus fiable
+              if (booking.payments && booking.payments.length > 0 && paymentType === "deposit") {
+                // Si on a un paiement enregistré, l'utiliser comme source de vérité
+                const latestPayment = booking.payments[0];
+                actualDepositPaid = latestPayment.amount;
+                console.log(`[Payment Success] ✅ Utilisation du montant depuis Payment (${actualDepositPaid.toFixed(2)}€) au lieu de booking.depositPaid (${booking.depositPaid.toFixed(2)}€)`, {
+                  bookingId: booking.id,
+                  paymentId: latestPayment.id,
+                  timestamp: new Date().toISOString(),
+                });
+              } else {
+                actualDepositPaid = booking.depositPaid;
+              }
+              actualSecurityDepositPaid = booking.securityDepositPaid || 0;
+            }
+          }
+        }
       }
     } catch (error) {
-      console.error("[Payment] Erreur lors de la récupération de la session Stripe:", error);
+      console.error("[Payment Success] Erreur lors de la récupération de la session Stripe:", error);
     }
   } else if (booking_id) {
+    // Récupérer la réservation avec les paiements associés
     booking = await prisma.booking.findUnique({
       where: { id: booking_id },
       select: {
@@ -71,8 +275,64 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
             deposit: true,
           },
         },
+        payments: {
+          where: {
+            status: "COMPLETED",
+            method: "STRIPE",
+          },
+          select: {
+            id: true,
+            amount: true,
+            transactionId: true,
+            metadata: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1, // Prendre le paiement le plus récent
+        },
       },
     });
+
+    if (booking) {
+      // Calculer le montant de la caution attendue depuis le véhicule
+      if (booking.vehicle.deposit) {
+        expectedSecurityDeposit = booking.vehicle.deposit;
+      }
+
+      // PRIORITÉ : Utiliser le montant depuis la table Payment si disponible
+      if (booking.payments && booking.payments.length > 0) {
+        const latestPayment = booking.payments[0];
+        const paymentMetadata = latestPayment.metadata as {
+          paymentType?: string;
+          downPayment?: number;
+          securityDeposit?: number;
+        } | null;
+        
+        console.log(`[Payment Success] 💳 Récupération depuis booking_id avec Payment`, {
+          bookingId: booking.id,
+          paymentId: latestPayment.id,
+          paymentAmount: `${latestPayment.amount.toFixed(2)}€`,
+          paymentType: paymentMetadata?.paymentType || "unknown",
+          bookingDepositPaid: `${booking.depositPaid.toFixed(2)}€`,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Si c'est un paiement d'acompte, utiliser le montant du Payment
+        if (paymentMetadata?.paymentType === "deposit") {
+          actualDepositPaid = latestPayment.amount;
+          // La caution n'a pas été payée, utiliser le montant attendu depuis les métadonnées ou le véhicule
+          expectedSecurityDeposit = paymentMetadata?.securityDeposit || booking.vehicle.deposit || 0;
+        } else {
+          actualDepositPaid = booking.depositPaid;
+        }
+      } else {
+        // Fallback sur booking.depositPaid si pas de Payment trouvé
+        actualDepositPaid = booking.depositPaid;
+      }
+      actualSecurityDepositPaid = booking.securityDepositPaid || 0;
+    }
   }
 
   if (!booking) {
@@ -107,17 +367,29 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                   {booking.vehicle.brand} {booking.vehicle.model}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Acompte payé (30%)</span>
-                <span className="font-semibold text-green-600">
-                  {booking.depositPaid.toFixed(2)}€
-                </span>
-              </div>
-              {booking.securityDepositPaid > 0 && (
+              {actualDepositPaid > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Caution de garantie payée</span>
+                  <span className="text-sm text-muted-foreground">Acompte payé (30%)</span>
+                  <span className="font-semibold text-green-600">
+                    {actualDepositPaid.toFixed(2)}€
+                  </span>
+                </div>
+              )}
+              {/* Afficher la caution selon le type de paiement :
+                  - Si empreinte (authorization) : "bloquée"
+                  - Si paiement complet (full) : "payée"
+                  - Si acompte seulement (deposit) : "sera bloquée plus tard" */}
+              {expectedSecurityDeposit > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">
+                    {paymentType === "authorization" 
+                      ? "Caution de garantie (bloquée)"
+                      : actualSecurityDepositPaid > 0
+                      ? "Caution de garantie payée"
+                      : "Caution de garantie (sera bloquée plus tard)"}
+                  </span>
                   <span className="font-semibold text-amber-600">
-                    {booking.securityDepositPaid.toFixed(2)}€
+                    {expectedSecurityDeposit.toFixed(2)}€
                   </span>
                 </div>
               )}
@@ -137,7 +409,7 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
               <p className="text-sm text-blue-800">
                 <strong>Prochaines étapes :</strong>
                 <br />
-                Vous allez recevoir un email de confirmation dans quelques instants. Votre réservation sera validée par un administrateur dans les plus brefs délais.
+                Vous allez recevoir un email de confirmation dans quelques instants.
               </p>
             </div>
 
