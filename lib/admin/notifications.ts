@@ -2,8 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { BookingStatus } from "@prisma/client";
+import { subHours } from "date-fns";
 
-export type BookingNotificationType = "creation" | "modification" | "cancellation";
+export type BookingNotificationType = "creation" | "modification" | "cancellation" | "payment";
 
 export interface BookingNotificationItem {
   id: string;
@@ -20,6 +21,7 @@ export interface BookingNotificationItem {
   cancellationRequestedAt?: string | null;
   cancellationRefundRate?: number | null;
   depositPaid?: number;
+  requiresAction?: boolean;
 }
 
 export interface AdminNotificationData {
@@ -28,6 +30,8 @@ export interface AdminNotificationData {
 }
 
 export async function getAdminNotificationData(): Promise<AdminNotificationData> {
+  const recentPaymentThreshold = subHours(new Date(), 24);
+
   const [totalPending, bookings] = await Promise.all([
     prisma.booking.count({
       where: {
@@ -42,6 +46,13 @@ export async function getAdminNotificationData(): Promise<AdminNotificationData>
         OR: [
           { status: BookingStatus.PENDING },
           { cancellationRequested: true },
+          {
+            AND: [
+              { status: BookingStatus.CONFIRMED },
+              { depositPaid: { gt: 0 } },
+              { updatedAt: { gte: recentPaymentThreshold } },
+            ],
+          },
         ],
       },
       orderBy: {
@@ -78,11 +89,17 @@ export async function getAdminNotificationData(): Promise<AdminNotificationData>
   ]);
 
   const items: BookingNotificationItem[] = bookings.map((booking) => {
-    const type: BookingNotificationType = booking.cancellationRequested
-      ? "cancellation"
-      : booking.status === BookingStatus.PENDING
-      ? "modification"
-      : "creation";
+    let type: BookingNotificationType = "creation";
+    let requiresAction = true;
+
+    if (booking.cancellationRequested) {
+      type = "cancellation";
+    } else if (booking.status === BookingStatus.PENDING) {
+      type = "modification";
+    } else if (booking.status === BookingStatus.CONFIRMED && (booking.depositPaid ?? 0) > 0) {
+      type = "payment";
+      requiresAction = false;
+    }
 
     return {
       id: booking.id,
@@ -103,6 +120,7 @@ export async function getAdminNotificationData(): Promise<AdminNotificationData>
         : null,
       cancellationRefundRate: booking.cancellationRequestedRefundRate,
       depositPaid: booking.depositPaid ?? 0,
+      requiresAction,
     };
   });
 
