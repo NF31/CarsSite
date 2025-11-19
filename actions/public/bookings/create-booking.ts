@@ -358,6 +358,8 @@ export async function createPublicBookingAction(
     }
 
     // Vérifier à nouveau les conflits de réservation (race condition)
+    // Note: Cette vérification ne devrait normalement pas être nécessaire car checkVehicleAvailabilityAction
+    // l'a déjà fait, mais on la garde pour éviter les race conditions
     const overlappingBooking = await prisma.booking.findFirst({
       where: {
         vehicleId: data.vehicleId,

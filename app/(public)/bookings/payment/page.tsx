@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { createCheckoutSessionAction } from "@/actions/public/payments/create-checkout-session";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import { PaymentPageClient } from "./PaymentPageClient";
 
@@ -27,7 +26,7 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
 
   const paymentType = type || "full"; // Par défaut, paiement complet
 
-  // Récupérer la réservation
+  // Récupérer la réservation avec toutes les données nécessaires pour revenir à l'étape 4
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     select: {
@@ -36,6 +35,8 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
       reference: true,
       startDate: true,
       endDate: true,
+      pickupLocationId: true,
+      returnLocationId: true,
       totalPrice: true,
       depositPaid: true,
       remainingAmount: true,
@@ -50,6 +51,20 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
           licensePlate: true,
           pricePerDay: true,
           deposit: true,
+        },
+      },
+      pickupLocation: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+        },
+      },
+      returnLocation: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
         },
       },
     },
@@ -103,6 +118,55 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
     }
   }
 
+  // Construire l'URL pour revenir à l'étape 4 du formulaire de réservation
+  const formatDateForUrl = (date: Date) => {
+    return date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+  };
+
+  // Extraire les heures depuis les dates (format HH:MM)
+  const extractTime = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const pickupName = booking.pickupLocation?.name || booking.pickupLocation?.address || '';
+  const returnName = booking.returnLocation?.name || booking.returnLocation?.address || '';
+
+  // Construire l'URL avec tous les paramètres nécessaires
+  const urlParams = new URLSearchParams({
+    vehicleId: booking.vehicle.id,
+    startDate: formatDateForUrl(booking.startDate),
+    endDate: formatDateForUrl(booking.endDate),
+    startTime: extractTime(booking.startDate),
+    endTime: extractTime(booking.endDate),
+    step: '4',
+    bookingId: booking.id, // IMPORTANT : bookingId doit être présent
+  });
+  
+  if (pickupName) {
+    urlParams.append('pickup', pickupName);
+  }
+  if (returnName) {
+    urlParams.append('returnLocation', returnName);
+  }
+  if (booking.serviceIds.length > 0) {
+    urlParams.append('serviceIds', booking.serviceIds.join(','));
+  }
+  
+  const backToStep4Url = `/bookings/new?${urlParams.toString()}`;
+  
+  // Log serveur pour vérifier que bookingId est bien dans l'URL
+  console.log("🔍 [PaymentPage - SERVEUR] URL de retour générée:", {
+    bookingId: booking.id,
+    bookingReference: booking.reference,
+    urlContainsBookingId: backToStep4Url.includes(`bookingId=${booking.id}`),
+    urlParamsString: urlParams.toString(),
+    urlParamsBookingId: urlParams.get('bookingId'),
+    fullUrl: backToStep4Url,
+    urlLength: backToStep4Url.length,
+  });
+
   return (
     <PaymentPageClient
       booking={{
@@ -124,6 +188,7 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
       }}
       paymentType={paymentType}
       paymentDescription={paymentDescription}
+      backToStep4Url={backToStep4Url}
     />
   );
 }

@@ -28,9 +28,10 @@ interface PaymentPageClientProps {
   };
   paymentType?: string; // "deposit" | "full" | "authorization"
   paymentDescription?: string;
+  backToStep4Url?: string; // URL pour revenir à l'étape 4
 }
 
-export function PaymentPageClient({ booking, paymentDetails, paymentType = "full", paymentDescription }: PaymentPageClientProps) {
+export function PaymentPageClient({ booking, paymentDetails, paymentType = "full", paymentDescription, backToStep4Url }: PaymentPageClientProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,9 +75,9 @@ export function PaymentPageClient({ booking, paymentDetails, paymentType = "full
               size="sm"
               className="text-muted-foreground hover:text-foreground"
             >
-              <Link href={`/bookings/${booking.id}`}>
+              <Link href={backToStep4Url || `/bookings/${booking.id}`}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour à la réservation
+                {backToStep4Url ? "Retour à l'étape 4" : "Retour à la réservation"}
               </Link>
             </Button>
             <span className="text-muted-foreground">•</span>
