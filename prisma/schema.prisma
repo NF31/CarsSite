@@ -136,6 +136,7 @@ model User {
   invoices      Invoice[]
   payments      Payment[]
   preferences   UserPreferences?
+  viewedNotifications AdminNotificationView[]
 
   @@index([email])
   @@index([deletedAt])
@@ -264,6 +265,7 @@ model Booking {
   returnLocation    Location      @relation("ReturnLocation", fields: [returnLocationId], references: [id], onDelete: Restrict)
   
   review            Review?
+  viewedByAdmins    AdminNotificationView[]
   invoices          Invoice[]
   payments          Payment[]
 
@@ -379,6 +381,22 @@ model Setting {
   @@index([category])
   @@index([key])
   @@map("settings")
+}
+
+model AdminNotificationView {
+  id        String   @id @default(cuid())
+  adminId   String   // ID de l'admin qui a vu la notification
+  bookingId String   // ID de la réservation/notification vue
+  viewedAt  DateTime @default(now())
+
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([adminId, bookingId])
+  @@index([adminId])
+  @@index([bookingId])
+  @@index([viewedAt])
+  @@map("admin_notification_views")
 }
 
 model VerificationToken {
