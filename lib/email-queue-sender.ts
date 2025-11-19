@@ -385,6 +385,7 @@ interface BookingCancellationRejectedEmailParams {
     endDate: Date;
     period: string;
     reason?: string | null;
+    rejectionReason?: string | null; // Message de refus de l'admin
   };
   vehicle: {
     label: string;
@@ -425,6 +426,7 @@ export async function queueBookingCancellationRejectedEmail({
       },
       dashboardUrl,
       reason: booking.reason,
+      rejectionReason: booking.rejectionReason,
     });
 
     await addEmailToQueue({
