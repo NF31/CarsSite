@@ -74,13 +74,24 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
     redirect("/dashboard");
   }
 
+  // Extraire les heures depuis les dates stockées dans la réservation
+  const extractTime = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const startTime = extractTime(booking.startDate);
+  const endTime = extractTime(booking.endDate);
+
   // Calculer le prix pour obtenir l'acompte et la caution
+  // Utiliser les heures réelles stockées dans la réservation, pas des valeurs par défaut
   const priceResult = await calculateBookingPriceAction({
     vehicleId: booking.vehicle.id,
     startDate: booking.startDate.toISOString(),
     endDate: booking.endDate.toISOString(),
-    startTime: "10:00", // Valeur par défaut, devrait être stockée dans la réservation
-    endTime: "10:00", // Valeur par défaut
+    startTime: startTime, // Heures réelles depuis la réservation
+    endTime: endTime, // Heures réelles depuis la réservation
     serviceIds: booking.serviceIds,
   });
 
@@ -123,12 +134,7 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
     return date.toISOString().split('T')[0]; // Format YYYY-MM-DD
   };
 
-  // Extraire les heures depuis les dates (format HH:MM)
-  const extractTime = (date: Date) => {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
+  // Les heures sont déjà extraites plus haut, on les réutilise
 
   const pickupName = booking.pickupLocation?.name || booking.pickupLocation?.address || '';
   const returnName = booking.returnLocation?.name || booking.returnLocation?.address || '';
