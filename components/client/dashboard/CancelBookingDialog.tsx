@@ -140,34 +140,40 @@ export function CancelBookingDialog({
 
   useEffect(() => {
     if (state.success) {
-      // Fermer le dialog d'abord
+      // Fermer le dialog d'abord pour que le toast soit visible
       setOpen(false);
-      // Afficher le toast APRÈS la fermeture du dialog, sur la page
-      // Utiliser setTimeout pour s'assurer que le dialog est fermé avant d'afficher le toast
+      
+      // Afficher le toast après la fermeture du dialog
       setTimeout(() => {
-        toast.success("Demande d'annulation envoyée", {
-          description: "Votre demande d'annulation a été envoyée avec succès. Elle sera traitée dans les plus brefs délais. Vous recevrez un email de confirmation une fois l'annulation validée.",
-          duration: 5000,
+        toast.success("✅ Demande d'annulation envoyée avec succès", {
+          description: "Votre demande d'annulation a été transmise à notre équipe. Elle sera traitée dans les plus brefs délais. Vous recevrez un email de confirmation une fois l'annulation validée par un administrateur.",
+          duration: 6000,
         });
-        // Rafraîchir la page APRÈS un délai pour laisser le toast s'afficher
+        
+        // Rafraîchir la page pour mettre à jour l'état
         setTimeout(() => {
           router.refresh();
         }, 1000);
-      }, 150);
+      }, 200);
     } else if (state.error) {
-      // Pour les erreurs, on peut afficher le toast directement car le dialog reste ouvert
-      toast.error("Erreur lors de l'annulation", {
+      // Pour les erreurs, afficher le toast directement car le dialog reste ouvert
+      toast.error("❌ Erreur lors de l'annulation", {
         description: state.error,
         duration: 5000,
       });
     }
   }, [state.success, state.error, router]);
 
+  // Réinitialiser le formulaire quand le dialog se ferme
   useEffect(() => {
-    if (!open) {
-      setReason("");
+    if (!open && !state.success) {
+      // Utiliser setTimeout pour éviter l'appel synchrone de setState
+      const timer = setTimeout(() => {
+        setReason("");
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [open]);
+  }, [open, state.success]);
 
   const refundLabel =
     preview.tier === "full"

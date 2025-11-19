@@ -251,6 +251,7 @@ model Booking {
   serviceIds        String[]      @default([]) // Array of Service IDs
   notes             String?
   cancellationReason String?
+  cancellationRejectionReason String? // Message de refus de l'admin
   cancelledAt      DateTime?
   cancellationRequested       Boolean       @default(false)
   cancellationRequestedAt     DateTime?

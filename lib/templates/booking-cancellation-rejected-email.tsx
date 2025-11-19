@@ -26,6 +26,7 @@ interface BookingCancellationRejectedTemplateParams {
   };
   dashboardUrl: string;
   reason?: string | null;
+  rejectionReason?: string | null; // Message de refus de l'admin
 }
 
 export function getBookingCancellationRejectedEmailTemplate({
@@ -38,6 +39,7 @@ export function getBookingCancellationRejectedEmailTemplate({
   pricing,
   dashboardUrl,
   reason,
+  rejectionReason,
 }: BookingCancellationRejectedTemplateParams) {
   const totalFormatted = formatCurrency(pricing.total);
   const depositFormatted = formatCurrency(pricing.deposit);
@@ -47,6 +49,17 @@ export function getBookingCancellationRejectedEmailTemplate({
     ? `<p style="margin:0 0 18px; font-size:14px; line-height:1.6; color:#475569;">
         <span style="font-weight:600; color:#0f172a;">Votre demande :</span> « ${reason} »
       </p>`
+    : "";
+
+  const rejectionReasonSection = rejectionReason
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fef2f2; border:1px solid #fecaca; border-radius:16px; padding:18px 20px; margin:20px 0;">
+        <tr>
+          <td>
+            <p style="margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:#991b1b; font-weight:600;">Message de notre équipe</p>
+            <p style="margin:0; font-size:14px; line-height:1.6; color:#7f1d1d;">${rejectionReason}</p>
+          </td>
+        </tr>
+      </table>`
     : "";
 
   return {
@@ -77,6 +90,7 @@ export function getBookingCancellationRejectedEmailTemplate({
                         Nous avons bien étudié votre demande d'annulation. Après vérification, la réservation reste confirmée aux dates initialement prévues.
                       </p>
                       ${reasonSection}
+                      ${rejectionReasonSection}
 
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px;">
                         <tr>
@@ -193,7 +207,7 @@ Montant total : ${totalFormatted}
 Acompte versé : ${depositFormatted}
 Reste à payer : ${remainingFormatted}
 
-${reason ? `Votre message : ${reason}\n\n` : ""}Si vous souhaitez ajuster la réservation, connectez-vous à votre espace client :
+${reason ? `Votre message : ${reason}\n\n` : ""}${rejectionReason ? `Message de notre équipe :\n${rejectionReason}\n\n` : ""}Si vous souhaitez ajuster la réservation, connectez-vous à votre espace client :
 ${dashboardUrl}
 
 Besoin d'aide ? Répondez à ce message ou contactez-nous au +33 1 23 45 67 89.

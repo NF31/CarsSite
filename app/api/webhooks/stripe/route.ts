@@ -577,6 +577,132 @@ export async function POST(req: NextRequest) {
         },
         timestamp: new Date().toISOString(),
       });
+    } else if (event.type === "charge.refunded" || event.type === "refund.created" || event.type === "refund.updated") {
+      // Gestion des événements de remboursement Stripe
+      const refund = event.data.object as Stripe.Refund;
+      
+      console.log(`[Stripe Webhook] 💰 Event ${event.type} reçu`, {
+        eventId: event.id,
+        refundId: refund.id,
+        paymentIntentId: refund.payment_intent,
+        amount: refund.amount ? `${(refund.amount / 100).toFixed(2)}€` : "N/A",
+        status: refund.status,
+        reason: refund.reason,
+        metadata: refund.metadata,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Récupérer le bookingId depuis les métadonnées du remboursement
+      const bookingId = refund.metadata?.bookingId;
+      const bookingReference = refund.metadata?.bookingReference;
+
+      if (!bookingId) {
+        console.warn(`[Stripe Webhook] ⚠️  Aucun bookingId dans les métadonnées du remboursement`, {
+          refundId: refund.id,
+          metadata: refund.metadata,
+          timestamp: new Date().toISOString(),
+        });
+        return NextResponse.json({ received: true });
+      }
+
+      // Récupérer le paiement associé au remboursement
+      const payment = await prisma.payment.findFirst({
+        where: {
+          bookingId: bookingId,
+          transactionId: refund.id,
+        },
+        select: {
+          id: true,
+          bookingId: true,
+          status: true,
+          amount: true,
+          metadata: true,
+        },
+      });
+
+      if (!payment) {
+        console.warn(`[Stripe Webhook] ⚠️  Aucun paiement trouvé pour ce remboursement`, {
+          refundId: refund.id,
+          bookingId: bookingId,
+          bookingReference: bookingReference || "N/A",
+          timestamp: new Date().toISOString(),
+        });
+        return NextResponse.json({ received: true });
+      }
+
+      // Déterminer le nouveau statut selon le statut Stripe
+      let newStatus: "COMPLETED" | "PENDING" | "FAILED" = "PENDING";
+      
+      if (refund.status === "succeeded") {
+        newStatus = "COMPLETED";
+      } else if (refund.status === "failed" || refund.status === "canceled") {
+        newStatus = "FAILED";
+      } else {
+        newStatus = "PENDING";
+      }
+
+      // Mettre à jour le statut du paiement si nécessaire
+      if (payment.status !== newStatus) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: newStatus,
+            metadata: {
+              ...(typeof payment.metadata === "object" && payment.metadata !== null 
+                ? (payment.metadata as Record<string, unknown>)
+                : {}),
+              lastWebhookEvent: event.type,
+              lastWebhookEventId: event.id,
+              lastWebhookTimestamp: new Date().toISOString(),
+              stripeRefundStatus: refund.status,
+            },
+          },
+        });
+
+        console.log(`[Stripe Webhook] ✅ Statut du remboursement mis à jour`, {
+          paymentId: payment.id,
+          bookingId: bookingId,
+          bookingReference: bookingReference || "N/A",
+          refundId: refund.id,
+          previousStatus: payment.status,
+          newStatus: newStatus,
+          stripeRefundStatus: refund.status,
+          eventType: event.type,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Si le remboursement a échoué, restaurer le depositPaid
+        if (newStatus === "FAILED" && refund.amount) {
+          const refundAmount = refund.amount / 100; // Convertir de centimes en euros
+          
+          await prisma.booking.update({
+            where: { id: bookingId },
+            data: {
+              depositPaid: {
+                increment: refundAmount, // Restaurer le montant remboursé
+              },
+            },
+          });
+
+          console.log(`[Stripe Webhook] ⚠️  Remboursement échoué - depositPaid restauré`, {
+            bookingId: bookingId,
+            bookingReference: bookingReference || "N/A",
+            refundId: refund.id,
+            refundAmount: `${refundAmount.toFixed(2)}€`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } else {
+        console.log(`[Stripe Webhook] ℹ️  Statut du remboursement déjà à jour`, {
+          paymentId: payment.id,
+          bookingId: bookingId,
+          refundId: refund.id,
+          currentStatus: payment.status,
+          stripeRefundStatus: refund.status,
+          eventType: event.type,
+          timestamp: new Date().toISOString(),
+        });
+      }
     } else {
       console.log(`[Stripe Webhook] Event type ${event.type} not handled`);
     }
