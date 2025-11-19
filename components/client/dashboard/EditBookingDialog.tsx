@@ -354,11 +354,12 @@ export function EditBookingDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled}>
-          Modifier la réservation
+        <Button variant="outline" size="sm" disabled={disabled} className="text-xs sm:text-sm">
+          <span className="hidden sm:inline">Modifier la réservation</span>
+          <span className="sm:hidden">Modifier</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Modifier les dates de la réservation</DialogTitle>
           <DialogDescription>
