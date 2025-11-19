@@ -198,15 +198,25 @@ export function CancelBookingDialog({
           variant="ghost"
           size="sm"
           className={cn(
-            "text-rose-600 hover:text-rose-700",
+            "text-rose-600 hover:text-rose-700 text-xs sm:text-sm",
             cancellationRequested ? "opacity-70" : "",
           )}
           aria-disabled={cancellationRequested}
         >
-          {cancellationRequested ? "Annulation en attente" : "Annuler la réservation"}
+          {cancellationRequested ? (
+            <>
+              <span className="hidden sm:inline">Annulation en attente</span>
+              <span className="sm:hidden">En attente</span>
+            </>
+          ) : (
+            <>
+              <span className="hidden sm:inline">Annuler la réservation</span>
+              <span className="sm:hidden">Annuler</span>
+            </>
+          )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {cancellationRequested
