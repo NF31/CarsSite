@@ -5,6 +5,9 @@ import { headers } from "next/headers";
 import Stripe from "stripe";
 import { BookingStatus } from "@prisma/client";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
+import { sendBookingConfirmationEmail } from "@/lib/email";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -315,6 +318,14 @@ export async function POST(req: NextRequest) {
           depositPaid: true,
           securityDepositPaid: true,
           remainingAmount: true,
+          reference: true,
+          totalPrice: true,
+          startDate: true,
+          endDate: true,
+          userId: true,
+          vehicleId: true,
+          pickupLocationId: true,
+          returnLocationId: true,
         },
       });
 
@@ -327,16 +338,27 @@ export async function POST(req: NextRequest) {
         timestamp: new Date().toISOString(),
       });
 
-      // Créer un enregistrement de paiement
+      // Créer un enregistrement de paiement AVANT l'envoi de l'email
       // Note: PaymentStatus n'a pas "AUTHORIZED", on utilise "PENDING" pour l'empreinte
       const paymentStatus = isAuthorization ? "PENDING" : "COMPLETED";
-      console.log(`[Stripe Webhook] 💳 Création de l'enregistrement de paiement`, {
+      
+      // Déterminer le montant à enregistrer dans Payment selon le type de paiement
+      const paymentAmount = roundedAmountPaid; // Montant réellement payé via Stripe
+      
+      console.log(`[Stripe Webhook] 💳 Création de l'enregistrement de paiement dans la table Payment`, {
         bookingId,
         userId,
-        amount: `${roundedAmountPaid.toFixed(2)}€`,
+        paymentDetails: {
+          amountToRecord: `${paymentAmount.toFixed(2)}€`,
+          amountFromStripe: `${roundedAmountPaid.toFixed(2)}€`,
+          paymentType,
+          breakdown: {
+            downPayment: isDepositOnly ? `${roundedDownPayment.toFixed(2)}€` : (isAuthorization ? "0.00€" : `${roundedDownPayment.toFixed(2)}€`),
+            securityDeposit: isAuthorization ? `${roundedSecurityDeposit.toFixed(2)}€ (bloqué)` : (isDepositOnly ? "0.00€" : `${roundedSecurityDeposit.toFixed(2)}€`),
+          },
+        },
         method: "STRIPE",
         status: paymentStatus,
-        paymentType,
         transactionId: session.id,
         paymentIntentId: session.payment_intent || "N/A",
         timestamp: new Date().toISOString(),
@@ -346,7 +368,7 @@ export async function POST(req: NextRequest) {
         data: {
           bookingId: bookingId,
           userId: userId,
-          amount: roundedAmountPaid, // Montant arrondi
+          amount: paymentAmount, // Montant réellement payé (93.75€ pour l'acompte seul)
           method: "STRIPE",
           status: paymentStatus,
           transactionId: session.id,
@@ -356,6 +378,7 @@ export async function POST(req: NextRequest) {
             paymentType: paymentType,
             downPayment: isAuthorization ? 0 : (isDepositOnly ? roundedDownPayment : roundedDownPayment),
             securityDeposit: isAuthorization ? roundedSecurityDeposit : (isDepositOnly ? 0 : roundedSecurityDeposit),
+            amountPaid: paymentAmount, // Montant total enregistré dans Payment
           },
         },
         select: {
@@ -367,37 +390,190 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      console.log(`[Stripe Webhook] ✅ Enregistrement de paiement créé`, {
+      console.log(`[Stripe Webhook] ✅ Enregistrement de paiement créé dans la table Payment`, {
         paymentId: createdPayment.id,
         bookingId,
-        amount: `${createdPayment.amount.toFixed(2)}€`,
-        status: createdPayment.status,
-        transactionId: createdPayment.transactionId,
-        createdAt: createdPayment.createdAt.toISOString(),
+        paymentRecord: {
+          amount: `${createdPayment.amount.toFixed(2)}€`,
+          status: createdPayment.status,
+          transactionId: createdPayment.transactionId,
+          createdAt: createdPayment.createdAt.toISOString(),
+        },
+        bookingUpdate: {
+          depositPaid: `${roundedDownPayment.toFixed(2)}€`,
+          securityDepositPaid: isAuthorization ? `${roundedSecurityDeposit.toFixed(2)}€ (bloqué)` : (isDepositOnly ? "0.00€" : `${roundedSecurityDeposit.toFixed(2)}€`),
+          status: isDepositOnly ? "CONFIRMED" : (isAuthorization ? "PENDING" : "CONFIRMED"),
+        },
+        verification: {
+          paymentAmountMatches: paymentAmount === roundedAmountPaid ? "✅ Oui" : "❌ Non",
+          depositPaidMatches: isDepositOnly ? (paymentAmount === roundedDownPayment ? "✅ Oui" : "❌ Non") : "N/A (paiement complet)",
+        },
         timestamp: new Date().toISOString(),
       });
+
+      // Envoyer l'email de confirmation si le statut est CONFIRMED
+      if (updatedBooking.status === BookingStatus.CONFIRMED) {
+        console.log(`[Stripe Webhook] 📧 Préparation de l'envoi de l'email de confirmation`, {
+          bookingId: updatedBooking.id,
+          reference: updatedBooking.reference,
+          status: updatedBooking.status,
+          timestamp: new Date().toISOString(),
+        });
+
+        try {
+          // Récupérer les informations nécessaires pour l'email
+          const [user, vehicle, pickupLocation, returnLocation] = await Promise.all([
+            prisma.user.findUnique({
+              where: { id: updatedBooking.userId },
+              select: {
+                email: true,
+                name: true,
+              },
+            }),
+            prisma.vehicle.findUnique({
+              where: { id: updatedBooking.vehicleId },
+              select: {
+                brand: true,
+                model: true,
+                licensePlate: true,
+              },
+            }),
+            prisma.location.findUnique({
+              where: { id: updatedBooking.pickupLocationId },
+              select: {
+                name: true,
+              },
+            }),
+            prisma.location.findUnique({
+              where: { id: updatedBooking.returnLocationId },
+              select: {
+                name: true,
+              },
+            }),
+          ]);
+
+          if (!user || !vehicle || !pickupLocation || !returnLocation) {
+            console.error(`[Stripe Webhook] ❌ Données manquantes pour l'envoi de l'email`, {
+              bookingId: updatedBooking.id,
+              userFound: !!user,
+              vehicleFound: !!vehicle,
+              pickupLocationFound: !!pickupLocation,
+              returnLocationFound: !!returnLocation,
+              timestamp: new Date().toISOString(),
+            });
+          } else {
+            // Formater la période de réservation
+            const bookingPeriod = `${format(updatedBooking.startDate, "dd MMMM yyyy 'à' HH:mm", {
+              locale: fr,
+            })} → ${format(updatedBooking.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
+
+            // Déterminer le message de salutation
+            const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
+
+            // Envoyer l'email de confirmation
+            const emailResult = await sendBookingConfirmationEmail({
+              to: user.email,
+              name: user.name || "Client",
+              greeting,
+              booking: {
+                reference: updatedBooking.reference,
+                totalPrice: updatedBooking.totalPrice,
+                depositPaid: updatedBooking.depositPaid || 0,
+                remainingAmount: updatedBooking.remainingAmount || 0,
+                startDate: updatedBooking.startDate,
+                endDate: updatedBooking.endDate,
+                status: updatedBooking.status,
+                period: bookingPeriod,
+              },
+              vehicle: {
+                label: `${vehicle.brand} ${vehicle.model}`,
+                licensePlate: vehicle.licensePlate,
+              },
+              locations: {
+                pickup: pickupLocation.name,
+                return: returnLocation.name,
+              },
+            });
+
+            if (emailResult.skipped) {
+              console.warn(`[Stripe Webhook] ⚠️  Email de confirmation ignoré pour la réservation ${updatedBooking.reference} (credentials non configurés)`, {
+                bookingId: updatedBooking.id,
+                reference: updatedBooking.reference,
+                timestamp: new Date().toISOString(),
+              });
+            } else if (!emailResult.success) {
+              console.error(`[Stripe Webhook] ❌ Échec de l'envoi de l'email de confirmation pour la réservation ${updatedBooking.reference}`, {
+                bookingId: updatedBooking.id,
+                reference: updatedBooking.reference,
+                error: emailResult.error || "raison inconnue",
+                timestamp: new Date().toISOString(),
+              });
+            } else {
+              console.log(`[Stripe Webhook] ✅ Email de confirmation envoyé avec succès`, {
+                bookingId: updatedBooking.id,
+                reference: updatedBooking.reference,
+                recipient: user.email,
+                messageId: emailResult.messageId,
+                queued: emailResult.queued,
+                timestamp: new Date().toISOString(),
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`[Stripe Webhook] ❌ Erreur lors de l'envoi de l'email de confirmation`, {
+            bookingId: updatedBooking.id,
+            reference: updatedBooking.reference,
+            error: error instanceof Error ? error.message : "Erreur inconnue",
+            stack: error instanceof Error ? error.stack : undefined,
+            timestamp: new Date().toISOString(),
+          });
+          // Ne pas bloquer le webhook si l'email échoue
+        }
+      } else {
+        console.log(`[Stripe Webhook] 📧 Email de confirmation non envoyé (statut: ${updatedBooking.status}, attendu: CONFIRMED)`, {
+          bookingId: updatedBooking.id,
+          reference: updatedBooking.reference,
+          currentStatus: updatedBooking.status,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       console.log(`[Stripe Webhook] 🎉 Paiement traité avec succès pour la réservation ${bookingId}`, {
         bookingId,
         paymentId: createdPayment.id,
         summary: {
           totalPaid: `${roundedAmountPaid.toFixed(2)}€`,
+          paymentType,
           breakdown: {
-            downPayment: `${roundedDownPayment.toFixed(2)}€ (30% de la location)`,
-            securityDeposit: `${roundedSecurityDeposit.toFixed(2)}€ (caution de garantie)`,
+            downPayment: isDepositOnly ? `${roundedDownPayment.toFixed(2)}€ (30% de la location) - PAYÉ` : (isAuthorization ? "0.00€ (non payé)" : `${roundedDownPayment.toFixed(2)}€ (30% de la location) - PAYÉ`),
+            securityDeposit: isAuthorization ? `${roundedSecurityDeposit.toFixed(2)}€ (caution de garantie) - BLOQUÉ` : (isDepositOnly ? "0.00€ (non payé)" : `${roundedSecurityDeposit.toFixed(2)}€ (caution de garantie) - PAYÉ`),
             total: `${expectedAmount.toFixed(2)}€`,
           },
         },
-        booking: {
-          status: "CONFIRMED",
-          depositPaid: `${roundedDownPayment.toFixed(2)}€`,
-          securityDepositPaid: `${roundedSecurityDeposit.toFixed(2)}€`,
-          remainingAmount: `${roundedRemainingAmount.toFixed(2)}€ (solde à la remise)`,
+        databaseRecords: {
+          paymentTable: {
+            id: createdPayment.id,
+            amount: `${createdPayment.amount.toFixed(2)}€`,
+            status: createdPayment.status,
+            transactionId: createdPayment.transactionId,
+          },
+          bookingTable: {
+            status: updatedBooking.status,
+            depositPaid: `${(updatedBooking.depositPaid || 0).toFixed(2)}€`,
+            securityDepositPaid: `${(updatedBooking.securityDepositPaid || 0).toFixed(2)}€`,
+            remainingAmount: `${(updatedBooking.remainingAmount || 0).toFixed(2)}€ (solde à la remise)`,
+          },
         },
         stripe: {
           sessionId: session.id,
           paymentIntentId: session.payment_intent || "N/A",
           paymentStatus: session.payment_status,
+          amountTotal: `${roundedAmountPaid.toFixed(2)}€`,
+        },
+        verification: {
+          paymentAmountInPaymentTable: `${createdPayment.amount.toFixed(2)}€`,
+          depositPaidInBookingTable: `${(updatedBooking.depositPaid || 0).toFixed(2)}€`,
+          amountsMatch: isDepositOnly ? (createdPayment.amount === updatedBooking.depositPaid ? "✅ Oui" : "❌ Non") : "N/A (paiement complet)",
         },
         timestamp: new Date().toISOString(),
       });
