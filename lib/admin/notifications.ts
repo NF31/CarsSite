@@ -40,6 +40,35 @@ export async function getAdminNotificationData(adminId?: string): Promise<AdminN
       }).then((views) => views.map((v) => v.bookingId))
     : [];
 
+  console.log(`[Admin Notifications] 🔔 Récupération des notifications pour admin: ${adminId || "non connecté"}`);
+  console.log(`[Admin Notifications] 📋 Notifications déjà vues: ${viewedBookingIds.length}`);
+
+  // D'abord, récupérer toutes les réservations éligibles (sans filtre des vues)
+  const allEligibleBookings = await prisma.booking.findMany({
+    where: {
+      OR: [
+        { status: BookingStatus.PENDING },
+        { cancellationRequested: true },
+        {
+          AND: [
+            { status: BookingStatus.CONFIRMED },
+            { depositPaid: { gt: 0 } },
+            { updatedAt: { gte: recentPaymentThreshold } },
+          ],
+        },
+      ],
+    },
+    select: {
+      id: true,
+      status: true,
+      cancellationRequested: true,
+    },
+    take: 50, // Limite pour le debug
+  });
+
+  console.log(`[Admin Notifications] 🔍 Réservations éligibles (sans filtre vues): ${allEligibleBookings.length}`);
+  console.log(`[Admin Notifications] 📋 IDs éligibles:`, allEligibleBookings.map(b => b.id));
+
   const [totalPending, bookings] = await Promise.all([
     prisma.booking.count({
       where: {
@@ -51,22 +80,21 @@ export async function getAdminNotificationData(adminId?: string): Promise<AdminN
     }),
     prisma.booking.findMany({
       where: {
-        AND: [
+        OR: [
+          // Toujours afficher les PENDING et cancellationRequested (même si vues)
+          // car elles nécessitent une action de l'admin
+          { status: BookingStatus.PENDING },
+          { cancellationRequested: true },
+          // Filtrer uniquement les notifications "payment" déjà vues
           {
-            OR: [
-              { status: BookingStatus.PENDING },
-              { cancellationRequested: true },
-              {
-                AND: [
-                  { status: BookingStatus.CONFIRMED },
-                  { depositPaid: { gt: 0 } },
-                  { updatedAt: { gte: recentPaymentThreshold } },
-                ],
-              },
+            AND: [
+              { status: BookingStatus.CONFIRMED },
+              { depositPaid: { gt: 0 } },
+              { updatedAt: { gte: recentPaymentThreshold } },
+              // Exclure uniquement les notifications "payment" déjà vues
+              ...(viewedBookingIds.length > 0 ? [{ id: { notIn: viewedBookingIds } }] : []),
             ],
           },
-          // Exclure les notifications déjà vues par cet admin
-          ...(viewedBookingIds.length > 0 ? [{ id: { notIn: viewedBookingIds } }] : []),
         ],
       },
       orderBy: {
@@ -101,6 +129,18 @@ export async function getAdminNotificationData(adminId?: string): Promise<AdminN
       },
     }),
   ]);
+
+  console.log(`[Admin Notifications] 📊 Total PENDING: ${totalPending}, Réservations trouvées: ${bookings.length}`);
+  console.log(`[Admin Notifications] 🔍 IDs déjà vus:`, viewedBookingIds);
+  console.log(`[Admin Notifications] 🔍 IDs trouvés après filtre:`, bookings.map(b => b.id));
+  
+  // Vérifier si toutes les réservations éligibles sont filtrées
+  if (allEligibleBookings.length > 0 && bookings.length === 0) {
+    const filteredIds = allEligibleBookings
+      .filter(b => viewedBookingIds.includes(b.id))
+      .map(b => b.id);
+    console.log(`[Admin Notifications] ⚠️  Toutes les réservations éligibles sont filtrées (déjà vues):`, filteredIds);
+  }
 
   const items: BookingNotificationItem[] = bookings.map((booking) => {
     let type: BookingNotificationType = "creation";
@@ -137,6 +177,8 @@ export async function getAdminNotificationData(adminId?: string): Promise<AdminN
       requiresAction,
     };
   });
+
+  console.log(`[Admin Notifications] ✅ Notifications retournées: ${items.length} items`);
 
   return {
     totalPending,

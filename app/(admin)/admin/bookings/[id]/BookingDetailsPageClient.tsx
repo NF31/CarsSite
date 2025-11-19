@@ -28,6 +28,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   BOOKING_STATUS_COLORS,
@@ -105,6 +115,8 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [activeModeration, setActiveModeration] = useState<string | null>(null);
   const [isLicensePending, startLicenseTransition] = useTransition();
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const computedStatus = useMemo(() => computeDynamicStatus(booking), [booking]);
 
@@ -196,6 +208,14 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
 
   const handleModeration = (action: "approve" | "reject") => {
     setModerationError(null);
+    
+    // Si c'est un refus d'annulation, ouvrir le dialog pour saisir le message
+    if (action === "reject" && isCancellationRequest) {
+      setRejectionDialogOpen(true);
+      return;
+    }
+
+    // Sinon, procéder directement
     setActiveModeration(action);
 
     startModerate(async () => {
@@ -214,6 +234,42 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
         router.refresh();
       } catch (error) {
         console.error("Erreur lors de la modération", error);
+        setModerationError("Une erreur inattendue est survenue.");
+      } finally {
+        setActiveModeration(null);
+      }
+    });
+  };
+
+  const handleRejectionConfirm = () => {
+    if (!rejectionReason.trim()) {
+      setModerationError("Veuillez saisir un message expliquant pourquoi vous conservez la réservation.");
+      return;
+    }
+
+    setRejectionDialogOpen(false);
+    setActiveModeration("reject");
+
+    startModerate(async () => {
+      try {
+        const result = await moderateBookingStatusAction({
+          bookingId: booking.id,
+          action: "reject",
+          rejectionReason: rejectionReason.trim(),
+        });
+
+        if (!result.success) {
+          setModerationError(result.error ?? "Erreur lors de la conservation de la réservation.");
+          return;
+        }
+
+        // Réinitialiser le message
+        setRejectionReason("");
+        
+        // Rafraîchir la page pour afficher les changements
+        router.refresh();
+      } catch (error) {
+        console.error("Erreur lors de la conservation", error);
         setModerationError("Une erreur inattendue est survenue.");
       } finally {
         setActiveModeration(null);
@@ -373,12 +429,69 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
                     <strong>Raison de l&apos;annulation :</strong> {booking.cancellationReason}
                   </>
                 )}
+                
+                {/* Informations de remboursement */}
+                {booking.depositPaid > 0 && booking.cancellationRequestedRefundRate !== null && (
+                  <>
+                    <br />
+                    <br />
+                    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
+                      <strong className="text-amber-900">💰 Détails du remboursement :</strong>
+                      <div className="mt-2 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-amber-800">Acompte payé :</span>
+                          <span className="font-semibold text-amber-900">
+                            {bookingCurrencyFormatter.format(booking.depositPaid)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-amber-800">Taux de remboursement :</span>
+                          <span className="font-semibold text-amber-900">
+                            {(booking.cancellationRequestedRefundRate * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t border-amber-200 pt-1 mt-1">
+                          <span className="text-amber-800">Montant à rembourser :</span>
+                          <span className="font-semibold text-green-700">
+                            {bookingCurrencyFormatter.format(
+                              Math.round(booking.depositPaid * booking.cancellationRequestedRefundRate * 100) / 100
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-amber-800">Frais retenus :</span>
+                          <span className="font-semibold text-red-700">
+                            {bookingCurrencyFormatter.format(
+                              Math.round((booking.depositPaid - booking.depositPaid * booking.cancellationRequestedRefundRate) * 100) / 100
+                            )}
+                          </span>
+                        </div>
+                        {booking.cancellationRequestedRefundRate === 0 && (
+                          <p className="text-xs text-amber-700 mt-2 italic">
+                            ⚠️ Aucun remboursement ne sera effectué selon la politique d&apos;annulation.
+                          </p>
+                        )}
+                        {booking.cancellationRequestedRefundRate === 1 && (
+                          <p className="text-xs text-green-700 mt-2 italic">
+                            ✅ Remboursement intégral de l&apos;acompte.
+                          </p>
+                        )}
+                        {booking.cancellationRequestedRefundRate === 0.5 && (
+                          <p className="text-xs text-amber-700 mt-2 italic">
+                            ℹ️ Remboursement partiel de 50% de l&apos;acompte.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+                
                 <br />
                 <br />
                 <strong>Actions possibles :</strong>
                 <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li><strong>Conserver la réservation</strong> : La réservation sera restaurée à son statut précédent ({booking.cancellationPreviousStatus ? BOOKING_STATUS_LABELS[booking.cancellationPreviousStatus] : "CONFIRMED"}) et les dates seront conservées.</li>
-                  <li><strong>Accepter l&apos;annulation</strong> : La réservation sera annulée et les dates seront libérées.</li>
+                  <li><strong>Conserver la réservation</strong> : La réservation sera restaurée à son statut précédent ({booking.cancellationPreviousStatus ? BOOKING_STATUS_LABELS[booking.cancellationPreviousStatus] : "CONFIRMED"}) et les dates seront conservées. Aucun remboursement ne sera effectué.</li>
+                  <li><strong>Accepter l&apos;annulation</strong> : La réservation sera annulée et les dates seront libérées. {booking.depositPaid > 0 && booking.cancellationRequestedRefundRate !== null && booking.cancellationRequestedRefundRate > 0 ? `Un remboursement de ${bookingCurrencyFormatter.format(Math.round(booking.depositPaid * booking.cancellationRequestedRefundRate * 100) / 100)} sera effectué automatiquement.` : "Aucun remboursement ne sera effectué."}</li>
                 </ul>
               </>
             ) : (
@@ -748,6 +861,66 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
           </Card>
         </div>
       </div>
+
+      {/* Dialog pour saisir le message de conservation de la réservation */}
+      <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Conserver la réservation</DialogTitle>
+            <DialogDescription>
+              Veuillez expliquer pourquoi vous conservez cette réservation. Ce message sera envoyé au client par email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejection-reason">
+                Message au client <span className="text-muted-foreground">(optionnel mais recommandé)</span>
+              </Label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="Ex: La réservation est confirmée et le véhicule est disponible. Nous ne pouvons pas accepter l'annulation à ce stade..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+                maxLength={500}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {rejectionReason.length}/500 caractères
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectionDialogOpen(false);
+                setRejectionReason("");
+              }}
+              disabled={isModerating && activeModeration === "reject"}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleRejectionConfirm}
+              disabled={isModerating && activeModeration === "reject"}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isModerating && activeModeration === "reject" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Traitement...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Confirmer la conservation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

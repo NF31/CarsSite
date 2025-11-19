@@ -60,6 +60,7 @@ type EmailModule = {
 const moderateSchema = z.object({
   bookingId: z.string().min(1),
   action: z.enum(["approve", "reject"]),
+  rejectionReason: z.string().max(500).optional(), // Message de refus optionnel (max 500 caractères)
 });
 
 export type ModerateBookingAction =
@@ -608,6 +609,7 @@ export async function moderateBookingStatusAction(
           }
         }
       } else {
+        // Action "reject" - Refuser la demande d'annulation
         const restored = await prisma.booking.update({
           where: { id: bookingId },
           data: {
@@ -617,6 +619,7 @@ export async function moderateBookingStatusAction(
             cancellationRequestedRefundRate: null,
             cancellationPreviousStatus: null,
             cancellationReason: null,
+            cancellationRejectionReason: parsed.data.rejectionReason || null, // Stocker le message de refus
           } as Prisma.BookingUpdateInput,
           select: {
             startDate: true,
@@ -648,6 +651,7 @@ export async function moderateBookingStatusAction(
               endDate: restored.endDate,
               period: bookingPeriod,
               reason: booking.cancellationReason,
+              rejectionReason: parsed.data.rejectionReason || null, // Message de refus de l'admin
             },
             vehicle: {
               label: booking.vehicle
