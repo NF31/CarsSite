@@ -29,8 +29,16 @@ export interface AdminNotificationData {
   items: BookingNotificationItem[];
 }
 
-export async function getAdminNotificationData(): Promise<AdminNotificationData> {
+export async function getAdminNotificationData(adminId?: string): Promise<AdminNotificationData> {
   const recentPaymentThreshold = subHours(new Date(), 24);
+
+  // Récupérer les IDs des notifications déjà vues par cet admin
+  const viewedBookingIds = adminId
+    ? await prisma.adminNotificationView.findMany({
+        where: { adminId },
+        select: { bookingId: true },
+      }).then((views) => views.map((v) => v.bookingId))
+    : [];
 
   const [totalPending, bookings] = await Promise.all([
     prisma.booking.count({
@@ -43,16 +51,22 @@ export async function getAdminNotificationData(): Promise<AdminNotificationData>
     }),
     prisma.booking.findMany({
       where: {
-        OR: [
-          { status: BookingStatus.PENDING },
-          { cancellationRequested: true },
+        AND: [
           {
-            AND: [
-              { status: BookingStatus.CONFIRMED },
-              { depositPaid: { gt: 0 } },
-              { updatedAt: { gte: recentPaymentThreshold } },
+            OR: [
+              { status: BookingStatus.PENDING },
+              { cancellationRequested: true },
+              {
+                AND: [
+                  { status: BookingStatus.CONFIRMED },
+                  { depositPaid: { gt: 0 } },
+                  { updatedAt: { gte: recentPaymentThreshold } },
+                ],
+              },
             ],
           },
+          // Exclure les notifications déjà vues par cet admin
+          ...(viewedBookingIds.length > 0 ? [{ id: { notIn: viewedBookingIds } }] : []),
         ],
       },
       orderBy: {
