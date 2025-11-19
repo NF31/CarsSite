@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { GetPublicVehicleByIdResult } from "@/actions/public/vehicles/get-by-id";
 import { createPublicBookingAction } from "@/actions/public/bookings/create-booking";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
+import { getPendingBookingAction } from "@/actions/public/bookings/get-pending-booking";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -35,6 +36,7 @@ interface BookingStep4PaymentProps {
   };
   updateBookingData: (updates: Partial<BookingStep4PaymentProps["bookingData"]>) => void;
   onPrevious: () => void;
+  existingBookingId?: string; // ID de la réservation existante si on revient depuis la page de paiement
 }
 
 export function BookingStep4Payment({
@@ -42,10 +44,26 @@ export function BookingStep4Payment({
   bookingData,
   updateBookingData,
   onPrevious,
+  existingBookingId,
 }: BookingStep4PaymentProps) {
   const router = useRouter();
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Log pour déboguer - vérifier que existingBookingId est bien reçu
+  useEffect(() => {
+    console.log("🔍 [BookingStep4Payment - CLIENT] Props reçues:", {
+      timestamp: new Date().toISOString(),
+      existingBookingId: existingBookingId || "UNDEFINED",
+      existingBookingIdType: typeof existingBookingId,
+      existingBookingIdLength: existingBookingId?.length || 0,
+      existingBookingIdValue: existingBookingId,
+      vehicleId: vehicle?.id,
+      hasVehicle: !!vehicle,
+      currentUrl: typeof window !== 'undefined' ? window.location.href : 'N/A',
+      urlSearchParams: typeof window !== 'undefined' ? window.location.search : 'N/A',
+    });
+  }, [existingBookingId, vehicle]);
   const [priceCalculation, setPriceCalculation] = useState<{
     vehiclePrice: number;
     servicesPrice: number;
@@ -119,6 +137,69 @@ export function BookingStep4Payment({
   ]);
 
   const handleCreateBooking = async () => {
+    // Vérification CRITIQUE : Si une réservation existe déjà, NE PAS créer de nouvelle réservation
+    // Cette vérification doit être la PREMIÈRE chose à faire, AVANT même setIsCreatingBooking
+    
+    // Vérifier aussi dans l'URL au cas où le prop n'est pas transmis
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingIdFromUrl = urlParams.get('bookingId');
+    const finalBookingId = existingBookingId || bookingIdFromUrl;
+    
+    // Log client ET serveur (via console.log qui apparaît dans les deux)
+    console.log("🔍 [BookingStep4Payment - CLIENT] handleCreateBooking appelé", {
+      timestamp: new Date().toISOString(),
+      existingBookingId: existingBookingId || "UNDEFINED",
+      existingBookingIdType: typeof existingBookingId,
+      existingBookingIdLength: existingBookingId?.length || 0,
+      bookingIdFromUrl: bookingIdFromUrl || "UNDEFINED",
+      bookingIdFromUrlType: typeof bookingIdFromUrl,
+      finalBookingId: finalBookingId || "UNDEFINED",
+      finalBookingIdType: typeof finalBookingId,
+      currentUrl: typeof window !== 'undefined' ? window.location.href : 'N/A',
+      urlSearchParams: typeof window !== 'undefined' ? window.location.search : 'N/A',
+      willUseExistingBooking: !!(finalBookingId && finalBookingId.trim() !== ""),
+    });
+
+    if (finalBookingId && finalBookingId.trim() !== "") {
+      // Déterminer le type de paiement selon l'option choisie
+      let paymentType = "full";
+      if (bookingData.paymentOption === "deposit") {
+        paymentType = "deposit";
+      } else if (bookingData.paymentOption === "deposit_and_deposit") {
+        paymentType = "full";
+      } else if (bookingData.paymentOption === "on_site") {
+        paymentType = "authorization";
+      }
+
+      console.log("✅ [BookingStep4Payment - CLIENT] Réservation existante détectée, redirection directe vers paiement", {
+        timestamp: new Date().toISOString(),
+        finalBookingId,
+        existingBookingId,
+        bookingIdFromUrl,
+        paymentOption: bookingData.paymentOption,
+        paymentType,
+        willRedirectTo: `/bookings/payment?bookingId=${finalBookingId}&type=${paymentType}`,
+      });
+
+      toast.success("Option de paiement mise à jour", {
+        description: "Redirection vers le paiement...",
+        duration: 2000,
+      });
+      router.push(`/bookings/payment?bookingId=${finalBookingId}&type=${paymentType}`);
+      return; // IMPORTANT : Sortir immédiatement, ne pas continuer - AUCUN appel à createPublicBookingAction
+    }
+
+    // Si on arrive ici, c'est qu'il n'y a PAS de réservation existante dans les props/URL
+    // MAIS on doit vérifier dans la base de données s'il existe une réservation PENDING
+    console.log("🔍 [BookingStep4Payment - CLIENT] Vérification dans la DB d'une réservation avec statut PENDING:", {
+      vehicleId: bookingData.vehicleId,
+      startDate: bookingData.startDate,
+      endDate: bookingData.endDate,
+      existingBookingId: existingBookingId || "aucun",
+      statusRecherche: "PENDING",
+      message: "Recherche d'une réservation PENDING pour cet utilisateur, ce véhicule et cette période",
+    });
+
     setIsCreatingBooking(true);
     setCreateError(null);
 
@@ -142,6 +223,56 @@ export function BookingStep4Payment({
         0,
         0
       );
+
+      // VÉRIFIER D'ABORD s'il existe une réservation PENDING dans la DB
+      // avec TOUS les critères : dates, véhicule, services, lieux de retrait/retour
+      // Gère les deux cas : utilisateur connecté (via session) et non connecté (via email)
+      const pendingBookingResult = await getPendingBookingAction({
+        vehicleId: bookingData.vehicleId,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        serviceIds: bookingData.selectedServiceIds,
+        pickupLocationId: bookingData.pickupPlaceId,
+        returnLocationId: bookingData.returnPlaceId,
+        customerEmail: bookingData.customerEmail, // Pour les utilisateurs non connectés
+      });
+
+      if (pendingBookingResult.success && pendingBookingResult.booking) {
+        // Une réservation PENDING existe déjà ! Utiliser celle-ci
+        console.log("✅ [BookingStep4Payment - CLIENT] Réservation PENDING trouvée dans la DB, utilisation de celle-ci:", {
+          bookingId: pendingBookingResult.booking.id,
+          reference: pendingBookingResult.booking.reference,
+          status: pendingBookingResult.booking.status,
+          message: "Réservation avec statut PENDING trouvée, redirection vers le paiement sans créer de nouvelle réservation",
+        });
+
+        // Déterminer le type de paiement selon l'option choisie
+        let paymentType = "full";
+        if (bookingData.paymentOption === "deposit") {
+          paymentType = "deposit";
+        } else if (bookingData.paymentOption === "deposit_and_deposit") {
+          paymentType = "full";
+        } else if (bookingData.paymentOption === "on_site") {
+          paymentType = "authorization";
+        }
+
+        toast.success("Réservation trouvée", {
+          description: "Redirection vers le paiement...",
+          duration: 2000,
+        });
+        router.push(`/bookings/payment?bookingId=${pendingBookingResult.booking.id}&type=${paymentType}`);
+        setIsCreatingBooking(false);
+        return; // IMPORTANT : Sortir, ne pas créer de nouvelle réservation
+      }
+
+      // Aucune réservation PENDING trouvée, on peut créer une nouvelle réservation
+      console.log("🆕 [BookingStep4Payment - CLIENT] Aucune réservation PENDING trouvée dans la DB, création d'une nouvelle réservation:", {
+        vehicleId: bookingData.vehicleId,
+        startDate: bookingData.startDate,
+        endDate: bookingData.endDate,
+        statusRecherche: "PENDING",
+        message: "Aucune réservation avec statut PENDING trouvée, création d'une nouvelle réservation",
+      });
 
       const result = await createPublicBookingAction({
         vehicleId: bookingData.vehicleId,
@@ -574,22 +705,30 @@ export function BookingStep4Payment({
                 </div>
               </RadioGroup>
             </div>
+            {existingBookingId && (
+              <Alert className="mt-4 sm:mt-6 bg-blue-50 border-blue-200">
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-blue-600" />
+                <AlertDescription className="text-sm sm:text-base leading-relaxed text-blue-800">
+                  <strong>Modification de votre réservation existante :</strong> Vous allez modifier l&apos;option de paiement de votre réservation. Aucune nouvelle réservation ne sera créée.
+                </AlertDescription>
+              </Alert>
+            )}
             <Alert className="mt-4 sm:mt-6">
               <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               <AlertDescription className="text-sm sm:text-base leading-relaxed">
                 {bookingData.paymentOption === "deposit" && (
                   <>
-                    <strong>Acompte seulement :</strong> Votre réservation sera créée et vous serez redirigé vers la page de paiement pour régler l&apos;acompte de {priceCalculation ? `${priceCalculation.deposit.toFixed(2)}€` : "montant calculé"}€. La caution de garantie sera bloquée lors de la confirmation de votre réservation.
+                    <strong>Acompte seulement :</strong> {existingBookingId ? "Vous serez redirigé vers la page de paiement pour régler l&apos;acompte de" : "Votre réservation sera créée et vous serez redirigé vers la page de paiement pour régler l&apos;acompte de"} {priceCalculation ? `${priceCalculation.deposit.toFixed(2)}€` : "montant calculé"}€. La caution de garantie sera bloquée lors de la confirmation de votre réservation.
                   </>
                 )}
                 {bookingData.paymentOption === "deposit_and_deposit" && (
                   <>
-                    <strong>Paiement immédiat :</strong> Votre réservation sera créée et vous serez redirigé vers la page de paiement pour régler l&apos;acompte et la caution de garantie ({priceCalculation ? `${((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€` : "montant calculé"}€ au total).
+                    <strong>Paiement immédiat :</strong> {existingBookingId ? "Vous serez redirigé vers la page de paiement pour régler l&apos;acompte et la caution de garantie" : "Votre réservation sera créée et vous serez redirigé vers la page de paiement pour régler l&apos;acompte et la caution de garantie"} ({priceCalculation ? `${((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€` : "montant calculé"}€ au total).
                   </>
                 )}
                 {bookingData.paymentOption === "on_site" && (
                   <>
-                    <strong>Paiement sur place :</strong> Votre réservation sera créée en attente de validation. Une empreinte bancaire sera requise pour confirmer votre réservation (aucun débit, juste un blocage temporaire). Vous paierez l&apos;acompte et le solde à la remise du véhicule.
+                    <strong>Paiement sur place :</strong> {existingBookingId ? "Une empreinte bancaire sera requise pour confirmer votre réservation" : "Votre réservation sera créée en attente de validation. Une empreinte bancaire sera requise pour confirmer votre réservation"} (aucun débit, juste un blocage temporaire). Vous paierez l&apos;acompte et le solde à la remise du véhicule.
                   </>
                 )}
               </AlertDescription>
@@ -623,7 +762,16 @@ export function BookingStep4Payment({
           {isCreatingBooking ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Création en cours...
+              {existingBookingId ? "Mise à jour en cours..." : "Création en cours..."}
+            </>
+          ) : existingBookingId ? (
+            <>
+              <CreditCard className="h-4 w-4" />
+              {bookingData.paymentOption === "deposit" 
+                ? (priceCalculation ? `Modifier et payer l'acompte ${priceCalculation.deposit.toFixed(2)}€` : "Modifier l'option de paiement")
+                : bookingData.paymentOption === "deposit_and_deposit"
+                ? (priceCalculation ? `Modifier et payer ${((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€ maintenant` : "Modifier l'option de paiement")
+                : "Modifier l'option de paiement"}
             </>
           ) : bookingData.paymentOption === "deposit" ? (
             <>

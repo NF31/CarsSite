@@ -16,6 +16,7 @@ const checkAvailabilitySchema = z.object({
     .min(1, "Date de fin requise")
     .refine((value) => !Number.isNaN(Date.parse(value)), "Date invalide")
     .transform((value) => new Date(value)),
+  excludeBookingId: z.string().optional(), // ID de réservation à exclure de la vérification (pour les modifications)
 });
 
 export type CheckAvailabilityResponse =
@@ -57,7 +58,7 @@ export async function checkVehicleAvailabilityAction(
       };
     }
 
-    const { vehicleId, startDate, endDate } = parsed.data;
+    const { vehicleId, startDate, endDate, excludeBookingId } = parsed.data;
 
     // Vérifier que les dates sont valides
     if (endDate <= startDate) {
@@ -99,20 +100,29 @@ export async function checkVehicleAvailabilityAction(
       };
     }
 
-    // Vérifier les conflits de réservation
-    const bookingConflict = await prisma.booking.findFirst({
-      where: {
-        vehicleId,
-        status: {
-          in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
-        },
-        startDate: {
-          lt: endDate,
-        },
-        endDate: {
-          gt: startDate,
-        },
+    // Vérifier les conflits de réservation (en excluant la réservation spécifiée si fournie)
+    const bookingConflictWhere: any = {
+      vehicleId,
+      status: {
+        in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
       },
+      startDate: {
+        lt: endDate,
+      },
+      endDate: {
+        gt: startDate,
+      },
+    };
+
+    // Exclure la réservation spécifiée si elle est fournie (pour les modifications)
+    if (excludeBookingId) {
+      bookingConflictWhere.id = {
+        not: excludeBookingId,
+      };
+    }
+
+    const bookingConflict = await prisma.booking.findFirst({
+      where: bookingConflictWhere,
       select: {
         reference: true,
         startDate: true,
