@@ -7,9 +7,8 @@ import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, AlertCircle, Loader2, CreditCard, Euro, Wallet } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, CreditCard, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -200,61 +199,79 @@ export function BookingStep4Payment({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Récapitulatif de la réservation */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Récapitulatif de votre réservation</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3 sm:pb-4">
+          <CardTitle className="text-lg sm:text-xl">Récapitulatif de votre réservation</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 pt-0">
           {/* Véhicule */}
-          <div>
-            <h4 className="font-semibold mb-2">Véhicule</h4>
-            <p className="text-sm text-muted-foreground">
-              {vehicle.brand} {vehicle.model} • {vehicle.year} • {vehicle.seats} places
+          <div className="pb-3 sm:pb-4 border-b border-border/50">
+            <h4 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Véhicule</h4>
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+              <span className="font-medium text-foreground">{vehicle.brand} {vehicle.model}</span>
+              <span className="mx-2">•</span>
+              <span>{vehicle.year}</span>
+              <span className="mx-2">•</span>
+              <span>{vehicle.seats} places</span>
             </p>
           </div>
 
           {/* Dates et lieux */}
-          <div>
-            <h4 className="font-semibold mb-2">Dates et lieux</h4>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>
-                <strong>Départ:</strong> {bookingData.startDate} à {bookingData.startTime} • {bookingData.pickup}
-              </p>
-              <p>
-                <strong>Retour:</strong> {bookingData.endDate} à {bookingData.endTime} • {bookingData.returnLocation}
-              </p>
+          <div className="pb-3 sm:pb-4 border-b border-border/50">
+            <h4 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Dates et lieux</h4>
+            <div className="text-sm sm:text-base text-muted-foreground space-y-2 sm:space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                <span className="font-semibold text-foreground min-w-[60px] sm:min-w-[70px]">Départ:</span>
+                <span className="flex-1">
+                  {bookingData.startDate} à {bookingData.startTime}
+                  <span className="hidden sm:inline mx-2">•</span>
+                  <span className="block sm:inline mt-1 sm:mt-0">{bookingData.pickup}</span>
+                </span>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                <span className="font-semibold text-foreground min-w-[60px] sm:min-w-[70px]">Retour:</span>
+                <span className="flex-1">
+                  {bookingData.endDate} à {bookingData.endTime}
+                  <span className="hidden sm:inline mx-2">•</span>
+                  <span className="block sm:inline mt-1 sm:mt-0">{bookingData.returnLocation}</span>
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Services */}
           {bookingData.selectedServiceIds.length > 0 && (
-            <div>
-              <h4 className="font-semibold mb-2">Services additionnels</h4>
-              <p className="text-sm text-muted-foreground">
-                {bookingData.selectedServiceIds.length} service(s) sélectionné(s)
+            <div className="pb-3 sm:pb-4 border-b border-border/50">
+              <h4 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Services additionnels</h4>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                {bookingData.selectedServiceIds.length} service{bookingData.selectedServiceIds.length > 1 ? "s" : ""} sélectionné{bookingData.selectedServiceIds.length > 1 ? "s" : ""}
               </p>
             </div>
           )}
 
           {/* Informations client */}
           <div>
-            <h4 className="font-semibold mb-2">Informations client</h4>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>
-                <strong>Nom:</strong> {bookingData.customerName}
-              </p>
-              <p>
-                <strong>Email:</strong> {bookingData.customerEmail}
-              </p>
-              <p>
-                <strong>Téléphone:</strong> {bookingData.customerPhone}
-              </p>
+            <h4 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Informations client</h4>
+            <div className="text-sm sm:text-base text-muted-foreground space-y-1.5 sm:space-y-2">
+              <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                <span className="font-semibold text-foreground min-w-[80px] sm:min-w-[90px]">Nom:</span>
+                <span>{bookingData.customerName}</span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                <span className="font-semibold text-foreground min-w-[80px] sm:min-w-[90px]">Email:</span>
+                <span className="break-all">{bookingData.customerEmail}</span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                <span className="font-semibold text-foreground min-w-[80px] sm:min-w-[90px]">Téléphone:</span>
+                <span>{bookingData.customerPhone}</span>
+              </div>
               {bookingData.driverLicenseUrl && (
-                <p>
-                  <strong>Permis de conduire:</strong> Téléchargé
-                </p>
+                <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                  <span className="font-semibold text-foreground min-w-[80px] sm:min-w-[90px]">Permis:</span>
+                  <span className="text-green-600 font-medium">✓ Téléchargé</span>
+                </div>
               )}
             </div>
           </div>
@@ -263,55 +280,55 @@ export function BookingStep4Payment({
 
       {/* Récapitulatif du prix */}
       {priceCalculation ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Détails du prix</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="text-lg sm:text-xl">Détails du prix</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Véhicule ({priceCalculation.numberOfDays.toFixed(2)} jour(s))</span>
-                <span>{priceCalculation.vehiclePrice.toFixed(2)}€</span>
+          <CardContent className="pt-0">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex justify-between items-center text-sm sm:text-base py-1.5">
+                <span className="text-muted-foreground">Véhicule ({priceCalculation.numberOfDays.toFixed(2)} jour{priceCalculation.numberOfDays > 1 ? "s" : ""})</span>
+                <span className="font-semibold">{priceCalculation.vehiclePrice.toFixed(2)}€</span>
               </div>
               {priceCalculation.servicesPrice > 0 && (
                 <>
-                  <div className="flex justify-between text-sm">
-                    <span>Services</span>
-                    <span>{priceCalculation.servicesPrice.toFixed(2)}€</span>
+                  <div className="flex justify-between items-center text-sm sm:text-base py-1.5 border-t border-border/50 pt-3">
+                    <span className="text-muted-foreground">Services</span>
+                    <span className="font-semibold">{priceCalculation.servicesPrice.toFixed(2)}€</span>
                   </div>
-                  <div className="pl-4 space-y-1">
+                  <div className="pl-3 sm:pl-4 space-y-1.5 sm:space-y-2 bg-muted/30 rounded-md p-2 sm:p-3">
                     {priceCalculation.breakdown.services.map((service) => (
-                      <div key={service.id} className="flex justify-between text-xs text-muted-foreground">
+                      <div key={service.id} className="flex justify-between items-center text-xs sm:text-sm text-muted-foreground">
                         <span>• {service.name}</span>
-                        <span>{service.total.toFixed(2)}€</span>
+                        <span className="font-medium">{service.total.toFixed(2)}€</span>
                       </div>
                     ))}
                   </div>
                 </>
               )}
-              <div className="border-t pt-2 mt-2">
-                <div className="flex justify-between font-semibold text-lg">
+              <div className="border-t-2 border-primary/20 pt-3 sm:pt-4 mt-3 sm:mt-4">
+                <div className="flex justify-between items-center font-semibold text-base sm:text-lg mb-3 sm:mb-4">
                   <span>Total de la location</span>
-                  <span>{priceCalculation.totalPrice.toFixed(2)}€</span>
+                  <span className="text-primary">{priceCalculation.totalPrice.toFixed(2)}€</span>
                 </div>
-                <div className="space-y-2 mt-3">
-                  <div className="flex justify-between text-sm">
-                    <span>Acompte (30%)</span>
-                    <span>{priceCalculation.deposit.toFixed(2)}€</span>
+                <div className="space-y-2 sm:space-y-2.5 bg-muted/20 rounded-md p-3 sm:p-4">
+                  <div className="flex justify-between items-center text-sm sm:text-base">
+                    <span className="text-muted-foreground">Acompte (30%)</span>
+                    <span className="font-semibold">{priceCalculation.deposit.toFixed(2)}€</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Solde à la remise</span>
-                    <span>{priceCalculation.remainingAmount.toFixed(2)}€</span>
+                  <div className="flex justify-between items-center text-sm sm:text-base">
+                    <span className="text-muted-foreground">Solde à la remise</span>
+                    <span className="font-semibold">{priceCalculation.remainingAmount.toFixed(2)}€</span>
                   </div>
                 </div>
                 {priceCalculation.vehicleDeposit > 0 && (
-                  <div className="mt-4 pt-3 border-t">
-                    <div className="flex justify-between text-sm font-medium text-amber-600">
+                  <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-amber-200 bg-amber-50/50 rounded-md p-3 sm:p-4">
+                    <div className="flex justify-between items-center text-sm sm:text-base font-semibold text-amber-700 mb-2">
                       <span>Caution de garantie</span>
                       <span>{priceCalculation.vehicleDeposit.toFixed(2)}€</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      ⓘ Cette caution sera bloquée lors de la confirmation et remboursée après restitution sans dégâts. Elle n'est pas incluse dans le prix de la location.
+                    <p className="text-xs sm:text-sm text-amber-600 leading-relaxed">
+                      ⓘ Cette caution sera bloquée lors de la confirmation et remboursée après restitution sans dégâts. Elle n&apos;est pas incluse dans le prix de la location.
                     </p>
                   </div>
                 )}
@@ -342,14 +359,14 @@ export function BookingStep4Payment({
       )}
 
       {/* Paiement */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Paiement</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3 sm:pb-4">
+          <CardTitle className="text-lg sm:text-xl">Paiement</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Choisissez votre mode de paiement</Label>
+        <CardContent className="pt-0">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
+              <Label className="text-base sm:text-lg font-semibold block">Choisissez votre mode de paiement</Label>
               <RadioGroup
                 value={bookingData.payNow ? "now" : "later"}
                 onValueChange={(value) => {
@@ -357,58 +374,132 @@ export function BookingStep4Payment({
                 }}
                 className="space-y-3"
               >
-                <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-muted/50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="now" id="pay-now" className="mt-1" />
+                <div className="flex items-start space-x-3 sm:space-x-4 rounded-lg border-2 border-primary/20 p-4 sm:p-5 hover:bg-muted/50 hover:border-primary/40 transition-all cursor-pointer">
+                  <RadioGroupItem value="now" id="pay-now" className="mt-0.5 sm:mt-1" />
                   <Label htmlFor="pay-now" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CreditCard className="h-4 w-4 text-primary" />
-                      <span className="font-semibold">Payer l'acompte maintenant</span>
+                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                      <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="font-semibold text-sm sm:text-base">Payer l&apos;acompte et la caution maintenant</span>
                     </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>Vous paierez l'acompte de {priceCalculation ? priceCalculation.deposit.toFixed(2) : "0.00"}€ maintenant.</p>
-                      {priceCalculation && priceCalculation.vehicleDeposit > 0 && (
-                        <p className="text-amber-600">
-                          + Caution de garantie : {priceCalculation.vehicleDeposit.toFixed(2)}€ (sera remboursée après restitution)
-                        </p>
+                    <div className="text-sm sm:text-base text-muted-foreground space-y-3 sm:space-y-4">
+                      {priceCalculation && (
+                        <>
+                          <div className="bg-primary/5 border-2 border-primary/20 rounded-lg p-3 sm:p-4">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1.5 sm:mb-2 font-medium">Montant total à payer maintenant</p>
+                            <p className="text-xl sm:text-2xl font-bold text-primary mb-1">
+                              {((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              = Acompte + Caution de garantie
+                            </p>
+                          </div>
+                          <div className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm bg-muted/30 rounded-md p-3 sm:p-4">
+                            <div className="flex justify-between items-center py-0.5">
+                              <span className="text-muted-foreground">Acompte (30% de la location) :</span>
+                              <span className="font-semibold">{priceCalculation.deposit.toFixed(2)}€</span>
+                            </div>
+                            {priceCalculation.vehicleDeposit > 0 && (
+                              <div className="flex justify-between items-center py-0.5 text-amber-700">
+                                <span>+ Caution de garantie :</span>
+                                <span className="font-semibold">{priceCalculation.vehicleDeposit.toFixed(2)}€</span>
+                              </div>
+                            )}
+                            <div className="border-t border-border/50 pt-2 mt-2 flex justify-between items-center font-bold text-sm sm:text-base">
+                              <span className="text-foreground">Total à payer maintenant :</span>
+                              <span className="text-primary">
+                                {((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€
+                              </span>
+                            </div>
+                          </div>
+                          {priceCalculation.vehicleDeposit > 0 && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 sm:p-3">
+                              <p className="text-xs sm:text-sm text-amber-700 leading-relaxed">
+                                ⓘ La caution de garantie sera remboursée après restitution du véhicule sans dégâts.
+                              </p>
+                            </div>
+                          )}
+                          {priceCalculation.remainingAmount > 0 && (
+                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                              Le solde de <strong className="text-foreground">{priceCalculation.remainingAmount.toFixed(2)}€</strong> sera à régler à la remise du véhicule.
+                            </p>
+                          )}
+                        </>
                       )}
-                      {priceCalculation && priceCalculation.remainingAmount > 0 && (
-                        <p>Le solde de {priceCalculation.remainingAmount.toFixed(2)}€ sera à régler à la remise du véhicule.</p>
+                      {!priceCalculation && (
+                        <p>Calcul du montant en cours...</p>
                       )}
                     </div>
                   </Label>
                 </div>
-                <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-muted/50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="later" id="pay-later" className="mt-1" />
+                <div className="flex items-start space-x-3 sm:space-x-4 rounded-lg border-2 border-border p-4 sm:p-5 hover:bg-muted/50 hover:border-primary/20 transition-all cursor-pointer">
+                  <RadioGroupItem value="later" id="pay-later" className="mt-0.5 sm:mt-1" />
                   <Label htmlFor="pay-later" className="flex-1 cursor-pointer">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Wallet className="h-4 w-4 text-primary" />
-                      <span className="font-semibold">Payer plus tard</span>
+                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                      <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="font-semibold text-sm sm:text-base">Payer plus tard</span>
                     </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>Vous paierez l'acompte de {priceCalculation ? priceCalculation.deposit.toFixed(2) : "0.00"}€ lors de la confirmation de votre réservation par l'administrateur.</p>
-                      {priceCalculation && priceCalculation.vehicleDeposit > 0 && (
-                        <p className="text-amber-600">
-                          + Caution de garantie : {priceCalculation.vehicleDeposit.toFixed(2)}€ (sera bloquée à la confirmation)
-                        </p>
+                    <div className="text-sm sm:text-base text-muted-foreground space-y-3 sm:space-y-4">
+                      {priceCalculation && (
+                        <>
+                          <div className="bg-primary/5 border-2 border-primary/20 rounded-lg p-3 sm:p-4">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1.5 sm:mb-2 font-medium">Montant total à payer lors de la confirmation</p>
+                            <p className="text-xl sm:text-2xl font-bold text-primary mb-1">
+                              {((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              = Acompte + Caution de garantie
+                            </p>
+                          </div>
+                          <div className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm bg-muted/30 rounded-md p-3 sm:p-4">
+                            <div className="flex justify-between items-center py-0.5">
+                              <span className="text-muted-foreground">Acompte (30% de la location) :</span>
+                              <span className="font-semibold">{priceCalculation.deposit.toFixed(2)}€</span>
+                            </div>
+                            {priceCalculation.vehicleDeposit > 0 && (
+                              <div className="flex justify-between items-center py-0.5 text-amber-700">
+                                <span>+ Caution de garantie :</span>
+                                <span className="font-semibold">{priceCalculation.vehicleDeposit.toFixed(2)}€</span>
+                              </div>
+                            )}
+                            <div className="border-t border-border/50 pt-2 mt-2 flex justify-between items-center font-bold text-sm sm:text-base">
+                              <span className="text-foreground">Total à payer :</span>
+                              <span className="text-primary">
+                                {((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€
+                              </span>
+                            </div>
+                          </div>
+                          {priceCalculation.vehicleDeposit > 0 && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-md p-2.5 sm:p-3">
+                              <p className="text-xs sm:text-sm text-amber-700 leading-relaxed">
+                                ⓘ La caution de garantie sera bloquée lors de la confirmation et remboursée après restitution sans dégâts.
+                              </p>
+                            </div>
+                          )}
+                          {priceCalculation.remainingAmount > 0 && (
+                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                              Le solde de <strong className="text-foreground">{priceCalculation.remainingAmount.toFixed(2)}€</strong> sera à régler à la remise du véhicule.
+                            </p>
+                          )}
+                        </>
                       )}
-                      {priceCalculation && priceCalculation.remainingAmount > 0 && (
-                        <p>Le solde de {priceCalculation.remainingAmount.toFixed(2)}€ sera à régler à la remise du véhicule.</p>
+                      {!priceCalculation && (
+                        <p>Calcul du montant en cours...</p>
                       )}
                     </div>
                   </Label>
                 </div>
               </RadioGroup>
             </div>
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
+            <Alert className="mt-4 sm:mt-6">
+              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <AlertDescription className="text-sm sm:text-base leading-relaxed">
                 {bookingData.payNow ? (
                   <>
-                    <strong>Paiement immédiat :</strong> Votre réservation sera créée et vous serez redirigé vers la page de paiement pour régler l'acompte et la caution de garantie.
+                    <strong>Paiement immédiat :</strong> Votre réservation sera créée et vous serez redirigé vers la page de paiement pour régler l&apos;acompte et la caution de garantie ({priceCalculation ? `${((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€` : "montant calculé"}€ au total).
                   </>
                 ) : (
                   <>
-                    <strong>Paiement différé :</strong> Votre réservation sera créée en attente de validation. Vous recevrez un email avec les instructions de paiement une fois la réservation confirmée par l'administrateur.
+                    <strong>Paiement différé :</strong> Votre réservation sera créée en attente de validation. Vous recevrez un email avec les instructions de paiement une fois la réservation confirmée par l&apos;administrateur. Vous devrez alors payer l&apos;acompte et la caution de garantie ({priceCalculation ? `${((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€` : "montant calculé"}€ au total).
                   </>
                 )}
               </AlertDescription>
@@ -418,7 +509,7 @@ export function BookingStep4Payment({
       </Card>
 
       {/* Boutons de navigation */}
-      <div className="flex justify-between gap-3">
+      <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 pt-2 sm:pt-4">
         <Button 
           type="button" 
           variant="outline" 
@@ -426,6 +517,7 @@ export function BookingStep4Payment({
             e.preventDefault();
             onPrevious();
           }}
+          className="w-full sm:w-auto order-2 sm:order-1"
         >
           Précédent
         </Button>
@@ -436,7 +528,7 @@ export function BookingStep4Payment({
             handleCreateBooking();
           }}
           disabled={isCreatingBooking || isCalculatingPrice || !priceCalculation}
-          className="flex items-center gap-2"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto order-1 sm:order-2 text-sm sm:text-base h-11 sm:h-12"
         >
           {isCreatingBooking ? (
             <>
@@ -446,7 +538,9 @@ export function BookingStep4Payment({
           ) : bookingData.payNow ? (
             <>
               <CreditCard className="h-4 w-4" />
-              Confirmer et payer maintenant
+              {priceCalculation
+                ? `Confirmer et payer ${((priceCalculation.deposit || 0) + (priceCalculation.vehicleDeposit || 0)).toFixed(2)}€ maintenant`
+                : "Confirmer et payer maintenant"}
             </>
           ) : (
             <>
