@@ -66,9 +66,9 @@ export function getBookingCancellationRequestEmailTemplate({
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f3f4f6; padding:32px 0;">
             <tr>
               <td align="center">
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px; background-color:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 24px 60px -30px rgba(59,130,246,0.28); font-family:'Geist Sans', Arial, sans-serif;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px; background-color:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 24px 60px -30px rgba(249,115,22,0.28); font-family:'Geist Sans', Arial, sans-serif;">
                   <tr>
-                    <td align="center" style="background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%); padding:32px 24px;">
+                    <td align="center" style="background:linear-gradient(135deg,#f97316 0%,#ea580c 100%); padding:32px 24px;">
                       <p style="margin:0; text-transform:uppercase; letter-spacing:2px; font-size:12px; color:rgba(255,255,255,0.75); font-weight:600;">Demande reçue</p>
                       <h1 style="margin:12px 0 0; font-size:28px; line-height:1.3; color:#ffffff; font-weight:600;">Votre annulation est en cours d'étude</h1>
                       <p style="margin:8px 0 0; font-size:16px; color:rgba(255,255,255,0.85);">Référence <span style="font-weight:600;">${reference}</span></p>
@@ -106,8 +106,8 @@ export function getBookingCancellationRequestEmailTemplate({
                               <tr>
                                 <td>
                                   <p style="margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#475569; font-weight:600;">Agences</p>
-                                  <p style="margin:8px 0 0; font-size:14px; color:#1f2937;"><span style="font-weight:600; color:#2563eb;">Retrait :</span> ${locations.pickup}</p>
-                                  <p style="margin:6px 0 0; font-size:14px; color:#1f2937;"><span style="font-weight:600; color:#2563eb;">Retour :</span> ${locations.return}</p>
+                                  <p style="margin:8px 0 0; font-size:14px; color:#1f2937;"><span style="font-weight:600; color:#ea580c;">Retrait :</span> ${locations.pickup}</p>
+                                  <p style="margin:6px 0 0; font-size:14px; color:#1f2937;"><span style="font-weight:600; color:#ea580c;">Retour :</span> ${locations.return}</p>
                                 </td>
                               </tr>
                             </table>
@@ -149,7 +149,7 @@ export function getBookingCancellationRequestEmailTemplate({
                         </tr>
                       </table>
 
-                      <div style="background-color:#f8fafc; border:1px solid #bfdbfe; border-radius:18px; padding:18px 20px; margin-bottom:24px; font-size:13px; line-height:1.6; color:#1e3a8a;">
+                      <div style="background-color:#fff7ed; border:1px solid #fed7aa; border-radius:18px; padding:18px 20px; margin-bottom:24px; font-size:13px; line-height:1.6; color:#9a3412;">
                         <strong style="display:block; font-size:14px; margin-bottom:6px;">Politique d'annulation</strong>
                         ${policy}
                       </div>
@@ -160,7 +160,7 @@ export function getBookingCancellationRequestEmailTemplate({
 
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 28px;">
                         <tr>
-                          <td align="center" style="background-color:#2563eb; border-radius:9999px;">
+                          <td align="center" style="background-color:#f97316; border-radius:9999px;">
                             <a href="${dashboardUrl}" style="display:inline-block; padding:14px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">Suivre ma réservation</a>
                           </td>
                         </tr>
@@ -170,7 +170,7 @@ export function getBookingCancellationRequestEmailTemplate({
                         <tr>
                           <td>
                             <p style="margin:0 0 10px; font-size:13px; color:#64748b;">
-                              Besoin d'assistance immédiate ? Répondez à cet email ou contactez-nous au <span style="font-weight:600; color:#2563eb;">+33 1 23 45 67 89</span>.
+                              Besoin d'assistance immédiate ? Répondez à cet email ou contactez-nous au <span style="font-weight:600; color:#f97316;">+33 1 23 45 67 89</span>.
                             </p>
                             <p style="margin:0; font-size:13px; color:#64748b;">
                               Merci pour votre confiance.<br>

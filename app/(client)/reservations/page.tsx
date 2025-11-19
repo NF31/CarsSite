@@ -287,7 +287,11 @@ export default async function ClientReservationsPage({ searchParams }: ClientRes
     const startDate = new Date(booking.startDateISO);
     const endDate = new Date(booking.endDateISO);
     const canEdit =
-      startDate > now && booking.derivedStatus !== BookingStatus.PENDING && !booking.isCancellationPending;
+      startDate > now &&
+      booking.derivedStatus !== BookingStatus.PENDING &&
+      booking.derivedStatus !== BookingStatus.CANCELLED &&
+      booking.derivedStatus !== BookingStatus.COMPLETED &&
+      !booking.isCancellationPending;
     const canCancel =
       startDate > now &&
       !booking.isCancellationPending &&
