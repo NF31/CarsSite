@@ -8,6 +8,7 @@ import { PaymentPageClient } from "./PaymentPageClient";
 interface PaymentPageProps {
   searchParams: Promise<{
     bookingId?: string;
+    type?: string; // "deposit" | "full" | "authorization"
   }>;
 }
 
@@ -18,11 +19,13 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
     redirect("/login?redirect=/bookings/payment");
   }
 
-  const { bookingId } = await searchParams;
+  const { bookingId, type } = await searchParams;
 
   if (!bookingId) {
     redirect("/dashboard");
   }
+
+  const paymentType = type || "full"; // Par défaut, paiement complet
 
   // Récupérer la réservation
   const booking = await prisma.booking.findUnique({
@@ -71,11 +74,33 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
   }
 
   const { deposit: downPayment, securityDeposit } = priceResult.data;
-  const totalToPay = downPayment + securityDeposit;
-
-  // Si déjà payé, rediriger
-  if (booking.depositPaid >= downPayment) {
-    redirect(`/bookings/payment/success?booking_id=${booking.id}`);
+  
+  // Déterminer le montant à payer selon le type
+  let totalToPay: number;
+  let paymentDescription: string;
+  
+  if (paymentType === "deposit") {
+    // Acompte seulement
+    totalToPay = downPayment;
+    paymentDescription = `Acompte pour la réservation ${booking.reference}`;
+    
+    // Si l'acompte est déjà payé, rediriger
+    if (booking.depositPaid >= downPayment) {
+      redirect(`/bookings/payment/success?booking_id=${booking.id}`);
+    }
+  } else if (paymentType === "authorization") {
+    // Empreinte bancaire seulement (aucun paiement, juste blocage)
+    totalToPay = securityDeposit;
+    paymentDescription = `Empreinte bancaire pour la réservation ${booking.reference}`;
+  } else {
+    // Paiement complet (acompte + caution)
+    totalToPay = downPayment + securityDeposit;
+    paymentDescription = `Acompte et caution pour la réservation ${booking.reference}`;
+    
+    // Si déjà payé, rediriger
+    if (booking.depositPaid >= downPayment) {
+      redirect(`/bookings/payment/success?booking_id=${booking.id}`);
+    }
   }
 
   return (
@@ -97,6 +122,8 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
         totalToPay,
         remainingAmount: priceResult.data.remainingAmount,
       }}
+      paymentType={paymentType}
+      paymentDescription={paymentDescription}
     />
   );
 }
