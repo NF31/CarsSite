@@ -103,6 +103,8 @@ export async function POST(req: NextRequest) {
           endDate: true,
           status: true,
           modificationDepositDifference: true, // Pour détecter les paiements de modification
+          originalStartDate: true, // Pour vérifier si c'est une modification
+          originalEndDate: true, // Pour vérifier si c'est une modification
           vehicle: {
             select: {
               id: true,
@@ -386,11 +388,11 @@ export async function POST(req: NextRequest) {
         data: updateData,
         select: {
           id: true,
+          reference: true,
           status: true,
           depositPaid: true,
           securityDepositPaid: true,
           remainingAmount: true,
-          reference: true,
           totalPrice: true,
           startDate: true,
           endDate: true,
@@ -403,12 +405,30 @@ export async function POST(req: NextRequest) {
 
       console.log(`[Stripe Webhook] ✅ Réservation mise à jour avec succès`, {
         bookingId: updatedBooking.id,
+        reference: updatedBooking.reference,
         status: updatedBooking.status,
         depositPaid: `${(updatedBooking.depositPaid || 0).toFixed(2)}€`,
         securityDepositPaid: `${(updatedBooking.securityDepositPaid || 0).toFixed(2)}€`,
         remainingAmount: `${(updatedBooking.remainingAmount || 0).toFixed(2)}€`,
+        isModificationPayment,
         timestamp: new Date().toISOString(),
       });
+
+      // Log pour les notifications admin
+      if (isModificationPayment) {
+        console.log(`[Stripe Webhook] 🔔 Notification admin à créer pour paiement de modification`, {
+          bookingId: updatedBooking.id,
+          reference: updatedBooking.reference,
+          status: updatedBooking.status,
+          depositPaid: `${(updatedBooking.depositPaid || 0).toFixed(2)}€`,
+          hasOriginalStartDate: !!booking.originalStartDate,
+          hasOriginalEndDate: !!booking.originalEndDate,
+          originalStartDate: booking.originalStartDate?.toISOString() ?? "N/A",
+          originalEndDate: booking.originalEndDate?.toISOString() ?? "N/A",
+          note: "La réservation a originalStartDate/originalEndDate, donc une notification 'modificationPayment' sera créée dans les notifications admin",
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       // Créer un enregistrement de paiement AVANT l'envoi de l'email
       // Note: PaymentStatus n'a pas "AUTHORIZED", on utilise "PENDING" pour l'empreinte
@@ -594,6 +614,7 @@ export async function POST(req: NextRequest) {
               });
 
               // Construire modificationInfo pour l'email
+              // IMPORTANT: paymentConfirmed = true car le webhook est appelé APRÈS le paiement réussi
               const modificationInfo = originalTotalPrice != null && originalDepositPaid != null ? {
                 originalTotalPrice,
                 originalDepositPaid,
@@ -601,6 +622,7 @@ export async function POST(req: NextRequest) {
                 depositDifference: depositDifference ?? 0,
                 additionalPaymentAmount: roundedAmountPaid, // Montant payé (la différence)
                 securityDepositPaid,
+                paymentConfirmed: true, // ✅ Paiement confirmé (webhook appelé après paiement réussi)
               } : undefined;
 
               console.log(`[Stripe Webhook] 📧 Envoi de l'email de mise à jour (paiement supplémentaire)`, {

@@ -84,7 +84,7 @@ function truncateReference(reference: string) {
 }
 
 type NavbarNotificationItem = BookingNotificationItem & {
-  type?: "creation" | "modification" | "cancellation" | "payment";
+  type?: "creation" | "modification" | "cancellation" | "payment" | "modificationPayment";
   cancellationReason?: string | null;
   cancellationRequestedAt?: string | null;
   cancellationRefundRate?: number | null;
@@ -391,8 +391,11 @@ const handleViewNotification = (bookingId: string) => {
                       const requiresAction = booking.requiresAction !== false;
                       const isCancellation = booking.type === "cancellation";
                       const isPaymentNotification = booking.type === "payment";
+                      const isModificationPayment = booking.type === "modificationPayment";
                       const badgeLabel = isCancellation
                         ? "Annulation demandée"
+                        : isModificationPayment
+                        ? "Paiement modification reçu"
                         : isPaymentNotification
                         ? "Paiement reçu"
                         : "Validation requise";
@@ -468,6 +471,22 @@ const handleViewNotification = (bookingId: string) => {
                                   : booking.cancellationRefundRate === 0.5
                                   ? " Remboursement estimé : 50%."
                                   : " Aucun remboursement estimé."}
+                              </p>
+                            </div>
+                          ) : isModificationPayment ? (
+                            <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                              <p className="font-semibold flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Paiement supplémentaire de modification confirmé
+                              </p>
+                              <p className="mt-1">
+                                Le client a effectué le paiement supplémentaire pour la modification de dates.
+                              </p>
+                              <p className="mt-1">
+                                Acompte total payé : {formatCurrency(booking.depositPaid)}.
+                              </p>
+                              <p className="mt-1 text-blue-700">
+                                La réservation est confirmée avec les nouvelles dates, aucune action requise.
                               </p>
                             </div>
                           ) : isPaymentNotification ? (
