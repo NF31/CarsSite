@@ -170,29 +170,29 @@ export function PaymentPageClient({ booking, paymentDetails, paymentType = "full
                     </div>
                   )}
                   {paymentType === "full" && (
-                    <div className="space-y-3">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-sm text-muted-foreground">Acompte (30%)</span>
+                      <span className="font-semibold">{paymentDetails.downPayment.toFixed(2)}€</span>
+                    </div>
+                    {paymentDetails.securityDeposit > 0 && (
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-sm text-muted-foreground">Acompte (30%)</span>
-                        <span className="font-semibold">{paymentDetails.downPayment.toFixed(2)}€</span>
-                      </div>
-                      {paymentDetails.securityDeposit > 0 && (
-                        <div className="flex justify-between items-center py-2 border-b">
-                          <div className="flex items-center gap-2">
-                            <Shield className="h-4 w-4 text-amber-600" />
-                            <span className="text-sm text-muted-foreground">Caution de garantie</span>
-                          </div>
-                          <span className="font-semibold text-amber-600">
-                            {paymentDetails.securityDeposit.toFixed(2)}€
-                          </span>
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-amber-600" />
+                          <span className="text-sm text-muted-foreground">Caution de garantie</span>
                         </div>
-                      )}
-                      <div className="flex justify-between items-center pt-2">
-                        <span className="text-base font-semibold">Total à payer maintenant</span>
-                        <span className="text-2xl font-bold text-primary">
-                          {paymentDetails.totalToPay.toFixed(2)}€
+                        <span className="font-semibold text-amber-600">
+                          {paymentDetails.securityDeposit.toFixed(2)}€
                         </span>
                       </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-base font-semibold">Total à payer maintenant</span>
+                      <span className="text-2xl font-bold text-primary">
+                        {paymentDetails.totalToPay.toFixed(2)}€
+                      </span>
                     </div>
+                  </div>
                   )}
                   {paymentType === "authorization" && (
                     <div className="space-y-3">

@@ -38,6 +38,17 @@ interface BookingUpdateTemplateParams {
   dashboardUrl: string;
   ctaLabel: string;
   ctaMutedLabel?: string;
+  modificationInfo?: {
+    originalTotalPrice?: number;
+    originalDepositPaid?: number;
+    originalRemainingAmount?: number;
+    depositDifference?: number;
+    refundAmount?: number;
+    additionalPaymentAmount?: number;
+    paymentUrl?: string;
+    securityDepositPaid?: number;
+  };
+  rejectionReason?: string | null; // Message de refus de l'admin (pour les modifications refusées)
 }
 
 export function getBookingUpdateEmailTemplate({
@@ -58,11 +69,91 @@ export function getBookingUpdateEmailTemplate({
   dashboardUrl,
   ctaLabel,
   ctaMutedLabel,
+  modificationInfo,
+  rejectionReason,
 }: BookingUpdateTemplateParams) {
   const totalFormatted = formatCurrency(pricing.total);
   const depositFormatted = formatCurrency(pricing.deposit);
   const remainingFormatted = formatCurrency(pricing.remaining);
   const secondaryCtaLabel = ctaMutedLabel ?? "Besoin d'aide ? Contactez-nous";
+  
+  // Vérifier si c'est un refus (ne pas afficher la comparaison des prix dans ce cas)
+  const isRejection = rejectionReason != null && rejectionReason.trim() !== "";
+  
+  // Calculer les différences si modificationInfo est présent ET que ce n'est PAS un refus
+  // On vérifie que modificationInfo existe ET qu'il contient au moins une valeur significative
+  // On accepte même les valeurs à 0 car elles peuvent être valides (ex: remboursement complet)
+  // IMPORTANT: Vérifier aussi que les valeurs ne sont pas null (en plus de undefined)
+  // Simplifié: Si modificationInfo existe, on considère qu'on a des données de modification
+  // MAIS on ne montre pas la comparaison si c'est un refus
+  const hasModificationInfo = !isRejection && !!modificationInfo && (
+    modificationInfo.originalTotalPrice != null ||
+    modificationInfo.originalDepositPaid != null ||
+    modificationInfo.depositDifference != null ||
+    modificationInfo.originalRemainingAmount != null ||
+    modificationInfo.refundAmount != null ||
+    modificationInfo.additionalPaymentAmount != null ||
+    modificationInfo.securityDepositPaid != null ||
+    modificationInfo.paymentUrl != null
+  );
+  
+  // Log pour déboguer
+  if (modificationInfo) {
+    console.log(`\n📧 [Email Template] ==========================================`);
+    console.log(`📧 [Email Template] Vérification de modificationInfo`);
+    console.log(`📧 [Email Template] ==========================================`);
+    console.log(`📧 [Email Template] modificationInfo existe: ${!!modificationInfo}`);
+    console.log(`📧 [Email Template] hasModificationInfo: ${hasModificationInfo}`);
+    console.log(`📧 [Email Template] Détails:`);
+    console.log(`   - originalTotalPrice: ${modificationInfo.originalTotalPrice ?? "undefined"} (type: ${typeof modificationInfo.originalTotalPrice})`);
+    console.log(`   - originalDepositPaid: ${modificationInfo.originalDepositPaid ?? "undefined"} (type: ${typeof modificationInfo.originalDepositPaid})`);
+    console.log(`   - depositDifference: ${modificationInfo.depositDifference ?? "undefined"} (type: ${typeof modificationInfo.depositDifference})`);
+    console.log(`   - originalRemainingAmount: ${modificationInfo.originalRemainingAmount ?? "undefined"} (type: ${typeof modificationInfo.originalRemainingAmount})`);
+    console.log(`   - refundAmount: ${modificationInfo.refundAmount ?? "undefined"} (type: ${typeof modificationInfo.refundAmount})`);
+    console.log(`   - additionalPaymentAmount: ${modificationInfo.additionalPaymentAmount ?? "undefined"} (type: ${typeof modificationInfo.additionalPaymentAmount})`);
+    console.log(`   - securityDepositPaid: ${modificationInfo.securityDepositPaid ?? "undefined"} (type: ${typeof modificationInfo.securityDepositPaid})`);
+    console.log(`📧 [Email Template] ==========================================`);
+  } else {
+    console.log(`\n📧 [Email Template] ⚠️  modificationInfo est undefined/null`);
+  }
+  
+  const priceDifference = hasModificationInfo && modificationInfo?.originalTotalPrice != null
+    ? pricing.total - modificationInfo.originalTotalPrice
+    : null;
+  
+  const depositDiff = modificationInfo?.depositDifference != null ? modificationInfo.depositDifference : null;
+  
+  // Log pour déboguer
+  if (modificationInfo) {
+    console.log(`📧 [Email Template] Calculs de différences:`);
+    console.log(`   - pricing.total: ${pricing.total}€`);
+    console.log(`   - modificationInfo.originalTotalPrice: ${modificationInfo.originalTotalPrice ?? "undefined"}€`);
+    console.log(`   - priceDifference: ${priceDifference !== null ? priceDifference + "€" : "null"}`);
+    console.log(`   - depositDiff: ${depositDiff !== null ? depositDiff + "€" : "null"}`);
+    console.log(`   - hasModificationInfo: ${hasModificationInfo}`);
+    console.log(`📧 [Email Template] depositDiff calculé:`, {
+      depositDifference: modificationInfo.depositDifference,
+      depositDiff: depositDiff,
+      refundAmount: modificationInfo.refundAmount,
+    });
+  }
+  const remainingDiff = hasModificationInfo && 
+    modificationInfo?.originalRemainingAmount != null
+    ? pricing.remaining - modificationInfo.originalRemainingAmount
+    : null;
+
+  // Log final pour vérifier les valeurs avant génération du HTML
+  console.log(`\n📧 [Email Template] ==========================================`);
+  console.log(`📧 [Email Template] 🎯 GÉNÉRATION DU HTML`);
+  console.log(`📧 [Email Template] ==========================================`);
+  console.log(`📧 [Email Template] hasModificationInfo: ${hasModificationInfo}`);
+  console.log(`📧 [Email Template] priceDifference: ${priceDifference !== null ? priceDifference + "€" : "null"}`);
+  console.log(`📧 [Email Template] depositDiff: ${depositDiff !== null ? depositDiff + "€" : "null"}`);
+  console.log(`📧 [Email Template] remainingDiff: ${remainingDiff !== null ? remainingDiff + "€" : "null"}`);
+  if (modificationInfo) {
+    console.log(`📧 [Email Template] modificationInfo.paymentUrl: ${modificationInfo.paymentUrl ? "✅ Présent" : "❌ Absent"}`);
+  }
+  console.log(`📧 [Email Template] ==========================================\n`);
 
   return {
     html: `
@@ -90,6 +181,17 @@ export function getBookingUpdateEmailTemplate({
                     <td style="padding:28px 24px 32px; color:#1f2937;">
                       <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${greeting} ${name},</h2>
                       <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#4b5563;">${statusMessage}</p>
+
+                      ${rejectionReason ? `
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fef2f2; border:1px solid #fecaca; border-radius:16px; padding:18px 20px; margin:0 0 20px;">
+                        <tr>
+                          <td>
+                            <p style="margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:#991b1b; font-weight:600;">Message de notre équipe</p>
+                            <p style="margin:0; font-size:14px; line-height:1.6; color:#7f1d1d;">${rejectionReason}</p>
+                          </td>
+                        </tr>
+                      </table>
+                      ` : ""}
 
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px;">
                         <tr>
@@ -137,6 +239,31 @@ export function getBookingUpdateEmailTemplate({
                         <tr>
                           <td style="padding:22px; color:#ffffff;">
                             <h3 style="margin:0 0 14px; font-size:17px; font-weight:600;">Détails financiers</h3>
+                            ${hasModificationInfo ? `
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                              <tr>
+                                <td style="padding-bottom:12px;">
+                                  <p style="margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.65); font-weight:600;">Montant total</p>
+                                  <p style="margin:4px 0 0; font-size:14px; color:rgba(255,255,255,0.7); text-decoration:line-through;">${modificationInfo?.originalTotalPrice !== undefined ? formatCurrency(modificationInfo.originalTotalPrice) : "N/A"}</p>
+                                  <p style="margin:4px 0 0; font-size:20px; font-weight:600; color:#ffffff;">${totalFormatted}</p>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding-bottom:12px;">
+                                  <p style="margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.65); font-weight:600;">Acompte versé</p>
+                                  <p style="margin:4px 0 0; font-size:14px; color:rgba(255,255,255,0.7); text-decoration:line-through;">${modificationInfo?.originalDepositPaid !== undefined ? formatCurrency(modificationInfo.originalDepositPaid) : "N/A"}</p>
+                                  <p style="margin:4px 0 0; font-size:16px; color:#ffffff;">${depositFormatted}</p>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <p style="margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.65); font-weight:600;">Reste à payer</p>
+                                  <p style="margin:4px 0 0; font-size:14px; color:rgba(255,255,255,0.7); text-decoration:line-through;">${modificationInfo?.originalRemainingAmount !== undefined ? formatCurrency(modificationInfo.originalRemainingAmount) : "N/A"}</p>
+                                  <p style="margin:4px 0 0; font-size:16px; color:#ffffff;">${remainingFormatted}</p>
+                                </td>
+                              </tr>
+                            </table>
+                            ` : `
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                               <tr>
                                 <td style="padding-bottom:12px;">
@@ -157,9 +284,152 @@ export function getBookingUpdateEmailTemplate({
                                 </td>
                               </tr>
                             </table>
+                            `}
                           </td>
                         </tr>
                       </table>
+
+                      ${hasModificationInfo ? `
+                      <!-- DEBUG: hasModificationInfo=${hasModificationInfo}, modificationInfo=${modificationInfo ? "présent" : "absent"} -->
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fff7ed; border:2px solid #fbbf24; border-radius:20px; margin-bottom:28px;">
+                        <tr>
+                          <td style="padding:22px;">
+                            <h3 style="margin:0 0 16px; font-size:17px; font-weight:600; color:#92400e;">📊 Comparaison des prix</h3>
+                            ${priceDifference !== null ? `
+                            <div style="margin-bottom:16px; padding:14px; background-color:#ffffff; border-radius:12px; border:1px solid #fbbf24;">
+                              <p style="margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#92400e; font-weight:600;">${priceDifference > 0 ? "📈 Augmentation du prix total" : "📉 Réduction du prix total"}</p>
+                              <p style="margin:0; font-size:24px; font-weight:700; color:${priceDifference > 0 ? "#dc2626" : "#16a34a"};">
+                                ${priceDifference > 0 ? "+" : ""}${formatCurrency(priceDifference)}
+                              </p>
+                            </div>
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:16px;">
+                              <tr>
+                                <td style="padding-bottom:10px;">
+                                  <p style="margin:0; font-size:12px; color:#92400e; font-weight:600;">Prix actuel :</p>
+                                  <p style="margin:4px 0 0; font-size:14px; color:#1f2937;">${modificationInfo?.originalTotalPrice != null ? formatCurrency(modificationInfo.originalTotalPrice) : "N/A"}</p>
+                                </td>
+                                <td style="padding-bottom:10px; text-align:right;">
+                                  <p style="margin:0; font-size:12px; color:#92400e; font-weight:600;">Nouveau prix :</p>
+                                  <p style="margin:4px 0 0; font-size:14px; font-weight:600; color:#1f2937;">${totalFormatted}</p>
+                                </td>
+                              </tr>
+                            </table>
+                            ` : ""}
+                            ${depositDiff !== null && depositDiff !== 0 ? `
+                            <div style="margin-bottom:16px; padding:14px; background-color:#ffffff; border-radius:12px; border:1px solid ${depositDiff > 0 ? "#fbbf24" : "#86efac"};">
+                              <p style="margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#92400e; font-weight:600;">Différence d'acompte</p>
+                              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                  <td style="padding-bottom:8px;">
+                                    <p style="margin:0; font-size:12px; color:#64748b;">Acompte actuel (30%) :</p>
+                                    <p style="margin:4px 0 0; font-size:14px; color:#1f2937;">${modificationInfo?.originalDepositPaid != null ? formatCurrency(modificationInfo.originalDepositPaid) : "N/A"}</p>
+                                  </td>
+                                  <td style="padding-bottom:8px; text-align:right;">
+                                    <p style="margin:0; font-size:12px; color:#64748b;">Nouvel acompte (30%) :</p>
+                                    <p style="margin:4px 0 0; font-size:14px; font-weight:600; color:#1f2937;">${depositFormatted}</p>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colspan="2" style="padding-top:8px; border-top:1px solid #e2e8f0;">
+                                    <p style="margin:0; font-size:14px; font-weight:600; color:${depositDiff > 0 ? "#dc2626" : "#16a34a"};">
+                                      ${depositDiff > 0 ? "+" : ""}${formatCurrency(depositDiff)}
+                                    </p>
+                                  </td>
+                                </tr>
+                              </table>
+                              ${depositDiff > 0 ? `
+                              ${modificationInfo?.paymentUrl ? `
+                              <!-- Admin a validé : afficher le bouton de paiement -->
+                              <div style="margin-top:12px; padding:12px; background-color:#fef3c7; border-radius:8px; border:1px solid #fbbf24;">
+                                <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#92400e;">💳 Paiement supplémentaire requis</p>
+                                <p style="margin:0; font-size:12px; color:#92400e;">
+                                  Vous avez déjà payé ${modificationInfo?.originalDepositPaid != null ? formatCurrency(modificationInfo.originalDepositPaid) : "N/A"} d'acompte.
+                                </p>
+                                <p style="margin:8px 0 0; font-size:14px; font-weight:600; color:#92400e; text-align:center;">
+                                  ✅ Vous devrez payer uniquement la différence : ${formatCurrency(depositDiff)}
+                                </p>
+                                ${modificationInfo?.securityDepositPaid && modificationInfo.securityDepositPaid > 0 ? `
+                                <p style="margin:8px 0 0; font-size:11px; color:#92400e;">
+                                  ℹ️ La caution de garantie (${formatCurrency(modificationInfo.securityDepositPaid)}) a déjà été payée et ne sera pas redemandée.
+                                </p>
+                                ` : ""}
+                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:12px auto 0;">
+                                  <tr>
+                                    <td align="center" style="background-color:#f97316; border-radius:8px;">
+                                      <a href="${modificationInfo.paymentUrl}" style="display:inline-block; padding:10px 20px; font-size:14px; font-weight:600; color:#ffffff; text-decoration:none;">Payer maintenant ${formatCurrency(depositDiff)}</a>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </div>
+                              ` : `
+                              <!-- Demande en attente : informer qu'un paiement sera demandé après validation -->
+                              <div style="margin-top:12px; padding:12px; background-color:#fef3c7; border-radius:8px; border:1px solid #fbbf24;">
+                                <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#92400e;">💳 Paiement supplémentaire prévu</p>
+                                <p style="margin:0; font-size:12px; color:#92400e;">
+                                  Vous avez déjà payé ${modificationInfo?.originalDepositPaid != null ? formatCurrency(modificationInfo.originalDepositPaid) : "N/A"} d'acompte.
+                                </p>
+                                <p style="margin:8px 0 0; font-size:14px; font-weight:600; color:#92400e; text-align:center;">
+                                  ⏳ Un paiement supplémentaire de ${formatCurrency(depositDiff)} sera demandé après validation de votre demande par notre équipe.
+                                </p>
+                                ${modificationInfo?.securityDepositPaid && modificationInfo.securityDepositPaid > 0 ? `
+                                <p style="margin:8px 0 0; font-size:11px; color:#92400e;">
+                                  ℹ️ La caution de garantie (${formatCurrency(modificationInfo.securityDepositPaid)}) a déjà été payée et ne sera pas redemandée.
+                                </p>
+                                ` : ""}
+                              </div>
+                              `}
+                              ` : depositDiff < 0 ? `
+                              <div style="margin-top:12px; padding:12px; background-color:#d1fae5; border-radius:8px; border:1px solid #86efac;">
+                                <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#065f46;">💰 Remboursement ${modificationInfo?.refundAmount ? "effectué" : "prévu"}</p>
+                                <p style="margin:0; font-size:12px; color:#065f46;">
+                                  ${modificationInfo?.refundAmount 
+                                    ? `Un remboursement de ${formatCurrency(Math.abs(depositDiff))} a été effectué et sera crédité sur votre compte sous 5-10 jours ouvrés.`
+                                    : `Un remboursement de ${formatCurrency(Math.abs(depositDiff))} sera effectué sous 5-10 jours ouvrés.`
+                                  }
+                                </p>
+                                ${modificationInfo?.refundAmount ? `
+                                <p style="margin:8px 0 0; font-size:11px; color:#065f46; font-style:italic;">
+                                  ✅ Le remboursement a été initié automatiquement via Stripe.
+                                </p>
+                                ` : ""}
+                              </div>
+                              ` : ""}
+                            </div>
+                            ` : ""}
+                            ${remainingDiff !== null && remainingDiff !== 0 ? `
+                            <div style="padding:14px; background-color:#ffffff; border-radius:12px; border:1px solid ${remainingDiff > 0 ? "#fbbf24" : "#86efac"};">
+                              <p style="margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#92400e; font-weight:600;">Différence de solde</p>
+                              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                  <td style="padding-bottom:8px;">
+                                    <p style="margin:0; font-size:12px; color:#64748b;">Ancien solde à payer :</p>
+                                    <p style="margin:4px 0 0; font-size:14px; color:#1f2937;">${modificationInfo?.originalRemainingAmount != null ? formatCurrency(modificationInfo.originalRemainingAmount) : "N/A"}</p>
+                                  </td>
+                                  <td style="padding-bottom:8px; text-align:right;">
+                                    <p style="margin:0; font-size:12px; color:#64748b;">Nouveau solde à payer :</p>
+                                    <p style="margin:4px 0 0; font-size:14px; font-weight:600; color:#1f2937;">${remainingFormatted}</p>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colspan="2" style="padding-top:8px; border-top:1px solid #e2e8f0;">
+                                    <p style="margin:0; font-size:14px; font-weight:600; color:${remainingDiff > 0 ? "#dc2626" : "#16a34a"};">
+                                      ${remainingDiff > 0 ? "+" : ""}${formatCurrency(remainingDiff)}
+                                    </p>
+                                  </td>
+                                </tr>
+                              </table>
+                              ${remainingDiff > 0 ? `
+                              <p style="margin:12px 0 0; font-size:12px; color:#92400e;">
+                                ⚠️ Solde à payer augmenté<br>
+                                Vous devrez payer ${formatCurrency(remainingDiff)} de plus à la remise du véhicule qu'initialement prévu.
+                              </p>
+                              ` : ""}
+                            </div>
+                            ` : ""}
+                          </td>
+                        </tr>
+                      </table>
+                      ` : ""}
 
                       <p style="margin:0 0 22px; font-size:14px; line-height:1.6; color:#475569;">
                         Vous pouvez consulter les documents mis à jour et suivre l'évolution de votre réservation depuis votre espace client sécurisé.
@@ -226,5 +496,4 @@ L’équipe CarRental
 `,
   };
 }
-
 

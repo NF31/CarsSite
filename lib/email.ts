@@ -370,6 +370,17 @@ interface BookingUpdateEmailParams {
     pickup: string;
     return: string;
   };
+  modificationInfo?: {
+    originalTotalPrice?: number;
+    originalDepositPaid?: number;
+    originalRemainingAmount?: number;
+    depositDifference?: number;
+    refundAmount?: number;
+    additionalPaymentAmount?: number;
+    paymentUrl?: string;
+    securityDepositPaid?: number;
+  };
+  rejectionReason?: string | null; // Message de refus de l'admin (pour les modifications refusées)
 }
 
 export async function sendBookingUpdateEmail({
@@ -379,7 +390,20 @@ export async function sendBookingUpdateEmail({
   booking,
   vehicle,
   locations,
+  modificationInfo,
+  rejectionReason,
 }: BookingUpdateEmailParams) {
+  // Log pour déboguer
+  if (modificationInfo) {
+    console.log(`\n📧 [Email] modificationInfo reçu dans sendBookingUpdateEmail:`);
+    console.log(`   ${JSON.stringify(modificationInfo, null, 2)}`);
+    console.log(`   - originalTotalPrice: ${modificationInfo.originalTotalPrice ?? "undefined/null"}`);
+    console.log(`   - originalDepositPaid: ${modificationInfo.originalDepositPaid ?? "undefined/null"}`);
+    console.log(`   - depositDifference: ${modificationInfo.depositDifference ?? "undefined/null"}`);
+  } else {
+    console.log(`\n📧 [Email] modificationInfo est undefined/null`);
+  }
+
   if (!hasEmailCredentials) {
     console.warn(
       "⚠️  Email credentials non configurés. L'email de mise à jour de réservation n'a pas pu être envoyé."
@@ -403,7 +427,9 @@ export async function sendBookingUpdateEmail({
         booking,
         vehicle,
         locations,
-      });
+        modificationInfo, // ✅ IMPORTANT: Passer modificationInfo à la queue
+        rejectionReason, // ✅ Passer le motif de refus si présent
+      } as Parameters<typeof queueBookingUpdateEmail>[0]);
       if (result.success && result.queued) {
         return { success: true, queued: true, messageId: undefined };
       }
@@ -424,8 +450,26 @@ export async function sendBookingUpdateEmail({
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const dashboardUrl = `${baseUrl}/client/dashboard`;
 
+  const bookingStatus = booking.status ?? BookingStatus.PENDING;
+
+  // Détecter si c'est un refus de modification (rejectionReason présent)
+  const isRejection = rejectionReason != null && rejectionReason.trim() !== "";
+  
+  // Log pour déboguer
+  console.log(`\n📧 [Email] Détection de refus:`);
+  console.log(`   - rejectionReason: ${rejectionReason ?? "null/undefined"}`);
+  console.log(`   - isRejection: ${isRejection}`);
+  console.log(`   - bookingStatus: ${bookingStatus}`);
+  console.log(`   - modificationInfo présent: ${!!modificationInfo}`);
+
+  // Détecter si c'est un PENDING avec paiement nécessaire (admin a validé mais client doit payer)
+  const isPendingWithPayment = bookingStatus === BookingStatus.PENDING && 
+    modificationInfo?.paymentUrl != null && 
+    modificationInfo?.additionalPaymentAmount != null && 
+    modificationInfo.additionalPaymentAmount > 0;
+
   const statusLabels: Record<BookingStatus, string> = {
-    [BookingStatus.PENDING]: "En attente",
+    [BookingStatus.PENDING]: isPendingWithPayment ? "En attente de paiement" : "En attente",
     [BookingStatus.CONFIRMED]: "Confirmée",
     [BookingStatus.IN_PROGRESS]: "En cours",
     [BookingStatus.COMPLETED]: "Terminée",
@@ -440,13 +484,17 @@ export async function sendBookingUpdateEmail({
     [BookingStatus.CANCELLED]: { text: "#991b1b", background: "#fee2e2" },
   };
 
-  const bookingStatus = booking.status ?? BookingStatus.PENDING;
-
   const statusMessages: Record<BookingStatus, string> = {
     [BookingStatus.PENDING]:
-      "Votre demande de modification a bien été prise en compte et reste en attente de validation. Nous reviendrons vers vous sous peu.",
+      isPendingWithPayment
+        ? "Bonne nouvelle ! Nous avons validé votre demande de modification. Pour finaliser votre réservation, veuillez effectuer le paiement supplémentaire requis."
+        : "Votre demande de modification a bien été prise en compte et reste en attente de validation. Nous reviendrons vers vous sous peu.",
     [BookingStatus.CONFIRMED]:
-      "Bonne nouvelle ! Votre réservation a été confirmée. Toutes les informations ci-dessous sont désormais validées. Votre véhicule vous attend pour la période indiquée.",
+      isRejection
+        ? "Nous sommes désolés : nous n'avons pas pu accepter votre demande de modification. Les dates originales ont été restaurées et votre réservation reste confirmée avec les informations initiales."
+        : modificationInfo
+        ? "Bonne nouvelle ! Nous avons validé votre demande de modification. Les nouvelles dates ainsi que les informations ci-dessous sont désormais confirmées."
+        : "Bonne nouvelle ! Votre réservation a été confirmée. Toutes les informations ci-dessous sont désormais validées. Votre véhicule vous attend pour la période indiquée.",
     [BookingStatus.IN_PROGRESS]:
       "Les nouvelles dates de votre réservation ont été intégrées. Votre véhicule vous attend pour la période indiquée ci-dessous.",
     [BookingStatus.COMPLETED]:
@@ -469,21 +517,39 @@ export async function sendBookingUpdateEmail({
     }
   > = {
     [BookingStatus.PENDING]: {
-      title: "Modification en attente",
-      subtitle: "Nous traitons votre demande et reviendrons vers vous rapidement.",
-      badge: "Demande reçue",
-      gradientFrom: "#fbbf24",
-      gradientTo: "#f59e0b",
+      title: isPendingWithPayment 
+        ? "Paiement supplémentaire requis" 
+        : "Modification en attente",
+      subtitle: isPendingWithPayment
+        ? "Votre demande est validée ! Effectuez le paiement pour finaliser votre réservation."
+        : "Nous traitons votre demande et reviendrons vers vous rapidement.",
+      badge: isPendingWithPayment 
+        ? "Paiement requis" 
+        : "Demande reçue",
+      gradientFrom: isPendingWithPayment ? "#f59e0b" : "#fbbf24",
+      gradientTo: isPendingWithPayment ? "#d97706" : "#f59e0b",
       ctaLabel: "Suivre ma réservation",
       ctaMutedLabel: "Besoin d'aide ? Répondez directement à ce message.",
     },
     [BookingStatus.CONFIRMED]: {
-      title: "Votre réservation est confirmée !",
-      subtitle: "Toutes les informations sont validées, retrouvez le détail ci-dessous.",
-      badge: "Réservation confirmée",
-      gradientFrom: "#0ea5e9",
-      gradientTo: "#0284c7",
-      ctaLabel: "Voir ma réservation",
+      title: isRejection 
+        ? "Votre demande de modification a été refusée"
+        : modificationInfo 
+        ? "Votre demande est validée !" 
+        : "Votre réservation est confirmée !",
+      subtitle: isRejection
+        ? "Les dates originales ont été restaurées. Votre réservation reste confirmée avec les informations initiales."
+        : modificationInfo 
+        ? "Les nouvelles dates sont confirmées, retrouvez le détail ci-dessous."
+        : "Toutes les informations sont validées, retrouvez le détail ci-dessous.",
+      badge: isRejection 
+        ? "Demande refusée" 
+        : modificationInfo 
+        ? "Demande acceptée" 
+        : "Réservation confirmée",
+      gradientFrom: isRejection ? "#ef4444" : "#0ea5e9",
+      gradientTo: isRejection ? "#b91c1c" : "#0284c7",
+      ctaLabel: "Voir la réservation mise à jour",
     },
     [BookingStatus.IN_PROGRESS]: {
       title: "Votre trajet démarre bientôt",
@@ -514,6 +580,47 @@ export async function sendBookingUpdateEmail({
 
   const hero = heroContent[bookingStatus];
 
+  // Générer le sujet de l'email selon le statut et le contexte
+  const getEmailSubject = (): string => {
+    const reference = booking.reference;
+    
+    // Selon le statut
+    switch (bookingStatus) {
+      case BookingStatus.PENDING:
+        // Si c'est un PENDING avec paiement requis (admin a validé mais client doit payer)
+        if (isPendingWithPayment) {
+          return `Demande acceptée - Réservation ${reference}`;
+        }
+        return `Demande de modification reçue - Réservation ${reference}`;
+      case BookingStatus.CONFIRMED:
+        // Si c'est un refus de modification (rejectionReason présent)
+        if (isRejection) {
+          return `Demande refusée - Réservation ${reference}`;
+        }
+        // Si c'est un paiement supplémentaire confirmé (modificationInfo avec additionalPaymentAmount)
+        if (modificationInfo?.additionalPaymentAmount != null && modificationInfo.additionalPaymentAmount > 0) {
+          return `Paiement supplémentaire confirmé - Réservation ${reference}`;
+        }
+        // Si c'est un remboursement effectué (modificationInfo avec refundAmount)
+        if (modificationInfo?.refundAmount != null && modificationInfo.refundAmount > 0) {
+          return `Remboursement effectué - Réservation ${reference}`;
+        }
+        // Si c'est une modification validée (modificationInfo présent)
+        if (modificationInfo) {
+          return `Demande acceptée - Réservation ${reference}`;
+        }
+        return `Réservation confirmée - ${reference}`;
+      case BookingStatus.CANCELLED:
+        return `Demande refusée - Réservation ${reference}`;
+      case BookingStatus.IN_PROGRESS:
+        return `Réservation mise à jour - ${reference}`;
+      case BookingStatus.COMPLETED:
+        return `Réservation finalisée - ${reference}`;
+      default:
+        return `Votre réservation ${reference} a été mise à jour`;
+    }
+  };
+
   const template = getBookingUpdateEmailTemplate({
     greeting,
     name,
@@ -540,13 +647,18 @@ export async function sendBookingUpdateEmail({
     dashboardUrl,
     ctaLabel: hero.ctaLabel,
     ctaMutedLabel: hero.ctaMutedLabel,
+    // Ne pas passer modificationInfo si c'est un refus (pour éviter d'afficher la comparaison des prix)
+    modificationInfo: isRejection ? undefined : modificationInfo,
+    rejectionReason,
   });
+
+  const emailSubject = getEmailSubject();
 
   try {
     const info = await transporter.sendMail({
       from: `"CarRental" <${process.env.GMAIL_USER}>`,
       to,
-      subject: `Votre réservation ${booking.reference} a été mise à jour`,
+      subject: emailSubject,
       html: template.html,
       text: template.text,
     });

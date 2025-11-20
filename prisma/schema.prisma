@@ -257,6 +257,14 @@ model Booking {
   cancellationRequestedAt     DateTime?
   cancellationRequestedRefundRate Float?
   cancellationPreviousStatus  BookingStatus?
+  modificationRequested       Boolean       @default(false)
+  modificationRequestedAt     DateTime?
+  originalStartDate            DateTime?
+  originalEndDate              DateTime?
+  originalTotalPrice           Float?
+  originalDepositPaid          Float?
+  modificationDepositDifference Float?
+  modificationRejectionReason  String? // Message de refus de l'admin pour une modification
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
