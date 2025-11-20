@@ -76,6 +76,15 @@ export interface BookingDetail {
   cancellationRequestedRefundRate: number | null;
   cancellationPreviousStatus: BookingStatus | null;
   cancelledAt: string | null;
+  modificationRequested: boolean;
+  modificationRequestedAt: string | null;
+  originalStartDate: string | null;
+  originalEndDate: string | null;
+  originalTotalPrice: number | null;
+  originalDepositPaid: number | null;
+  modificationDepositDifference: number | null;
+  securityDepositPaid: number;
+  cancellationRejectionReason: string | null;
   createdAt: string;
   updatedAt: string;
   user: BookingDetailUser;
@@ -147,6 +156,15 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
         cancellationRequestedRefundRate: true,
         cancellationPreviousStatus: true,
         cancelledAt: true,
+        modificationRequested: true,
+        modificationRequestedAt: true,
+        originalStartDate: true,
+        originalEndDate: true,
+        originalTotalPrice: true,
+        originalDepositPaid: true,
+        modificationDepositDifference: true,
+        securityDepositPaid: true,
+        cancellationRejectionReason: true,
         createdAt: true,
         updatedAt: true,
         user: {
@@ -263,6 +281,21 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
       cancellationRequestedRefundRate: booking.cancellationRequestedRefundRate ?? null,
       cancellationPreviousStatus: booking.cancellationPreviousStatus ?? null,
       cancelledAt: booking.cancelledAt ? toDate(booking.cancelledAt).toISOString() : null,
+      modificationRequested: booking.modificationRequested ?? false,
+      modificationRequestedAt: booking.modificationRequestedAt
+        ? toDate(booking.modificationRequestedAt).toISOString()
+        : null,
+      originalStartDate: booking.originalStartDate
+        ? toDate(booking.originalStartDate).toISOString()
+        : null,
+      originalEndDate: booking.originalEndDate
+        ? toDate(booking.originalEndDate).toISOString()
+        : null,
+      originalTotalPrice: booking.originalTotalPrice ?? null,
+      originalDepositPaid: booking.originalDepositPaid ?? null,
+      modificationDepositDifference: booking.modificationDepositDifference ?? null,
+      securityDepositPaid: booking.securityDepositPaid ?? 0,
+      cancellationRejectionReason: booking.cancellationRejectionReason ?? null,
       createdAt: toDate(booking.createdAt).toISOString(),
       updatedAt: toDate(booking.updatedAt).toISOString(),
       user: {
