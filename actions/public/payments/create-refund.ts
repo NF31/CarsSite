@@ -3,6 +3,12 @@
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 
+interface PaymentMetadata {
+  isModificationPayment?: boolean;
+  stripePaymentIntentId?: string;
+  [key: string]: unknown;
+}
+
 export interface CreateRefundInput {
   bookingId: string;
   amount: number; // Montant en euros
@@ -76,9 +82,9 @@ export async function createRefundAction(
             createdAt: true,
           },
           orderBy: {
-            createdAt: "desc",
+            createdAt: "asc", // Ordre chronologique pour trouver le paiement initial
           },
-          take: 1, // Prendre le paiement le plus récent
+          // Récupérer TOUS les paiements, pas seulement le dernier
         },
       },
     });
@@ -105,6 +111,18 @@ export async function createRefundAction(
       originalDepositPaid: `${(booking.originalDepositPaid || 0).toFixed(2)}€`,
       effectiveDepositPaid: `${effectiveDepositPaid.toFixed(2)}€`,
       paymentsFound: booking.payments.length,
+      allPayments: booking.payments.map(p => {
+        const metadata = p.metadata as PaymentMetadata;
+        return {
+          id: p.id,
+          amount: `${p.amount.toFixed(2)}€`,
+          createdAt: p.createdAt.toISOString(),
+          isModificationPayment: metadata?.isModificationPayment === true,
+          hasIsModificationPayment: metadata?.isModificationPayment !== undefined,
+          metadataKeys: p.metadata ? Object.keys(p.metadata as object) : [],
+          fullMetadata: p.metadata, // Pour debug complet
+        };
+      }),
       timestamp: new Date().toISOString(),
     });
 
@@ -168,13 +186,86 @@ export async function createRefundAction(
       };
     }
 
-    const payment = booking.payments[0];
+    // Pour les modifications de réservation, trouver le paiement initial
+    // (celui qui correspond à originalDepositPaid, pas les paiements de modification)
+    let payment = booking.payments[0];
+    
+    if (input.reason === "booking_modification" && booking.originalDepositPaid) {
+      console.log(`[Refund] 🔍 Recherche du paiement initial pour modification`, {
+        originalDepositPaid: `${booking.originalDepositPaid.toFixed(2)}€`,
+        totalPayments: booking.payments.length,
+        allPayments: booking.payments.map((p, index) => {
+          const metadata = p.metadata as PaymentMetadata;
+          return {
+            index,
+            id: p.id,
+            amount: `${p.amount.toFixed(2)}€`,
+            createdAt: p.createdAt.toISOString(),
+            isModificationPayment: metadata?.isModificationPayment === true,
+            paymentType: metadata?.paymentType || "N/A",
+            differenceFromOriginal: `${Math.abs(p.amount - booking.originalDepositPaid!).toFixed(2)}€`,
+            matchesOriginal: Math.abs(p.amount - booking.originalDepositPaid!) < 5, // Tolérance de 5€
+          };
+        }),
+        timestamp: new Date().toISOString(),
+      });
+
+      // 1. Chercher d'abord un paiement qui correspond exactement à originalDepositPaid (tolérance 5€)
+      // et qui n'est PAS un paiement de modification
+      // IMPORTANT: Les anciens paiements peuvent ne pas avoir isModificationPayment, donc on considère
+      // qu'un paiement sans isModificationPayment OU avec isModificationPayment === false est un paiement initial
+      let initialPayment = booking.payments.find(p => {
+        const metadata = p.metadata as PaymentMetadata;
+        const isModificationPayment = metadata?.isModificationPayment === true; // Seulement true exclut
+        const matchesAmount = Math.abs(p.amount - booking.originalDepositPaid!) < 5; // Tolérance de 5€
+        // Un paiement est initial s'il n'a PAS isModificationPayment: true
+        return !isModificationPayment && matchesAmount;
+      });
+
+      // 2. Si pas trouvé, prendre le paiement le plus ancien qui n'est PAS une modification
+      // (c'est-à-dire qui n'a pas isModificationPayment: true)
+      if (!initialPayment) {
+        initialPayment = booking.payments.find(p => {
+          const metadata = p.metadata as PaymentMetadata;
+          // Seulement exclure si isModificationPayment est explicitement true
+          return metadata?.isModificationPayment !== true;
+        });
+      }
+
+      // 3. Si toujours pas trouvé, prendre le premier paiement (le plus ancien)
+      if (initialPayment) {
+        payment = initialPayment;
+        const metadata = payment.metadata as PaymentMetadata;
+        console.log(`[Refund] ✅ Paiement initial sélectionné pour la modification`, {
+          paymentId: payment.id,
+          amount: `${payment.amount.toFixed(2)}€`,
+          originalDepositPaid: `${booking.originalDepositPaid.toFixed(2)}€`,
+          difference: `${Math.abs(payment.amount - booking.originalDepositPaid!).toFixed(2)}€`,
+          isModificationPayment: metadata?.isModificationPayment === true,
+          createdAt: payment.createdAt.toISOString(),
+          matchType: Math.abs(payment.amount - booking.originalDepositPaid!) < 5 ? "amount_match" : "oldest_non_modification",
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        // Fallback : prendre le premier paiement (le plus ancien)
+        payment = booking.payments[0];
+        console.log(`[Refund] ⚠️  Aucun paiement non-modification trouvé, utilisation du premier paiement`, {
+          paymentId: payment.id,
+          amount: `${payment.amount.toFixed(2)}€`,
+          originalDepositPaid: `${booking.originalDepositPaid.toFixed(2)}€`,
+          totalPayments: booking.payments.length,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
 
     console.log(`[Refund] 💳 Paiement sélectionné pour le remboursement`, {
       paymentId: payment.id,
       amount: `${payment.amount.toFixed(2)}€`,
       transactionId: payment.transactionId,
       metadata: payment.metadata,
+      isModificationPayment: (payment.metadata as PaymentMetadata)?.isModificationPayment === true,
+      createdAt: payment.createdAt.toISOString(),
       timestamp: new Date().toISOString(),
     });
 
@@ -236,7 +327,113 @@ export async function createRefundAction(
     const amountInCents = Math.round(input.amount * 100);
     const paidAmountInCents = Math.round(payment.amount * 100);
 
-    if (amountInCents > paidAmountInCents) {
+    // Si le montant à rembourser dépasse le montant d'un seul paiement,
+    // calculer le montant total remboursable sur tous les paiements (y compris modifications si nécessaire)
+    if (amountInCents > paidAmountInCents && input.reason === "booking_modification") {
+      console.log(`[Refund] ⚠️  Le montant à rembourser (${input.amount.toFixed(2)}€) dépasse le paiement sélectionné (${payment.amount.toFixed(2)}€)`);
+      console.log(`[Refund] 🔍 Calcul du montant total remboursable sur tous les paiements non-modification...`);
+      
+      // Calculer le montant total remboursable
+      // D'abord essayer avec les paiements non-modification
+      let nonModificationPayments = booking.payments.filter(p => {
+        const metadata = p.metadata as PaymentMetadata;
+        return metadata?.isModificationPayment !== true;
+      });
+
+      console.log(`[Refund] 📋 Paiements non-modification trouvés:`, {
+        count: nonModificationPayments.length,
+        payments: nonModificationPayments.map(p => {
+          const metadata = p.metadata as PaymentMetadata;
+          return {
+            id: p.id,
+            amount: `${p.amount.toFixed(2)}€`,
+            createdAt: p.createdAt.toISOString(),
+            isModificationPayment: metadata?.isModificationPayment,
+            hasMetadata: !!p.metadata,
+            metadataKeys: p.metadata ? Object.keys(p.metadata as object) : [],
+          };
+        }),
+        timestamp: new Date().toISOString(),
+      });
+
+      let totalRefundableAmount = nonModificationPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      // Si aucun paiement non-modification trouvé mais originalDepositPaid existe,
+      // cela signifie que le paiement initial n'a pas été enregistré ou a été perdu.
+      // Dans ce cas, on utilise TOUS les paiements disponibles (y compris les modifications)
+      // car on doit rembourser basé sur originalDepositPaid qui est la source de vérité
+      if (nonModificationPayments.length === 0 && booking.originalDepositPaid) {
+        console.log(`[Refund] ⚠️  Aucun paiement non-modification trouvé, mais originalDepositPaid existe (${booking.originalDepositPaid.toFixed(2)}€)`);
+        console.log(`[Refund] 🔄 Utilisation de TOUS les paiements disponibles pour le remboursement (y compris modifications)`);
+        
+        // Utiliser tous les paiements disponibles
+        nonModificationPayments = booking.payments;
+        totalRefundableAmount = booking.payments.reduce((sum, p) => sum + p.amount, 0);
+        
+        console.log(`[Refund] 📋 Tous les paiements utilisés pour remboursement:`, {
+          count: nonModificationPayments.length,
+          totalAmount: `${totalRefundableAmount.toFixed(2)}€`,
+          originalDepositPaid: `${booking.originalDepositPaid.toFixed(2)}€`,
+          requestedRefund: `${input.amount.toFixed(2)}€`,
+          payments: nonModificationPayments.map(p => ({
+            id: p.id,
+            amount: `${p.amount.toFixed(2)}€`,
+            createdAt: p.createdAt.toISOString(),
+          })),
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      console.log(`[Refund] 💰 Montant total remboursable: ${totalRefundableAmount.toFixed(2)}€`);
+      console.log(`[Refund] 💰 Montant à rembourser: ${input.amount.toFixed(2)}€`);
+
+      if (input.amount > totalRefundableAmount) {
+        // Si le montant total disponible est insuffisant, on ne peut pas rembourser
+        console.error(`[Refund] ❌ Montant insuffisant pour le remboursement`, {
+          requestedAmount: `${input.amount.toFixed(2)}€`,
+          totalAvailable: `${totalRefundableAmount.toFixed(2)}€`,
+          originalDepositPaid: `${booking.originalDepositPaid?.toFixed(2) ?? "N/A"}€`,
+          deficit: `${(input.amount - totalRefundableAmount).toFixed(2)}€`,
+          timestamp: new Date().toISOString(),
+        });
+        
+        return {
+          success: false,
+          error: `Le montant du remboursement (${input.amount.toFixed(2)}€) dépasse le montant total disponible (${totalRefundableAmount.toFixed(2)}€). ${booking.originalDepositPaid ? `L'acompte original était de ${booking.originalDepositPaid.toFixed(2)}€ mais le paiement initial n'existe pas dans la base de données.` : ""} Un remboursement manuel devra être effectué.`,
+        };
+      }
+
+      // Si le montant total est suffisant, utiliser le paiement qui a le montant le plus élevé
+      // parmi les paiements non-modification
+      const bestPayment = nonModificationPayments
+        .sort((a, b) => b.amount - a.amount)[0]; // Trier par montant décroissant
+
+      if (bestPayment && bestPayment.amount >= input.amount) {
+        payment = bestPayment;
+        console.log(`[Refund] ✅ Nouveau paiement sélectionné avec montant suffisant`, {
+          paymentId: payment.id,
+          amount: `${payment.amount.toFixed(2)}€`,
+          refundAmount: `${input.amount.toFixed(2)}€`,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (bestPayment) {
+        // Si aucun paiement unique n'a un montant suffisant, on peut quand même rembourser
+        // le montant maximum possible sur le meilleur paiement
+        console.log(`[Refund] ⚠️  Aucun paiement unique n'a un montant suffisant. Utilisation du meilleur paiement disponible.`, {
+          bestPaymentId: bestPayment.id,
+          bestPaymentAmount: `${bestPayment.amount.toFixed(2)}€`,
+          requestedAmount: `${input.amount.toFixed(2)}€`,
+          totalRefundable: `${totalRefundableAmount.toFixed(2)}€`,
+          timestamp: new Date().toISOString(),
+        });
+        // On continue avec le meilleur paiement, mais on ajustera le montant si nécessaire
+        // Pour l'instant, on retourne une erreur pour que l'admin soit informé
+        return {
+          success: false,
+          error: `Le montant du remboursement (${input.amount.toFixed(2)}€) dépasse le montant du meilleur paiement disponible (${bestPayment.amount.toFixed(2)}€). Le montant total remboursable est de ${totalRefundableAmount.toFixed(2)}€. Un remboursement partiel ou multiple devra être effectué manuellement.`,
+        };
+      }
+    } else if (amountInCents > paidAmountInCents) {
       return {
         success: false,
         error: `Le montant du remboursement (${input.amount.toFixed(2)}€) ne peut pas dépasser le montant payé (${payment.amount.toFixed(2)}€).`,

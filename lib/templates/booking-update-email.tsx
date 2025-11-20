@@ -47,6 +47,7 @@ interface BookingUpdateTemplateParams {
     additionalPaymentAmount?: number;
     paymentUrl?: string;
     securityDepositPaid?: number;
+    paymentConfirmed?: boolean; // Indique si le paiement supplémentaire a été confirmé (webhook)
   };
   rejectionReason?: string | null; // Message de refus de l'admin (pour les modifications refusées)
 }
@@ -338,7 +339,23 @@ export function getBookingUpdateEmailTemplate({
                                 </tr>
                               </table>
                               ${depositDiff > 0 ? `
-                              ${modificationInfo?.paymentUrl ? `
+                              ${modificationInfo?.paymentConfirmed ? `
+                              <!-- Paiement confirmé : webhook a traité le paiement -->
+                              <div style="margin-top:12px; padding:12px; background-color:#d1fae5; border-radius:8px; border:1px solid #86efac;">
+                                <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#065f46;">✅ Paiement supplémentaire confirmé</p>
+                                <p style="margin:0; font-size:12px; color:#065f46;">
+                                  Vous avez déjà payé ${modificationInfo?.originalDepositPaid != null ? formatCurrency(modificationInfo.originalDepositPaid) : "N/A"} d'acompte.
+                                </p>
+                                <p style="margin:8px 0 0; font-size:14px; font-weight:600; color:#065f46; text-align:center;">
+                                  ✅ Votre paiement supplémentaire de ${formatCurrency(depositDiff)} a été effectué avec succès.
+                                </p>
+                                ${modificationInfo?.securityDepositPaid && modificationInfo.securityDepositPaid > 0 ? `
+                                <p style="margin:8px 0 0; font-size:11px; color:#065f46;">
+                                  ℹ️ La caution de garantie (${formatCurrency(modificationInfo.securityDepositPaid)}) a déjà été payée et ne sera pas redemandée.
+                                </p>
+                                ` : ""}
+                              </div>
+                              ` : modificationInfo?.paymentUrl ? `
                               <!-- Admin a validé : afficher le bouton de paiement -->
                               <div style="margin-top:12px; padding:12px; background-color:#fef3c7; border-radius:8px; border:1px solid #fbbf24;">
                                 <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#92400e;">💳 Paiement supplémentaire requis</p>

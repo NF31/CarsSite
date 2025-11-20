@@ -108,12 +108,15 @@ async function handleModificationRequest(
 ): Promise<ModerateBookingResult> {
   console.log(`\n🔵 [Admin Moderation] ==========================================`);
   console.log(`🔵 [Admin Moderation] 🚀 DÉBUT handleModificationRequest`);
-  console.log(`🔵 [Admin Moderation] Action: ${action}`);
-  console.log(`🔵 [Admin Moderation] Booking ID: ${booking.id}`);
-  console.log(`🔵 [Admin Moderation] Référence: ${booking.reference}`);
-  console.log(`🔵 [Admin Moderation] Statut actuel: ${booking.status}`);
-  console.log(`🔵 [Admin Moderation] modificationRequested: ${booking.modificationRequested}`);
-  console.log(`🔵 [Admin Moderation] modificationDepositDifference: ${booking.modificationDepositDifference ?? "null/undefined"}`);
+  console.log(`🔵 [Admin Moderation] ==========================================`);
+  console.log(`   - Action: ${action}`);
+  console.log(`   - Booking ID: ${booking.id}`);
+  console.log(`   - Référence: ${booking.reference}`);
+  console.log(`   - Statut actuel: ${booking.status}`);
+  console.log(`   - modificationRequested: ${booking.modificationRequested}`);
+  console.log(`   - modificationDepositDifference: ${booking.modificationDepositDifference ?? "null/undefined"}€`);
+  console.log(`   - originalDepositPaid: ${booking.originalDepositPaid ?? "null/undefined"}€`);
+  console.log(`   - depositPaid (actuel): ${booking.depositPaid ?? "null/undefined"}€`);
   console.log(`🔵 [Admin Moderation] ==========================================\n`);
 
   const { createRefundAction } = await import("@/actions/public/payments/create-refund");
@@ -142,20 +145,38 @@ async function handleModificationRequest(
     const originalTotalPrice = booking.originalTotalPrice ?? booking.totalPrice ?? 0;
     const originalDepositPaid = booking.originalDepositPaid ?? booking.depositPaid ?? 0;
     const originalRemainingAmount = originalTotalPrice - originalDepositPaid;
+    
+    // IMPORTANT: Utiliser modificationDepositDifference comme source de vérité
+    // Cette valeur a été calculée et stockée lors de la demande de modification par le client
+    // Elle représente la différence exacte entre le nouvel acompte et l'ancien acompte
     const depositDifference = booking.modificationDepositDifference ?? 0;
+    
+    // Vérification de cohérence : recalculer pour vérifier (mais ne pas utiliser pour la décision)
+    const newDepositPaid = booking.depositPaid ?? 0;
+    const calculatedDepositDifference = newDepositPaid - originalDepositPaid;
+    
+    // Log pour déboguer si les valeurs ne correspondent pas
+    if (Math.abs(depositDifference - calculatedDepositDifference) > 0.01) {
+      console.warn(`\n⚠️  [Admin Moderation] Écart entre depositDifference stocké et calculé:`);
+      console.warn(`   - depositDifference (stocké): ${depositDifference}€`);
+      console.warn(`   - calculatedDepositDifference: ${calculatedDepositDifference}€`);
+      console.warn(`   - Écart: ${Math.abs(depositDifference - calculatedDepositDifference)}€`);
+      console.warn(`   - On utilise la valeur stockée (modificationDepositDifference) comme source de vérité`);
+    }
+    
     const securityDepositPaid = booking.securityDepositPaid ?? 0;
     let paymentUrl: string | undefined;
 
     console.log(`✅ [Admin Moderation] 📊 Données de modification:`);
-    console.log(`   - depositDifference (depuis DB): ${depositDifference}€`);
-    console.log(`   - modificationDepositDifference (raw): ${booking.modificationDepositDifference ?? "null/undefined"}`);
+    console.log(`   - modificationDepositDifference (source de vérité depuis DB): ${depositDifference}€`);
+    console.log(`   - originalDepositPaid (stocké): ${originalDepositPaid}€`);
+    console.log(`   - newDepositPaid (actuel dans booking): ${newDepositPaid}€`);
+    console.log(`   - calculatedDepositDifference (vérification): ${calculatedDepositDifference}€`);
     console.log(`   - ⚠️  VÉRIFICATION CRITIQUE: depositDifference > 0 ? ${depositDifference > 0} → Statut sera: ${depositDifference > 0 ? "PENDING" : "CONFIRMED"}`);
     console.log(`   - securityDepositPaid: ${securityDepositPaid}€`);
     console.log(`   - originalTotalPrice (stocké): ${originalTotalPrice}€`);
-    console.log(`   - originalDepositPaid (stocké): ${originalDepositPaid}€`);
     console.log(`   - originalRemainingAmount (calculé): ${originalRemainingAmount}€`);
     console.log(`   - nouveau totalPrice: ${booking.totalPrice ?? "N/A"}€`);
-    console.log(`   - nouveau depositPaid: ${booking.depositPaid ?? "N/A"}€`);
 
     // Si nouveau prix < ancien prix → créer un remboursement
     // IMPORTANT: Utiliser originalDepositPaid (stocké) pour vérifier si un paiement a été fait
@@ -372,6 +393,36 @@ async function handleModificationRequest(
       console.log(`✅ [Admin Moderation] Statut correct dans la DB: ${updated.status}`);
     }
 
+    // Logs finaux pour tracer le flux complet
+    console.log(`\n🎯 [Admin Moderation] ==========================================`);
+    console.log(`🎯 [Admin Moderation] RÉSUMÉ DE LA VALIDATION`);
+    console.log(`🎯 [Admin Moderation] ==========================================`);
+    console.log(`   - Référence: ${booking.reference}`);
+    console.log(`   - Statut final: ${updated.status}`);
+    console.log(`   - depositDifference: ${depositDifference}€`);
+    console.log(`   - requiresPayment: ${requiresPayment}`);
+    console.log(`   - paymentUrl créé: ${paymentUrl ? "✅ OUI" : "❌ NON"}`);
+    
+    if (updated.status === BookingStatus.PENDING && requiresPayment) {
+      console.log(`\n   📋 PROCHAINES ÉTAPES:`);
+      console.log(`   ✅ Modification validée par l'admin`);
+      console.log(`   ⏳ Statut: PENDING (en attente de paiement supplémentaire)`);
+      console.log(`   💳 Montant à payer: ${depositDifference}€`);
+      console.log(`   📧 Email envoyé au client avec lien de paiement`);
+      console.log(`   🔄 Le statut passera à CONFIRMED après paiement (webhook Stripe)`);
+      console.log(`   🚀 Redirection admin vers /admin/bookings dans 500ms`);
+    } else if (updated.status === BookingStatus.CONFIRMED) {
+      console.log(`\n   📋 PROCHAINES ÉTAPES:`);
+      console.log(`   ✅ Modification validée par l'admin`);
+      console.log(`   ✅ Statut: CONFIRMED (pas de paiement supplémentaire nécessaire)`);
+      if (refundCreated) {
+        console.log(`   💰 Remboursement créé: ${refundAmountCreated}€`);
+      }
+      console.log(`   📧 Email de confirmation envoyé au client`);
+      console.log(`   🚀 Redirection admin vers /admin/bookings dans 500ms`);
+    }
+    console.log(`🎯 [Admin Moderation] ==========================================\n`);
+
     // Envoyer un email de confirmation
     console.log(`\n📧 [Admin Moderation] Préparation de l'email de confirmation...`);
     console.log(`📧 [Admin Moderation] Statut qui sera envoyé dans l'email: ${updated.status}`);
@@ -518,8 +569,9 @@ async function handleModificationRequest(
       console.log(`   - URL: ${paymentUrl.substring(0, 80)}...`);
     }
 
+    // Les logs finaux détaillés ont déjà été ajoutés plus haut (après la mise à jour de la DB)
     console.log(`\n✅ [Admin Moderation] ==========================================`);
-    console.log(`✅ [Admin Moderation] 🎉 FIN handleModificationRequest - SUCCÈS`);
+    console.log(`✅ [Admin Moderation] 🎉 FIN handleModificationRequest - SUCCÈS (APPROVE)`);
     console.log(`✅ [Admin Moderation] ==========================================\n`);
 
     return {
@@ -631,6 +683,23 @@ async function handleModificationRequest(
         );
       }
     }
+
+    // Logs finaux pour tracer le flux de refus
+    console.log(`\n🎯 [Admin Moderation] ==========================================`);
+    console.log(`🎯 [Admin Moderation] RÉSUMÉ DU REFUS DE MODIFICATION`);
+    console.log(`🎯 [Admin Moderation] ==========================================`);
+    console.log(`   - Référence: ${booking.reference}`);
+    console.log(`   - Statut final: ${updated.status}`);
+    console.log(`   - Motif de refus: ${rejectionReason ? "✅ Fourni" : "❌ Non fourni"}`);
+    console.log(`   - Dates restaurées: ${updated.startDate.toISOString()} → ${updated.endDate.toISOString()}`);
+    console.log(`   - Prix restauré: ${updated.totalPrice}€`);
+    console.log(`   - Acompte restauré: ${updated.depositPaid}€`);
+    console.log(`\n   📋 PROCHAINES ÉTAPES:`);
+    console.log(`   ❌ Modification refusée par l'admin`);
+    console.log(`   ✅ Statut: CONFIRMED (dates originales restaurées)`);
+    console.log(`   📧 Email de refus envoyé au client avec le motif`);
+    console.log(`   🚀 Redirection admin vers /admin/bookings dans 500ms`);
+    console.log(`🎯 [Admin Moderation] ==========================================\n`);
 
     return {
       success: true,
