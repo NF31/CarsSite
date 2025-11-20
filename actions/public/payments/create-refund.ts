@@ -55,6 +55,7 @@ export async function createRefundAction(
         userId: true,
         reference: true,
         depositPaid: true,
+        originalDepositPaid: true, // Ajouter pour les modifications
         payments: {
           where: {
             method: "STRIPE",
@@ -93,10 +94,16 @@ export async function createRefundAction(
       };
     }
 
+    // Pour les modifications, utiliser originalDepositPaid si disponible
+    // car depositPaid a été mis à jour avec le nouveau montant
+    const effectiveDepositPaid = booking.originalDepositPaid ?? booking.depositPaid ?? 0;
+    
     console.log(`[Refund] ✅ Réservation trouvée`, {
       bookingId: booking.id,
       reference: booking.reference,
       depositPaid: `${(booking.depositPaid || 0).toFixed(2)}€`,
+      originalDepositPaid: `${(booking.originalDepositPaid || 0).toFixed(2)}€`,
+      effectiveDepositPaid: `${effectiveDepositPaid.toFixed(2)}€`,
       paymentsFound: booking.payments.length,
       timestamp: new Date().toISOString(),
     });

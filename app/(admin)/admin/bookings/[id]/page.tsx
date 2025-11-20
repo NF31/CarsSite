@@ -50,7 +50,16 @@ export default async function BookingDetailsPage({ params }: BookingDetailsPageP
   }
 
   const { id } = await params;
+  console.log(`[BookingDetailsPage] 🔄 Chargement de la page pour booking ID: ${id}`);
   const bookingResult = await getBookingByIdAction(id);
+  
+  if (bookingResult.success && bookingResult.data) {
+    console.log(`[BookingDetailsPage] ✅ Booking chargé:`, {
+      reference: bookingResult.data.reference,
+      status: bookingResult.data.status,
+      modificationRequested: bookingResult.data.modificationRequested,
+    });
+  }
 
   if (!bookingResult.success || !bookingResult.data) {
     if (bookingResult.status === 404) {

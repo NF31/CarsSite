@@ -363,9 +363,7 @@ export function EditBookingDialog({
         <DialogHeader>
           <DialogTitle>Modifier les dates de la réservation</DialogTitle>
           <DialogDescription>
-            Sélectionnez de nouvelles dates de départ et de retour. La réservation passera en
-            statut <span className="font-semibold text-primary">En attente</span> jusqu&apos;à
-            validation par un administrateur.
+            Sélectionnez de nouvelles dates de départ et de retour. Votre demande sera traitée dans les plus brefs délais.
           </DialogDescription>
         </DialogHeader>
 
@@ -405,6 +403,63 @@ export function EditBookingDialog({
             {/* Affichage de la comparaison des prix */}
             {priceCalculation && (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+                {/* Section principale : Différence de prix total */}
+                {(() => {
+                  const priceDifference = priceCalculation.totalPrice - currentTotalPrice;
+                  const roundedPriceDifference = Math.round(priceDifference * 100) / 100;
+                  
+                  if (roundedPriceDifference !== 0) {
+                    return (
+                      <div className={cn(
+                        "rounded-lg border-2 p-4 space-y-2",
+                        roundedPriceDifference > 0 
+                          ? "border-amber-300 bg-amber-50" 
+                          : "border-green-300 bg-green-50"
+                      )}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-900">
+                            {roundedPriceDifference > 0 ? "📈 Augmentation" : "📉 Réduction"} du prix total :
+                          </span>
+                          <span className={cn(
+                            "text-lg font-bold",
+                            roundedPriceDifference > 0 ? "text-amber-700" : "text-green-700"
+                          )}>
+                            {roundedPriceDifference > 0 ? "+" : ""}
+                            {new Intl.NumberFormat("fr-FR", {
+                              style: "currency",
+                              currency: "EUR",
+                            }).format(roundedPriceDifference)}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">Prix actuel</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {new Intl.NumberFormat("fr-FR", {
+                                style: "currency",
+                                currency: "EUR",
+                              }).format(currentTotalPrice)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">Nouveau prix</p>
+                            <p className="text-sm font-semibold text-blue-900">
+                              {isCalculatingPrice ? (
+                                <span className="text-muted-foreground">Calcul...</span>
+                              ) : (
+                                new Intl.NumberFormat("fr-FR", {
+                                  style: "currency",
+                                  currency: "EUR",
+                                }).format(priceCalculation.totalPrice)
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Prix actuel :</span>
                   <span className="text-sm font-semibold text-gray-900">
@@ -461,7 +516,7 @@ export function EditBookingDialog({
                       </div>
                       {priceCalculation.depositDifference !== 0 && (
                         <div className="flex items-center justify-between pt-1">
-                          <span className="text-sm font-medium text-gray-700">Différence d'acompte :</span>
+                          <span className="text-sm font-medium text-gray-700">Différence d&apos;acompte :</span>
                           <span
                             className={cn(
                               "text-sm font-semibold",
@@ -490,18 +545,40 @@ export function EditBookingDialog({
                       </div>
                     )}
                     {priceCalculation.depositDifference > 0 && (
-                      <div className="rounded-md bg-amber-50 p-3 border border-amber-200">
-                        <p className="text-xs text-amber-700 font-medium mb-1">
-                          💳 Paiement supplémentaire requis
+                      <div className="rounded-md bg-amber-50 p-4 border-2 border-amber-300">
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className="text-lg">💳</span>
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-amber-900 mb-1">
+                              Paiement supplémentaire requis
                         </p>
-                        <p className="text-xs text-amber-600">
-                          Vous avez déjà payé {depositPaid.toFixed(2)}€ d'acompte. Seule la différence de {priceCalculation.depositDifference.toFixed(2)}€ sera demandée (pas le nouvel acompte en entier).
+                            <p className="text-sm text-amber-800 font-medium mb-2">
+                              Vous avez déjà payé {new Intl.NumberFormat("fr-FR", {
+                                style: "currency",
+                                currency: "EUR",
+                              }).format(depositPaid)} d&apos;acompte.
+                            </p>
+                            <div className="bg-white rounded-md p-3 border border-amber-200">
+                              <p className="text-xs text-amber-900 font-semibold mb-1">
+                                ✅ Vous devrez payer uniquement la différence :
+                              </p>
+                              <p className="text-lg font-bold text-amber-700 text-center">
+                                {new Intl.NumberFormat("fr-FR", {
+                                  style: "currency",
+                                  currency: "EUR",
+                                }).format(priceCalculation.depositDifference)}
+                              </p>
+                            </div>
                           {securityDepositPaid > 0 && (
-                            <span className="block mt-1 text-amber-700 font-medium">
-                              ℹ️ La caution de garantie ({securityDepositPaid.toFixed(2)}€) a déjà été payée et ne sera pas redemandée.
-                            </span>
+                              <p className="text-xs text-amber-700 font-medium mt-2">
+                                ℹ️ La caution de garantie ({new Intl.NumberFormat("fr-FR", {
+                                  style: "currency",
+                                  currency: "EUR",
+                                }).format(securityDepositPaid)}) a déjà été payée et ne sera pas redemandée.
+                              </p>
                           )}
-                        </p>
+                          </div>
+                        </div>
                       </div>
                     )}
                     <div className="border-t border-blue-200 pt-2 space-y-3">
@@ -570,7 +647,7 @@ export function EditBookingDialog({
                                 ⚠️ Solde à payer augmenté
                               </p>
                               <p className="text-xs text-amber-600">
-                                Vous devrez payer {Math.abs(roundedDifference).toFixed(2)}€ de plus à la remise du véhicule qu'initialement prévu.
+                                Vous devrez payer {Math.abs(roundedDifference).toFixed(2)}€ de plus à la remise du véhicule qu&apos;initialement prévu.
                               </p>
                             </div>
                           );
@@ -581,7 +658,7 @@ export function EditBookingDialog({
                                 ✅ Solde à payer réduit
                               </p>
                               <p className="text-xs text-green-600">
-                                Vous paierez {Math.abs(roundedDifference).toFixed(2)}€ de moins à la remise du véhicule qu'initialement prévu.
+                                Vous paierez {Math.abs(roundedDifference).toFixed(2)}€ de moins à la remise du véhicule qu&apos;initialement prévu.
                               </p>
                             </div>
                           );
@@ -592,7 +669,7 @@ export function EditBookingDialog({
                     {priceCalculation.totalPrice === currentTotalPrice && priceCalculation.depositDifference === 0 && (
                       <div className="rounded-md bg-green-50 p-2 border border-green-200">
                         <p className="text-xs text-green-700 text-center font-medium">
-                          Le prix et l'acompte restent identiques
+                          Le prix et l&apos;acompte restent identiques
                         </p>
                       </div>
                     )}

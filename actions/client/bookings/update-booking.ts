@@ -260,6 +260,8 @@ export async function updateClientBookingAction(
     // Récupérer les montants déjà payés
     const oldDepositPaid = existingBooking.depositPaid ?? 0;
     const securityDepositPaid = existingBooking.securityDepositPaid ?? 0;
+    const oldTotalPrice = existingBooking.totalPrice ?? 0;
+    const oldRemainingAmount = existingBooking.remainingAmount ?? 0;
     
     // Calculer la différence d'acompte
     const depositDifference = newDownPayment - oldDepositPaid;
@@ -319,6 +321,32 @@ export async function updateClientBookingAction(
         { locale: fr },
       )} → ${format(updatedBooking.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
 
+      const modificationInfoToSend = {
+        originalTotalPrice: oldTotalPrice,
+        originalDepositPaid: oldDepositPaid,
+        originalRemainingAmount: oldRemainingAmount,
+        depositDifference: roundedDepositDifference,
+        // Ajouter refundAmount si remboursement nécessaire
+        refundAmount: roundedDepositDifference < 0 ? Math.abs(roundedDepositDifference) : undefined,
+        // Ajouter additionalPaymentAmount si paiement supplémentaire nécessaire
+        additionalPaymentAmount: roundedDepositDifference > 0 ? roundedDepositDifference : undefined,
+        securityDepositPaid: securityDepositPaid > 0 ? securityDepositPaid : undefined,
+        // IMPORTANT: Ne PAS ajouter paymentUrl ici car le paiement sera créé uniquement après validation admin
+        // paymentUrl sera ajouté dans actions/admin/bookings/moderate-booking.ts après validation
+      };
+
+      console.log(`\n📧 [Client Booking Update] Envoi de l'email de demande de modification...`);
+      console.log(`📧 [Client Booking Update] modificationInfo:`);
+      console.log(`   ${JSON.stringify(modificationInfoToSend, null, 2)}`);
+      console.log(`📧 [Client Booking Update] Détails:`);
+      console.log(`   - originalTotalPrice: ${oldTotalPrice}€`);
+      console.log(`   - originalDepositPaid: ${oldDepositPaid}€`);
+      console.log(`   - originalRemainingAmount: ${oldRemainingAmount}€`);
+      console.log(`   - depositDifference: ${roundedDepositDifference}€`);
+      console.log(`   - refundAmount: ${modificationInfoToSend.refundAmount ?? "N/A"}€`);
+      console.log(`   - additionalPaymentAmount: ${modificationInfoToSend.additionalPaymentAmount ?? "N/A"}€`);
+      console.log(`   - securityDepositPaid: ${modificationInfoToSend.securityDepositPaid ?? "N/A"}€`);
+
       const emailResult = await sendBookingUpdateEmail({
         to: existingBooking.user.email,
         name: existingBooking.user.name,
@@ -343,6 +371,7 @@ export async function updateClientBookingAction(
           pickup: existingBooking.pickupLocation?.name ?? "Agence de départ",
           return: existingBooking.returnLocation?.name ?? "Agence de retour",
         },
+        modificationInfo: modificationInfoToSend,
       });
 
       if (emailResult.skipped) {
