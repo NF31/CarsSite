@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import Stripe from "stripe";
 import { BookingStatus } from "@prisma/client";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
-import { sendBookingConfirmationEmail } from "@/lib/email";
+import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/email";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -96,10 +96,13 @@ export async function POST(req: NextRequest) {
           userId: true,
           totalPrice: true,
           depositPaid: true,
+          securityDepositPaid: true,
+          remainingAmount: true,
           serviceIds: true,
           startDate: true,
           endDate: true,
           status: true,
+          modificationDepositDifference: true, // Pour détecter les paiements de modification
           vehicle: {
             select: {
               id: true,
@@ -181,6 +184,29 @@ export async function POST(req: NextRequest) {
       const paymentType = session.metadata?.paymentType || "full";
       const isAuthorization = paymentType === "authorization";
       const isDepositOnly = paymentType === "deposit";
+      // Vérifier isModificationPayment depuis les métadonnées OU depuis modificationDepositDifference dans la DB
+      // (vérification de secours au cas où les métadonnées ne seraient pas présentes)
+      const hasModificationDepositDifference = (booking.modificationDepositDifference ?? 0) > 0;
+      const isModificationPayment = 
+        session.metadata?.isModificationPayment === "true" || 
+        hasModificationDepositDifference;
+      
+      console.log(`[Stripe Webhook] 🔍 Détection du type de paiement`, {
+        bookingId,
+        paymentType,
+        isAuthorization,
+        isDepositOnly,
+        isModificationPayment,
+        hasModificationDepositDifference,
+        modificationDepositDifference: booking.modificationDepositDifference,
+        metadataIsModificationPayment: session.metadata?.isModificationPayment,
+        metadata: session.metadata,
+        timestamp: new Date().toISOString(),
+      });
+      
+      // Récupérer l'acompte actuel de la réservation pour les paiements supplémentaires
+      const currentDepositPaid = booking.depositPaid || 0;
+      const currentSecurityDepositPaid = booking.securityDepositPaid || 0;
 
       // Arrondir les montants à 2 décimales pour éviter les problèmes de précision
       const roundedDownPayment = Math.round(downPayment * 100) / 100;
@@ -190,10 +216,22 @@ export async function POST(req: NextRequest) {
       // Vérifier que le montant payé correspond
       const amountPaid = session.amount_total ? session.amount_total / 100 : 0; // Convertir de centimes en euros
       const roundedAmountPaid = Math.round(amountPaid * 100) / 100;
-      
+
       // Déterminer le montant attendu selon le type de paiement
       let expectedAmount: number;
-      if (isAuthorization) {
+      if (isModificationPayment) {
+        // Pour un paiement supplémentaire de modification, le montant attendu est juste la différence
+        // Le montant payé est la différence d'acompte (ex: 85,50€)
+        // On ne vérifie pas contre le nouvel acompte total, mais contre le montant réellement payé
+        expectedAmount = roundedAmountPaid; // Le montant payé est toujours correct pour une modification
+        console.log(`[Stripe Webhook] 🔄 Paiement supplémentaire de modification détecté`, {
+          bookingId,
+          currentDepositPaid: `${currentDepositPaid.toFixed(2)}€`,
+          amountPaid: `${roundedAmountPaid.toFixed(2)}€`,
+          newDepositPaid: `${(currentDepositPaid + roundedAmountPaid).toFixed(2)}€`,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (isAuthorization) {
         // Pour l'empreinte, on attend seulement la caution
         expectedAmount = roundedSecurityDeposit;
       } else if (isDepositOnly) {
@@ -245,11 +283,45 @@ export async function POST(req: NextRequest) {
         depositPaid?: number;
         securityDepositPaid?: number;
         status?: typeof BookingStatus[keyof typeof BookingStatus];
+        modificationDepositDifference?: null;
       } = {
         remainingAmount: roundedRemainingAmount, // Le solde restant à payer à la remise
       };
 
-      if (isAuthorization) {
+      if (isModificationPayment) {
+        // Pour un paiement supplémentaire de modification :
+        // - Le montant payé est juste la différence d'acompte (ex: 85,50€)
+        // - On ajoute ce montant à l'acompte existant
+        // - La caution reste inchangée si elle a déjà été payée
+        // - Le solde restant est recalculé avec le nouvel acompte
+        // - Nettoyer modificationDepositDifference car le paiement est maintenant effectué
+        const newDepositPaid = Math.round((currentDepositPaid + roundedAmountPaid) * 100) / 100;
+        const newRemainingAmount = Math.round((booking.totalPrice - newDepositPaid) * 100) / 100;
+        
+        updateData = {
+          depositPaid: newDepositPaid, // Ancien acompte + différence payée
+          securityDepositPaid: currentSecurityDepositPaid, // PRÉSERVÉ (déjà payée)
+          remainingAmount: newRemainingAmount,
+          status: BookingStatus.CONFIRMED, // Confirmation automatique après paiement réussi
+          modificationDepositDifference: null, // Nettoyer car le paiement est maintenant effectué
+        };
+        
+        console.log(`[Stripe Webhook] 📝 Mise à jour de la réservation (paiement supplémentaire de modification)`, {
+          bookingId,
+          updates: {
+            previousStatus: booking.status,
+            newStatus: BookingStatus.CONFIRMED,
+            previousDepositPaid: `${currentDepositPaid.toFixed(2)}€`,
+            amountPaid: `${roundedAmountPaid.toFixed(2)}€`,
+            newDepositPaid: `${newDepositPaid.toFixed(2)}€`,
+            securityDepositPaid: `${currentSecurityDepositPaid.toFixed(2)}€ (préservé)`,
+            previousRemainingAmount: `${(booking.remainingAmount || 0).toFixed(2)}€`,
+            newRemainingAmount: `${newRemainingAmount.toFixed(2)}€`,
+            totalPrice: `${booking.totalPrice.toFixed(2)}€`,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      } else if (isAuthorization) {
         // Pour l'empreinte bancaire : on ne met à jour que securityDepositPaid (bloqué, pas payé)
         // Le statut reste PENDING jusqu'à confirmation manuelle
         updateData = {
@@ -345,6 +417,25 @@ export async function POST(req: NextRequest) {
       // Déterminer le montant à enregistrer dans Payment selon le type de paiement
       const paymentAmount = roundedAmountPaid; // Montant réellement payé via Stripe
       
+      // Déterminer les montants d'acompte et de caution pour les métadonnées
+      let metadataDownPayment: number;
+      let metadataSecurityDeposit: number;
+      
+      if (isModificationPayment) {
+        // Pour un paiement supplémentaire de modification, on enregistre juste le montant payé
+        metadataDownPayment = roundedAmountPaid; // La différence d'acompte payée
+        metadataSecurityDeposit = 0; // La caution n'est pas incluse dans ce paiement
+      } else if (isAuthorization) {
+        metadataDownPayment = 0;
+        metadataSecurityDeposit = roundedSecurityDeposit;
+      } else if (isDepositOnly) {
+        metadataDownPayment = roundedDownPayment;
+        metadataSecurityDeposit = 0;
+      } else {
+        metadataDownPayment = roundedDownPayment;
+        metadataSecurityDeposit = roundedSecurityDeposit;
+      }
+      
       console.log(`[Stripe Webhook] 💳 Création de l'enregistrement de paiement dans la table Payment`, {
         bookingId,
         userId,
@@ -352,9 +443,10 @@ export async function POST(req: NextRequest) {
           amountToRecord: `${paymentAmount.toFixed(2)}€`,
           amountFromStripe: `${roundedAmountPaid.toFixed(2)}€`,
           paymentType,
+          isModificationPayment,
           breakdown: {
-            downPayment: isDepositOnly ? `${roundedDownPayment.toFixed(2)}€` : (isAuthorization ? "0.00€" : `${roundedDownPayment.toFixed(2)}€`),
-            securityDeposit: isAuthorization ? `${roundedSecurityDeposit.toFixed(2)}€ (bloqué)` : (isDepositOnly ? "0.00€" : `${roundedSecurityDeposit.toFixed(2)}€`),
+            downPayment: `${metadataDownPayment.toFixed(2)}€`,
+            securityDeposit: `${metadataSecurityDeposit.toFixed(2)}€${isAuthorization ? " (bloqué)" : ""}`,
           },
         },
         method: "STRIPE",
@@ -376,8 +468,9 @@ export async function POST(req: NextRequest) {
             stripeSessionId: session.id,
             stripePaymentIntentId: session.payment_intent as string | undefined,
             paymentType: paymentType,
-            downPayment: isAuthorization ? 0 : (isDepositOnly ? roundedDownPayment : roundedDownPayment),
-            securityDeposit: isAuthorization ? roundedSecurityDeposit : (isDepositOnly ? 0 : roundedSecurityDeposit),
+            isModificationPayment: isModificationPayment,
+            downPayment: metadataDownPayment,
+            securityDeposit: metadataSecurityDeposit,
             amountPaid: paymentAmount, // Montant total enregistré dans Payment
           },
         },
@@ -413,10 +506,12 @@ export async function POST(req: NextRequest) {
 
       // Envoyer l'email de confirmation si le statut est CONFIRMED
       if (updatedBooking.status === BookingStatus.CONFIRMED) {
-        console.log(`[Stripe Webhook] 📧 Préparation de l'envoi de l'email de confirmation`, {
+        const emailType = isModificationPayment ? "mise à jour (paiement supplémentaire)" : "confirmation";
+        console.log(`[Stripe Webhook] 📧 Préparation de l'envoi de l'email de ${emailType}`, {
           bookingId: updatedBooking.id,
           reference: updatedBooking.reference,
           status: updatedBooking.status,
+          isModificationPayment,
           timestamp: new Date().toISOString(),
         });
 
@@ -470,53 +565,153 @@ export async function POST(req: NextRequest) {
             // Déterminer le message de salutation
             const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
 
-            // Envoyer l'email de confirmation
-            const emailResult = await sendBookingConfirmationEmail({
-              to: user.email,
-              name: user.name || "Client",
-              greeting,
-              booking: {
+            // Si c'est un paiement supplémentaire de modification, envoyer un email de mise à jour
+            if (isModificationPayment) {
+              console.log(`[Stripe Webhook] 🔄 Paiement supplémentaire de modification détecté, récupération des métadonnées`, {
+                bookingId: updatedBooking.id,
                 reference: updatedBooking.reference,
-                totalPrice: updatedBooking.totalPrice,
-                depositPaid: updatedBooking.depositPaid || 0,
-                remainingAmount: updatedBooking.remainingAmount || 0,
-                startDate: updatedBooking.startDate,
-                endDate: updatedBooking.endDate,
-                status: updatedBooking.status,
-                period: bookingPeriod,
-              },
-              vehicle: {
-                label: `${vehicle.brand} ${vehicle.model}`,
-                licensePlate: vehicle.licensePlate,
-              },
-              locations: {
-                pickup: pickupLocation.name,
-                return: returnLocation.name,
-              },
-            });
+                sessionMetadata: session.metadata,
+                timestamp: new Date().toISOString(),
+              });
+              
+              // Récupérer les informations de modification depuis les métadonnées de la session Stripe
+              // (car les champs peuvent être nettoyés dans la DB avant le paiement)
+              const originalTotalPrice = session.metadata?.originalTotalPrice ? parseFloat(session.metadata.originalTotalPrice) : null;
+              const originalDepositPaid = session.metadata?.originalDepositPaid ? parseFloat(session.metadata.originalDepositPaid) : null;
+              const originalRemainingAmount = session.metadata?.originalRemainingAmount ? parseFloat(session.metadata.originalRemainingAmount) : null;
+              const depositDifference = session.metadata?.depositDifference ? parseFloat(session.metadata.depositDifference) : null;
+              const securityDepositPaid = session.metadata?.securityDepositPaid ? parseFloat(session.metadata.securityDepositPaid) : 0;
+              
+              console.log(`[Stripe Webhook] 📊 Métadonnées de modification récupérées`, {
+                bookingId: updatedBooking.id,
+                originalTotalPrice,
+                originalDepositPaid,
+                originalRemainingAmount,
+                depositDifference,
+                securityDepositPaid,
+                roundedAmountPaid,
+                timestamp: new Date().toISOString(),
+              });
 
-            if (emailResult.skipped) {
-              console.warn(`[Stripe Webhook] ⚠️  Email de confirmation ignoré pour la réservation ${updatedBooking.reference} (credentials non configurés)`, {
+              // Construire modificationInfo pour l'email
+              const modificationInfo = originalTotalPrice != null && originalDepositPaid != null ? {
+                originalTotalPrice,
+                originalDepositPaid,
+                originalRemainingAmount: originalRemainingAmount ?? (originalTotalPrice - originalDepositPaid),
+                depositDifference: depositDifference ?? 0,
+                additionalPaymentAmount: roundedAmountPaid, // Montant payé (la différence)
+                securityDepositPaid,
+              } : undefined;
+
+              console.log(`[Stripe Webhook] 📧 Envoi de l'email de mise à jour (paiement supplémentaire)`, {
                 bookingId: updatedBooking.id,
                 reference: updatedBooking.reference,
+                modificationInfo: modificationInfo ? {
+                  originalTotalPrice: modificationInfo.originalTotalPrice,
+                  originalDepositPaid: modificationInfo.originalDepositPaid,
+                  depositDifference: modificationInfo.depositDifference,
+                  additionalPaymentAmount: modificationInfo.additionalPaymentAmount,
+                } : "N/A",
                 timestamp: new Date().toISOString(),
               });
-            } else if (!emailResult.success) {
-              console.error(`[Stripe Webhook] ❌ Échec de l'envoi de l'email de confirmation pour la réservation ${updatedBooking.reference}`, {
-                bookingId: updatedBooking.id,
-                reference: updatedBooking.reference,
-                error: emailResult.error || "raison inconnue",
-                timestamp: new Date().toISOString(),
+
+              const emailResult = await sendBookingUpdateEmail({
+                to: user.email,
+                name: user.name || "Client",
+                greeting,
+                booking: {
+                  reference: updatedBooking.reference,
+                  totalPrice: updatedBooking.totalPrice,
+                  depositPaid: updatedBooking.depositPaid || 0,
+                  remainingAmount: updatedBooking.remainingAmount || 0,
+                  startDate: updatedBooking.startDate,
+                  endDate: updatedBooking.endDate,
+                  status: updatedBooking.status,
+                  period: bookingPeriod,
+                },
+                vehicle: {
+                  label: `${vehicle.brand} ${vehicle.model}`,
+                  licensePlate: vehicle.licensePlate,
+                },
+                locations: {
+                  pickup: pickupLocation.name,
+                  return: returnLocation.name,
+                },
+                modificationInfo,
               });
+
+              if (emailResult.skipped) {
+                console.warn(`[Stripe Webhook] ⚠️  Email de mise à jour ignoré pour la réservation ${updatedBooking.reference} (credentials non configurés)`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  timestamp: new Date().toISOString(),
+                });
+              } else if (!emailResult.success) {
+                console.error(`[Stripe Webhook] ❌ Échec de l'envoi de l'email de mise à jour pour la réservation ${updatedBooking.reference}`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  error: emailResult.error || "raison inconnue",
+                  timestamp: new Date().toISOString(),
+                });
+              } else {
+                console.log(`[Stripe Webhook] ✅ Email de mise à jour envoyé avec succès`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  recipient: user.email,
+                  messageId: emailResult.messageId,
+                  queued: emailResult.queued,
+                  timestamp: new Date().toISOString(),
+                });
+              }
             } else {
-              console.log(`[Stripe Webhook] ✅ Email de confirmation envoyé avec succès`, {
-                bookingId: updatedBooking.id,
-                reference: updatedBooking.reference,
-                recipient: user.email,
-                messageId: emailResult.messageId,
-                queued: emailResult.queued,
-                timestamp: new Date().toISOString(),
+              // Envoyer l'email de confirmation pour les paiements normaux
+              const emailResult = await sendBookingConfirmationEmail({
+                to: user.email,
+                name: user.name || "Client",
+                greeting,
+                booking: {
+                  reference: updatedBooking.reference,
+                  totalPrice: updatedBooking.totalPrice,
+                  depositPaid: updatedBooking.depositPaid || 0,
+                  remainingAmount: updatedBooking.remainingAmount || 0,
+                  startDate: updatedBooking.startDate,
+                  endDate: updatedBooking.endDate,
+                  status: updatedBooking.status,
+                  period: bookingPeriod,
+                },
+                vehicle: {
+                  label: `${vehicle.brand} ${vehicle.model}`,
+                  licensePlate: vehicle.licensePlate,
+                },
+                locations: {
+                  pickup: pickupLocation.name,
+                  return: returnLocation.name,
+                },
               });
+
+              if (emailResult.skipped) {
+                console.warn(`[Stripe Webhook] ⚠️  Email de confirmation ignoré pour la réservation ${updatedBooking.reference} (credentials non configurés)`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  timestamp: new Date().toISOString(),
+                });
+              } else if (!emailResult.success) {
+                console.error(`[Stripe Webhook] ❌ Échec de l'envoi de l'email de confirmation pour la réservation ${updatedBooking.reference}`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  error: emailResult.error || "raison inconnue",
+                  timestamp: new Date().toISOString(),
+                });
+              } else {
+                console.log(`[Stripe Webhook] ✅ Email de confirmation envoyé avec succès`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  recipient: user.email,
+                  messageId: emailResult.messageId,
+                  queued: emailResult.queued,
+                  timestamp: new Date().toISOString(),
+                });
+              }
             }
           }
         } catch (error) {

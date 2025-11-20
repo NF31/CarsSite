@@ -4,6 +4,7 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -107,9 +108,10 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
   const [isModerating, startModerate] = useTransition();
   const [isMarkingAsViewed, startMarkAsViewed] = useTransition();
-  // État pour le dialog de refus d'annulation
+  // État pour le dialog de refus (annulation ou modification)
   const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
   const [rejectionBookingId, setRejectionBookingId] = useState<string | null>(null);
+  const [rejectionBookingType, setRejectionBookingType] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
   const getInitials = (name: string) => {
@@ -141,11 +143,17 @@ const hiddenNotifications =
   ) || 0;
 
 const handleModeration = (bookingId: string, action: "approve" | "reject", bookingType?: string) => {
+    // Empêcher les doubles clics
+    if (activeBookingId === bookingId || isModerating) {
+      return;
+    }
+    
     setActionError(null);
     
-    // Si c'est un rejet d'annulation, ouvrir le dialog pour saisir le message
-    if (action === "reject" && bookingType === "cancellation") {
+    // Si c'est un rejet d'annulation OU de modification, ouvrir le dialog pour saisir le message
+    if (action === "reject" && (bookingType === "cancellation" || bookingType === "modification")) {
       setRejectionBookingId(bookingId);
+      setRejectionBookingType(bookingType || null);
       setRejectionReason("");
       setRejectionDialogOpen(true);
       return;
@@ -154,42 +162,118 @@ const handleModeration = (bookingId: string, action: "approve" | "reject", booki
     // Sinon, procéder normalement
     setActiveBookingId(bookingId);
     startModerate(async () => {
-      const result = await moderateBookingStatusAction({ bookingId, action });
-      if (!result.success) {
-        setActionError(result.error ?? "Impossible de traiter cette réservation.");
+      try {
+        const result = await moderateBookingStatusAction({ bookingId, action });
+        if (!result.success) {
+          const errorMessage = result.error ?? "Impossible de traiter cette réservation.";
+          setActionError(errorMessage);
+          toast.error(errorMessage);
+          setActiveBookingId(null);
+          return;
+        }
+        
+        // Afficher un message de succès selon le type et l'action
+        if (action === "approve") {
+          if (bookingType === "modification") {
+            toast.success("Modification validée !", {
+              description: `L'email a été envoyé au client avec les instructions de paiement.`,
+            });
+          } else if (bookingType === "cancellation") {
+            toast.success("Annulation validée !", {
+              description: `L'email de confirmation d'annulation a été envoyé au client.`,
+            });
+          } else {
+            toast.success("Réservation validée !", {
+              description: `L'email de confirmation a été envoyé au client.`,
+            });
+          }
+        } else {
+          if (bookingType === "modification") {
+            toast.success("Modification refusée", {
+              description: `L'email de refus a été envoyé au client.`,
+            });
+          } else if (bookingType === "cancellation") {
+            toast.success("Annulation refusée", {
+              description: `L'email de refus d'annulation a été envoyé au client.`,
+            });
+          } else {
+            toast.success("Réservation refusée", {
+              description: `L'email de refus a été envoyé au client.`,
+            });
+          }
+        }
+        
+        // Ne pas marquer comme vue ni retirer de la liste ici
+        // La logique dans getAdminNotificationData gère déjà l'affichage des PENDING
+        // On laisse router.refresh() mettre à jour les notifications depuis la BDD
+        
+        // Revalider les données pour mettre à jour l'interface
+        router.refresh();
+      } catch (error) {
+        console.error("[Admin Navbar] Erreur lors de la modération:", error);
+        const errorMessage = "Une erreur est survenue lors du traitement.";
+        setActionError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
         setActiveBookingId(null);
-        return;
       }
-      // Marquer comme vue dans la base de données
-      await markNotificationAsViewedAction(bookingId);
-      setPendingBookings((previous) => previous.filter((item) => item.id !== bookingId));
-      setActiveBookingId(null);
   });
 };
 
 const handleRejectionConfirm = () => {
   if (!rejectionBookingId) return;
   
+  // Empêcher les doubles clics
+  if (activeBookingId === rejectionBookingId || isModerating) {
+    return;
+  }
+  
   setActionError(null);
-  setActiveBookingId(rejectionBookingId);
-  startModerate(async () => {
-    const result = await moderateBookingStatusAction({ 
-      bookingId: rejectionBookingId, 
-      action: "reject",
-      rejectionReason: rejectionReason.trim() || undefined, // Envoyer undefined si vide
-    });
-    if (!result.success) {
-      setActionError(result.error ?? "Impossible de traiter cette réservation.");
+      setActiveBookingId(rejectionBookingId);
+    startModerate(async () => {
+      try {
+        const result = await moderateBookingStatusAction({ 
+          bookingId: rejectionBookingId, 
+          action: "reject",
+          rejectionReason: rejectionReason.trim() || undefined, // Envoyer undefined si vide
+        });
+        if (!result.success) {
+          const errorMessage = result.error ?? "Impossible de traiter cette réservation.";
+          setActionError(errorMessage);
+          toast.error(errorMessage);
+          setActiveBookingId(null);
+          return;
+        }
+        
+        // Adapter le message selon le type
+        if (rejectionBookingType === "modification") {
+          toast.success("Modification refusée", {
+            description: `L'email de refus a été envoyé au client.`,
+          });
+        } else {
+          toast.success("Annulation refusée", {
+            description: `L'email de refus d'annulation a été envoyé au client.`,
+          });
+        }
+        
+        // Ne pas marquer comme vue ni retirer de la liste ici
+        // La logique dans getAdminNotificationData gère déjà l'affichage des PENDING
+        // On laisse router.refresh() mettre à jour les notifications depuis la BDD
+        
+        // Revalider les données pour mettre à jour l'interface
+        router.refresh();
+    } catch (error) {
+      console.error("[Admin Navbar] Erreur lors du rejet:", error);
+      const errorMessage = "Une erreur est survenue lors du traitement.";
+      setActionError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
       setActiveBookingId(null);
-      return;
+      setRejectionDialogOpen(false);
+      setRejectionBookingId(null);
+      setRejectionBookingType(null);
+      setRejectionReason("");
     }
-    // Marquer comme vue dans la base de données
-    await markNotificationAsViewedAction(rejectionBookingId);
-    setPendingBookings((previous) => previous.filter((item) => item.id !== rejectionBookingId));
-    setActiveBookingId(null);
-    setRejectionDialogOpen(false);
-    setRejectionBookingId(null);
-    setRejectionReason("");
   });
 };
 
@@ -405,7 +489,7 @@ const handleViewNotification = (bookingId: string) => {
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                disabled={isProcessing}
+                                disabled={isProcessing || activeBookingId !== null}
                                 onClick={() => handleModeration(booking.id, "reject", booking.type)}
                                 className="inline-flex items-center gap-1"
                               >
@@ -418,7 +502,7 @@ const handleViewNotification = (bookingId: string) => {
                               </Button>
                               <Button
                                 size="sm"
-                                disabled={isProcessing}
+                                disabled={isProcessing || activeBookingId !== null}
                                 onClick={() => handleModeration(booking.id, "approve")}
                                 className="inline-flex items-center gap-1"
                               >
@@ -534,13 +618,19 @@ const handleViewNotification = (bookingId: string) => {
         </div>
       </div>
 
-      {/* Dialog pour le message de refus d'annulation */}
+      {/* Dialog pour le message de refus (annulation ou modification) */}
       <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Rejeter la demande d&apos;annulation</DialogTitle>
+            <DialogTitle>
+              {rejectionBookingType === "modification" 
+                ? "Refuser la modification" 
+                : "Rejeter la demande d&apos;annulation"}
+            </DialogTitle>
             <DialogDescription>
-              Vous pouvez ajouter un message expliquant pourquoi la demande d&apos;annulation est refusée. Ce message sera envoyé au client par email.
+              {rejectionBookingType === "modification"
+                ? "Veuillez expliquer pourquoi vous refusez cette modification de dates. Ce message sera envoyé au client par email."
+                : "Vous pouvez ajouter un message expliquant pourquoi la demande d&apos;annulation est refusée. Ce message sera envoyé au client par email."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -550,7 +640,11 @@ const handleViewNotification = (bookingId: string) => {
               </Label>
               <Textarea
                 id="rejection-reason"
-                placeholder="Ex: La réservation est trop proche de la date de début pour permettre une annulation selon notre politique..."
+                placeholder={
+                  rejectionBookingType === "modification"
+                    ? "Ex: Les nouvelles dates demandées ne sont pas disponibles. Le véhicule est déjà réservé pour cette période..."
+                    : "Ex: La réservation est trop proche de la date de début pour permettre une annulation selon notre politique..."
+                }
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={4}
@@ -568,6 +662,7 @@ const handleViewNotification = (bookingId: string) => {
               onClick={() => {
                 setRejectionDialogOpen(false);
                 setRejectionBookingId(null);
+                setRejectionBookingType(null);
                 setRejectionReason("");
               }}
               disabled={isModerating}

@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceStrict } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   CalendarRange,
@@ -114,11 +115,43 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
   const [isModerating, startModerate] = useTransition();
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [activeModeration, setActiveModeration] = useState<string | null>(null);
+  const [isProcessingAction, setIsProcessingAction] = useState(false); // État supplémentaire pour bloquer immédiatement
   const [isLicensePending, startLicenseTransition] = useTransition();
   const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const computedStatus = useMemo(() => computeDynamicStatus(booking), [booking]);
+  // Logger les changements de props booking
+  useEffect(() => {
+    console.log(`[BookingDetailsPageClient] 📦 Props booking mises à jour:`, {
+      id: booking.id,
+      reference: booking.reference,
+      status: booking.status,
+      modificationRequested: booking.modificationRequested,
+      modificationDepositDifference: booking.modificationDepositDifference,
+      updatedAt: booking.updatedAt,
+    });
+  }, [booking.id, booking.reference, booking.status, booking.modificationRequested, booking.modificationDepositDifference, booking.updatedAt]);
+
+  // Réinitialiser les états quand isModerating devient false (transition terminée)
+  useEffect(() => {
+    if (!isModerating) {
+      // Attendre un court délai pour s'assurer que le refresh est terminé
+      const timeoutId = setTimeout(() => {
+        setIsProcessingAction(false);
+        setActiveModeration(null);
+      }, 200);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isModerating]);
+
+  const computedStatus = useMemo(() => {
+    const status = computeDynamicStatus(booking);
+    console.log(`[BookingDetailsPageClient] 🏷️ Statut calculé:`, {
+      bookingStatus: booking.status,
+      computedStatus: status,
+    });
+    return status;
+  }, [booking]);
 
   const startDateLabel = useMemo(() => formatDateTime(booking.startDate), [booking.startDate]);
   const endDateLabel = useMemo(() => formatDateTime(booking.endDate), [booking.endDate]);
@@ -207,11 +240,25 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
   };
 
   const handleModeration = (action: "approve" | "reject") => {
+    // Empêcher les clics multiples - vérifier TOUS les états possibles
+    if (isProcessingAction || isModerating || activeModeration !== null) {
+      console.log(`[BookingDetails] ⚠️ Action déjà en cours, ignore le clic sur ${action}`, {
+        isProcessingAction,
+        isModerating,
+        activeModeration,
+      });
+      return;
+    }
+
+    // Bloquer immédiatement pour éviter les clics multiples
+    setIsProcessingAction(true);
     setModerationError(null);
     
-    // Si c'est un refus d'annulation, ouvrir le dialog pour saisir le message
-    if (action === "reject" && isCancellationRequest) {
+    // Si c'est un refus d'annulation OU de modification, ouvrir le dialog pour saisir le message
+    const isModification = booking.modificationRequested || (booking.modificationDepositDifference ?? 0) > 0;
+    if (action === "reject" && (isCancellationRequest || isModification)) {
       setRejectionDialogOpen(true);
+      setIsProcessingAction(false); // Réinitialiser si on ouvre juste le dialog
       return;
     }
 
@@ -227,26 +274,92 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
 
         if (!result.success) {
           setModerationError(result.error ?? "Erreur lors de la validation/refus de la réservation.");
+          toast.error(result.error ?? "Erreur lors de la validation/refus de la réservation.");
+          setIsProcessingAction(false);
+          setActiveModeration(null);
           return;
         }
 
-        // Rafraîchir la page pour afficher les changements
-        router.refresh();
+        // Déterminer le type de demande pour afficher le bon message
+        const isModification = booking.modificationRequested || (booking.modificationDepositDifference ?? 0) > 0;
+        const isCancellation = booking.cancellationRequested;
+
+        if (action === "approve") {
+          if (isModification) {
+            toast.success("Modification validée !", {
+              description: `L'email a été envoyé au client avec les instructions de paiement.`,
+            });
+          } else if (isCancellation) {
+            toast.success("Annulation validée !", {
+              description: `L'email de confirmation d'annulation a été envoyé au client.`,
+            });
+          } else {
+            toast.success("Réservation validée !", {
+              description: `L'email de confirmation a été envoyé au client.`,
+            });
+          }
+        } else {
+          if (isModification) {
+            toast.success("Modification refusée", {
+              description: `L'email de refus a été envoyé au client.`,
+            });
+          } else if (isCancellation) {
+            toast.success("Annulation refusée", {
+              description: `L'email de refus d'annulation a été envoyé au client.`,
+            });
+          } else {
+            toast.success("Réservation refusée", {
+              description: `L'email de refus a été envoyé au client.`,
+            });
+          }
+        }
+
+        // Réinitialiser les états
+        setIsProcessingAction(false);
+        setActiveModeration(null);
+        
+        // Logs pour déboguer
+        console.log("[BookingDetails] ✅ Action réussie, redirection vers la liste des réservations...");
+        
+        // Rediriger vers la liste des réservations après traitement
+        setTimeout(() => {
+          console.log("[BookingDetails] 🚀 Exécution de la redirection vers /admin/bookings...");
+          router.push("/admin/bookings");
+        }, 500);
       } catch (error) {
         console.error("Erreur lors de la modération", error);
-        setModerationError("Une erreur inattendue est survenue.");
-      } finally {
+        const errorMessage = "Une erreur inattendue est survenue.";
+        setModerationError(errorMessage);
+        toast.error(errorMessage);
+        setIsProcessingAction(false);
         setActiveModeration(null);
       }
     });
   };
 
   const handleRejectionConfirm = () => {
-    if (!rejectionReason.trim()) {
-      setModerationError("Veuillez saisir un message expliquant pourquoi vous conservez la réservation.");
+    // Empêcher les clics multiples - vérifier TOUS les états possibles
+    if (isProcessingAction || isModerating || activeModeration !== null) {
+      console.log(`[BookingDetails] ⚠️ Action déjà en cours, ignore la confirmation de refus`, {
+        isProcessingAction,
+        isModerating,
+        activeModeration,
+      });
       return;
     }
 
+    const isModification = booking.modificationRequested || (booking.modificationDepositDifference ?? 0) > 0;
+    if (!rejectionReason.trim()) {
+      setModerationError(
+        isModification
+          ? "Veuillez saisir un message expliquant pourquoi vous refusez cette modification."
+          : "Veuillez saisir un message expliquant pourquoi vous conservez la réservation."
+      );
+      return;
+    }
+
+    // Bloquer immédiatement pour éviter les clics multiples
+    setIsProcessingAction(true);
     setRejectionDialogOpen(false);
     setActiveModeration("reject");
 
@@ -259,19 +372,51 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
         });
 
         if (!result.success) {
-          setModerationError(result.error ?? "Erreur lors de la conservation de la réservation.");
+          const errorMessage = result.error ?? "Erreur lors de la conservation de la réservation.";
+          setModerationError(errorMessage);
+          toast.error(errorMessage);
+          setIsProcessingAction(false);
+          setActiveModeration(null);
           return;
         }
 
-        // Réinitialiser le message
+        // Déterminer le type pour afficher le bon message
+        const isModification = booking.modificationRequested || (booking.modificationDepositDifference ?? 0) > 0;
+        const isCancellation = booking.cancellationRequested;
+
+        if (isModification) {
+          toast.success("Modification refusée", {
+            description: `L'email de refus a été envoyé au client.`,
+          });
+        } else if (isCancellation) {
+          toast.success("Annulation refusée", {
+            description: `L'email de refus d'annulation a été envoyé au client.`,
+          });
+        } else {
+          toast.success("Réservation refusée", {
+            description: `L'email de refus a été envoyé au client.`,
+          });
+        }
+
+        // Réinitialiser le message et les états
         setRejectionReason("");
+        setIsProcessingAction(false);
+        setActiveModeration(null);
         
-        // Rafraîchir la page pour afficher les changements
-        router.refresh();
+        // Logs pour déboguer
+        console.log("[BookingDetails] ✅ Action réussie, redirection vers la liste des réservations...");
+        
+        // Rediriger vers la liste des réservations après traitement
+        setTimeout(() => {
+          console.log("[BookingDetails] 🚀 Exécution de la redirection vers /admin/bookings...");
+          router.push("/admin/bookings");
+        }, 500);
       } catch (error) {
         console.error("Erreur lors de la conservation", error);
-        setModerationError("Une erreur inattendue est survenue.");
-      } finally {
+        const errorMessage = "Une erreur inattendue est survenue.";
+        setModerationError(errorMessage);
+        toast.error(errorMessage);
+        setIsProcessingAction(false);
         setActiveModeration(null);
       }
     });
@@ -280,7 +425,9 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
   // Vérifier si la réservation nécessite une validation (statut PENDING)
   const needsValidation = computedStatus === BookingStatus.PENDING;
   const isCancellationRequest = booking.cancellationRequested === true;
-  const isProcessing = isModerating && activeModeration !== null;
+  const isModificationRequest = booking.modificationRequested === true;
+  // Désactiver les boutons si une action est en cours - utiliser TOUS les états pour être sûr
+  const isProcessing = isProcessingAction || isModerating || activeModeration !== null;
 
   return (
     <div className="space-y-6">
@@ -374,11 +521,16 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
                     className="w-full md:w-auto"
                   >
                     {isProcessing && activeModeration === "approve" ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Traitement...
+                      </>
                     ) : (
-                      <Check className="mr-2 h-4 w-4" />
+                      <>
+                        <Check className="mr-2 h-4 w-4" />
+                        Valider
+                      </>
                     )}
-                    Valider
                   </Button>
                 </>
               )}
@@ -410,7 +562,138 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            {isCancellationRequest ? (
+            {isModificationRequest ? (
+              <>
+                <strong>📅 Demande de modification de dates du client</strong>
+                <br />
+                Le client a demandé la modification des dates de cette réservation.
+                {booking.modificationRequestedAt && (
+                  <>
+                    <br />
+                    <strong>Demandée le :</strong> {formatDateTime(booking.modificationRequestedAt)}
+                  </>
+                )}
+                
+                {/* Informations de modification */}
+                {booking.originalStartDate && booking.originalEndDate && booking.originalTotalPrice !== null && (
+                  <>
+                    <br />
+                    <br />
+                    <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3">
+                      <strong className="text-blue-900">📊 Comparaison des dates et prix :</strong>
+                      <div className="mt-2 space-y-2 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-xs text-blue-800 font-semibold mb-1">Dates originales :</p>
+                            <p className="text-blue-900">
+                              {formatDateTime(booking.originalStartDate)} → {formatDateTime(booking.originalEndDate)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-blue-800 font-semibold mb-1">Nouvelles dates :</p>
+                            <p className="text-blue-900 font-semibold">
+                              {formatDateTime(booking.startDate)} → {formatDateTime(booking.endDate)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="border-t border-blue-200 pt-2 mt-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-blue-800 font-semibold mb-1">Prix original :</p>
+                              <p className="text-blue-900">
+                                {bookingCurrencyFormatter.format(booking.originalTotalPrice)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-blue-800 font-semibold mb-1">Nouveau prix :</p>
+                              <p className="text-blue-900 font-semibold">
+                                {bookingCurrencyFormatter.format(booking.totalPrice)}
+                              </p>
+                            </div>
+                          </div>
+                          {booking.originalTotalPrice !== booking.totalPrice && (
+                            <div className="mt-2 pt-2 border-t border-blue-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-blue-800 font-semibold">Différence de prix :</span>
+                                <span className={cn(
+                                  "font-bold",
+                                  booking.totalPrice > booking.originalTotalPrice ? "text-amber-700" : "text-green-700"
+                                )}>
+                                  {booking.totalPrice > booking.originalTotalPrice ? "+" : ""}
+                                  {bookingCurrencyFormatter.format(booking.totalPrice - booking.originalTotalPrice)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {/* Détails du remboursement/paiement */}
+                {booking.modificationDepositDifference !== null && booking.originalDepositPaid !== null && (
+                  <>
+                    <br />
+                    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
+                      <strong className="text-amber-900">💰 Détails du remboursement/paiement :</strong>
+                      <div className="mt-2 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-amber-800">Acompte payé (original) :</span>
+                          <span className="font-semibold text-amber-900">
+                            {bookingCurrencyFormatter.format(booking.originalDepositPaid)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-amber-800">Nouvel acompte (30%) :</span>
+                          <span className="font-semibold text-amber-900">
+                            {bookingCurrencyFormatter.format(booking.depositPaid)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t border-amber-200 pt-1 mt-1">
+                          <span className="text-amber-800">Différence d&apos;acompte :</span>
+                          <span className={cn(
+                            "font-semibold",
+                            booking.modificationDepositDifference > 0 ? "text-red-700" : "text-green-700"
+                          )}>
+                            {booking.modificationDepositDifference > 0 ? "+" : ""}
+                            {bookingCurrencyFormatter.format(booking.modificationDepositDifference)}
+                          </span>
+                        </div>
+                        {booking.modificationDepositDifference < 0 && (
+                          <p className="text-xs text-green-700 mt-2 italic">
+                            ✅ Un remboursement de {bookingCurrencyFormatter.format(Math.abs(booking.modificationDepositDifference))} sera effectué automatiquement via Stripe.
+                          </p>
+                        )}
+                        {booking.modificationDepositDifference > 0 && (
+                          <p className="text-xs text-amber-700 mt-2 italic">
+                            💳 Un paiement supplémentaire de {bookingCurrencyFormatter.format(booking.modificationDepositDifference)} sera demandé au client (seulement la différence, pas le nouvel acompte en entier).
+                            {booking.securityDepositPaid > 0 && (
+                              <span className="block mt-1">
+                                ℹ️ La caution de garantie ({bookingCurrencyFormatter.format(booking.securityDepositPaid)}) a déjà été payée et ne sera pas redemandée.
+                              </span>
+                            )}
+                          </p>
+                        )}
+                        {booking.modificationDepositDifference === 0 && (
+                          <p className="text-xs text-blue-700 mt-2 italic">
+                            ℹ️ Aucun remboursement ni paiement supplémentaire nécessaire.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                <br />
+                <br />
+                <strong>Actions possibles :</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li><strong>Valider la modification</strong> : Les nouvelles dates seront confirmées. {booking.modificationDepositDifference !== null && booking.modificationDepositDifference < 0 ? `Un remboursement de ${bookingCurrencyFormatter.format(Math.abs(booking.modificationDepositDifference))} sera effectué automatiquement via Stripe.` : booking.modificationDepositDifference !== null && booking.modificationDepositDifference > 0 ? `Une session de paiement de ${bookingCurrencyFormatter.format(booking.modificationDepositDifference)} sera créée pour le client.` : "Aucun remboursement ni paiement supplémentaire ne sera nécessaire."}</li>
+                  <li><strong>Refuser la modification</strong> : Les dates originales seront restaurées et la réservation repassera en statut {booking.cancellationPreviousStatus ? BOOKING_STATUS_LABELS[booking.cancellationPreviousStatus] : "CONFIRMED"}. Aucun remboursement ni paiement ne sera effectué.</li>
+                </ul>
+              </>
+            ) : isCancellationRequest ? (
               <>
                 <strong>⚠️ Demande d&apos;annulation du client</strong>
                 <br />
@@ -862,13 +1145,17 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
         </div>
       </div>
 
-      {/* Dialog pour saisir le message de conservation de la réservation */}
+      {/* Dialog pour saisir le message de refus (annulation ou modification) */}
       <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Conserver la réservation</DialogTitle>
+            <DialogTitle>
+              {isCancellationRequest ? "Conserver la réservation" : "Refuser la modification"}
+            </DialogTitle>
             <DialogDescription>
-              Veuillez expliquer pourquoi vous conservez cette réservation. Ce message sera envoyé au client par email.
+              {isCancellationRequest
+                ? "Veuillez expliquer pourquoi vous conservez cette réservation. Ce message sera envoyé au client par email."
+                : "Veuillez expliquer pourquoi vous refusez cette modification de dates. Ce message sera envoyé au client par email."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -878,7 +1165,11 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
               </Label>
               <Textarea
                 id="rejection-reason"
-                placeholder="Ex: La réservation est confirmée et le véhicule est disponible. Nous ne pouvons pas accepter l'annulation à ce stade..."
+                placeholder={
+                  isCancellationRequest
+                    ? "Ex: La réservation est confirmée et le véhicule est disponible. Nous ne pouvons pas accepter l'annulation à ce stade..."
+                    : "Ex: Les nouvelles dates demandées ne sont pas disponibles. Le véhicule est déjà réservé pour cette période..."
+                }
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={4}
@@ -914,7 +1205,7 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
               ) : (
                 <>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Confirmer la conservation
+                  {isCancellationRequest ? "Confirmer la conservation" : "Confirmer le refus"}
                 </>
               )}
             </Button>

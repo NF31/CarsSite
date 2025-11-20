@@ -31,13 +31,27 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
   let actualSecurityDepositPaid = 0;
   let expectedSecurityDeposit = 0; // Montant de la caution attendue (même si pas encore payée)
   let paymentType: "deposit" | "full" | "authorization" = "full";
+  let isModificationPayment = false;
 
   if (session_id) {
     // Récupérer la session Stripe pour obtenir le bookingId et le montant payé
     try {
       stripeSession = await stripe.checkout.sessions.retrieve(session_id);
+      
+      // Vérifier si la session a expiré ou n'est pas complète
+      if (stripeSession.status === "expired") {
+        // Rediriger vers une page d'expiration personnalisée
+        redirect(`/bookings/payment/expired?session_id=${session_id}&booking_id=${stripeSession.metadata?.bookingId || booking_id || ""}`);
+      }
+      
+      // Si le paiement n'est pas payé mais la session n'est pas expirée, rediriger aussi
+      if (stripeSession.payment_status !== "paid" && stripeSession.status !== "complete") {
+        redirect(`/bookings/payment/expired?session_id=${session_id}&booking_id=${stripeSession.metadata?.bookingId || booking_id || ""}`);
+      }
+      
       const bookingIdFromMetadata = stripeSession.metadata?.bookingId;
       paymentType = (stripeSession.metadata?.paymentType as "deposit" | "full" | "authorization") || "full";
+      isModificationPayment = stripeSession.metadata?.isModificationPayment === "true";
 
       if (bookingIdFromMetadata) {
         // Récupérer la réservation avec les paiements associés
@@ -339,6 +353,15 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
     redirect("/dashboard");
   }
 
+  // Détecter si c'est un paiement supplémentaire de modification
+  const modificationMetadata = isModificationPayment && stripeSession?.metadata ? {
+    originalTotalPrice: stripeSession.metadata.originalTotalPrice ? parseFloat(stripeSession.metadata.originalTotalPrice) : null,
+    originalDepositPaid: stripeSession.metadata.originalDepositPaid ? parseFloat(stripeSession.metadata.originalDepositPaid) : null,
+    originalRemainingAmount: stripeSession.metadata.originalRemainingAmount ? parseFloat(stripeSession.metadata.originalRemainingAmount) : null,
+    depositDifference: stripeSession.metadata.depositDifference ? parseFloat(stripeSession.metadata.depositDifference) : null,
+    securityDepositPaid: stripeSession.metadata.securityDepositPaid ? parseFloat(stripeSession.metadata.securityDepositPaid) : 0,
+  } : null;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
@@ -348,10 +371,12 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
               <CheckCircle2 className="h-10 w-10 text-white" />
             </div>
             <CardTitle className="text-3xl font-bold text-gray-900">
-              Paiement confirmé !
+              {isModificationPayment ? "Paiement supplémentaire confirmé !" : "Paiement confirmé !"}
             </CardTitle>
             <p className="text-muted-foreground mt-2">
-              Votre réservation a été confirmée avec succès
+              {isModificationPayment 
+                ? "Votre paiement supplémentaire pour la modification a été effectué avec succès"
+                : "Votre réservation a été confirmée avec succès"}
             </p>
           </CardHeader>
           <CardContent className="pt-8 space-y-6">
@@ -367,9 +392,56 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                   {booking.vehicle.brand} {booking.vehicle.model}
                 </span>
               </div>
+              
+              {/* Afficher les informations de modification si c'est un paiement supplémentaire */}
+              {isModificationPayment && modificationMetadata && modificationMetadata.originalTotalPrice != null && (
+                <div className="border-t pt-3 mt-3 space-y-2">
+                  <p className="text-sm font-semibold text-amber-700 mb-2">📊 Comparaison des prix</p>
+                  <div className="bg-white rounded p-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Prix original :</span>
+                      <span>{modificationMetadata.originalTotalPrice.toFixed(2)}€</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Nouveau prix :</span>
+                      <span className="font-semibold">{booking.totalPrice.toFixed(2)}€</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-muted-foreground">Différence :</span>
+                      <span className={`font-semibold ${(booking.totalPrice - modificationMetadata.originalTotalPrice) >= 0 ? "text-red-600" : "text-green-600"}`}>
+                        {(booking.totalPrice - modificationMetadata.originalTotalPrice) >= 0 ? "+" : ""}
+                        {(booking.totalPrice - modificationMetadata.originalTotalPrice).toFixed(2)}€
+                      </span>
+                    </div>
+                  </div>
+                  {modificationMetadata.originalDepositPaid != null && (
+                    <div className="bg-white rounded p-3 space-y-2 text-sm mt-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Acompte original :</span>
+                        <span>{modificationMetadata.originalDepositPaid.toFixed(2)}€</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Nouvel acompte :</span>
+                        <span className="font-semibold">{booking.depositPaid.toFixed(2)}€</span>
+                      </div>
+                      {modificationMetadata.depositDifference != null && (
+                        <div className="flex justify-between pt-2 border-t">
+                          <span className="text-muted-foreground">Paiement supplémentaire :</span>
+                          <span className="font-semibold text-green-600">
+                            +{modificationMetadata.depositDifference.toFixed(2)}€
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {actualDepositPaid > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Acompte payé (30%)</span>
+                  <span className="text-sm text-muted-foreground">
+                    {isModificationPayment ? "Acompte total payé (30%)" : "Acompte payé (30%)"}
+                  </span>
                   <span className="font-semibold text-green-600">
                     {actualDepositPaid.toFixed(2)}€
                   </span>
@@ -409,7 +481,9 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
               <p className="text-sm text-blue-800">
                 <strong>Prochaines étapes :</strong>
                 <br />
-                Vous allez recevoir un email de confirmation dans quelques instants.
+                {isModificationPayment 
+                  ? "Vous allez recevoir un email de mise à jour avec les détails de votre paiement supplémentaire dans quelques instants."
+                  : "Vous allez recevoir un email de confirmation dans quelques instants."}
               </p>
             </div>
 
@@ -432,4 +506,3 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
     </div>
   );
 }
-
