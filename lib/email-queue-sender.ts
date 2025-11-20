@@ -227,6 +227,7 @@ export interface BookingUpdateEmailParams {
     additionalPaymentAmount?: number;
     paymentUrl?: string;
     securityDepositPaid?: number;
+    paymentConfirmed?: boolean; // Indique si le paiement supplémentaire a été confirmé (webhook)
   };
   rejectionReason?: string | null; // Message de refus de l'admin (pour les modifications refusées)
 }
@@ -339,18 +340,24 @@ export async function queueBookingUpdateEmail({
         ctaMutedLabel: "Besoin d'aide ? Répondez directement à ce message.",
       },
       [BookingStatus.CONFIRMED]: {
-        title: isRejection 
+        title: isRejection
           ? "Votre demande de modification a été refusée"
+          : modificationInfo?.paymentConfirmed === true
+          ? "Paiement supplémentaire confirmé !"
           : modificationInfo 
           ? "Votre demande est validée !" 
           : "Votre réservation est confirmée !",
         subtitle: isRejection
           ? "Les dates originales ont été restaurées. Votre réservation reste confirmée avec les informations initiales."
+          : modificationInfo?.paymentConfirmed === true
+          ? "Votre paiement supplémentaire pour la modification a été effectué avec succès"
           : modificationInfo 
           ? "Les nouvelles dates sont confirmées, retrouvez le détail ci-dessous."
           : "Toutes les informations sont validées, retrouvez le détail ci-dessous.",
         badge: isRejection 
           ? "Demande refusée" 
+          : modificationInfo?.paymentConfirmed === true
+          ? "Paiement confirmé"
           : modificationInfo 
           ? "Demande acceptée" 
           : "Réservation confirmée",
@@ -404,10 +411,14 @@ export async function queueBookingUpdateEmail({
           if (isRejection) {
             return `Demande refusée - Réservation ${reference}`;
           }
-          // Si c'est un paiement supplémentaire confirmé (modificationInfo avec additionalPaymentAmount)
-          if (modificationInfo?.additionalPaymentAmount != null && modificationInfo.additionalPaymentAmount > 0) {
-            return `Paiement supplémentaire confirmé - Réservation ${reference}`;
-          }
+        // Si c'est un paiement supplémentaire confirmé (modificationInfo avec paymentConfirmed = true)
+        if (modificationInfo?.paymentConfirmed === true) {
+          return `Paiement supplémentaire confirmé - Réservation ${reference}`;
+        }
+        // Si c'est un paiement supplémentaire requis (modificationInfo avec additionalPaymentAmount mais pas encore confirmé)
+        if (modificationInfo?.additionalPaymentAmount != null && modificationInfo.additionalPaymentAmount > 0 && !modificationInfo.paymentConfirmed) {
+          return `Paiement supplémentaire requis - Réservation ${reference}`;
+        }
           // Si c'est un remboursement effectué (modificationInfo avec refundAmount)
           if (modificationInfo?.refundAmount != null && modificationInfo.refundAmount > 0) {
             return `Remboursement effectué - Réservation ${reference}`;

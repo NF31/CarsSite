@@ -319,7 +319,16 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
         setActiveModeration(null);
         
         // Logs pour déboguer
-        console.log("[BookingDetails] ✅ Action réussie, redirection vers la liste des réservations...");
+        console.log("[BookingDetails] ✅ Action réussie, préparation de la redirection...");
+        console.log("[BookingDetails] 📊 Détails de l'action:");
+        console.log(`   - Action: ${action}`);
+        console.log(`   - Type: ${isModification ? "modification" : isCancellation ? "annulation" : "réservation"}`);
+        console.log(`   - Booking ID: ${booking.id}`);
+        console.log(`   - Référence: ${booking.reference}`);
+        console.log(`   - Statut actuel (avant redirection): ${booking.status}`);
+        console.log(`   - modificationDepositDifference: ${booking.modificationDepositDifference ?? "N/A"}€`);
+        console.log(`   - Redirection dans: 500ms`);
+        console.log(`   - Destination: /admin/bookings`);
         
         // Rediriger vers la liste des réservations après traitement
         setTimeout(() => {
