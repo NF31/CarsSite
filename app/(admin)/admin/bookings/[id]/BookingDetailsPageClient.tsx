@@ -53,6 +53,7 @@ import {
 import { BookingStatus, ServicePricingType, VehicleStatus } from "@prisma/client";
 import { X, Check } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RefundHistorySection } from "@/components/admin/bookings/RefundHistorySection";
 
 interface BookingDetailsPageClientProps {
   booking: BookingDetail;
@@ -786,6 +787,9 @@ export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientPr
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Historique des remboursements */}
+      <RefundHistorySection bookingId={booking.id} />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,320px)]">
         <div className="space-y-6 min-w-0">
