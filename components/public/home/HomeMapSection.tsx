@@ -1,38 +1,23 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { m as motion } from "framer-motion";
 
-// Composant pour Google Maps (à intégrer avec votre clé API)
+// Composant pour Google Maps (embed standard comme sur la page contact)
 function GoogleMapEmbed() {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-  if (!apiKey) {
-    return (
-      <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
-        <p className="text-muted-foreground">
-          Clé API Google Maps non configurée
-        </p>
-      </div>
-    );
-  }
-
-  // Coordonnées par défaut (Paris)
-  const defaultLat = 48.8566;
-  const defaultLng = 2.3522;
-  const zoom = 12;
-
   return (
-    <div className="w-full h-96 rounded-lg overflow-hidden border-2">
+    <div className="aspect-video w-full overflow-hidden bg-slate-100">
       <iframe
+        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.9916256937596!2d2.2922926156746234!3d48.85837007928746!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e66e2964e34e2d%3A0x8ddca9ee380ef7e0!2sTour%20Eiffel!5e0!3m2!1sfr!2sfr!4v1234567890"
         width="100%"
         height="100%"
         style={{ border: 0 }}
-        loading="lazy"
         allowFullScreen
+        loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
-        src={`https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=Paris,France&zoom=${zoom}&center=${defaultLat},${defaultLng}`}
+        title="Localisation CarRental - 123 Avenue de la République, 75011 Paris"
+        className="w-full h-full"
       />
     </div>
   );
@@ -67,15 +52,49 @@ const locations = [
 
 export function HomeMapSection() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 w-full">
       {/* Carte Google Maps */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
+        className="w-full"
       >
-        <GoogleMapEmbed />
+        <Card className="border-2 shadow-xl overflow-hidden w-full">
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="rounded-xl bg-primary/20 p-2 sm:p-3 flex-shrink-0">
+                <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-xl sm:text-2xl mb-1 break-words">Notre localisation</CardTitle>
+                <CardDescription className="text-sm sm:text-base break-words">
+                  Retrouvez-nous dans notre agence parisienne
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <GoogleMapEmbed />
+            <div className="p-4 sm:p-6 text-center bg-muted/30">
+              <address className="not-italic text-base sm:text-lg font-semibold text-foreground mb-2 break-words">
+                123 Avenue de la République
+                <br />
+                75011 Paris, France
+              </address>
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=123+Avenue+de+la+République+75011+Paris"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-primary hover:underline transition-all group"
+              >
+                Voir sur Google Maps
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Liste des agences */}
@@ -84,12 +103,12 @@ export function HomeMapSection() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full"
       >
         {locations.map((location) => (
           <Card
             key={location.id}
-            className="border-2 hover:border-primary transition-all duration-300 hover:shadow-lg"
+            className="border-2 border-transparent hover:border-primary/20 transition-all duration-300 shadow-lg hover:shadow-xl h-full w-full"
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
