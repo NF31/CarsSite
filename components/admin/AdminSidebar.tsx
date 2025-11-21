@@ -14,6 +14,8 @@ import {
   Receipt,
   Settings,
   Menu,
+  History,
+  DollarSign,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +51,7 @@ const menuItems = [
       { title: "Nouvelle réservation", href: "/admin/bookings/add" },
       { title: "Calendrier", href: "/admin/bookings/calendar" },
       { title: "En attente", href: "/admin/bookings?status=pending" },
+      { title: "Historique des remboursements", href: "/admin/refunds" },
     ],
   },
   {
