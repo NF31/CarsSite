@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { AlertCircle, Car, Fuel, Loader2, MapPin, Plus, TrendingUp, X } from "lucide-react";
+import { AlertCircle, MapPin, Plus, X } from "lucide-react";
 import { LoadScript } from "@react-google-maps/api";
 
 declare global {
@@ -18,18 +17,14 @@ declare global {
           Autocomplete: typeof google.maps.places.Autocomplete;
         };
         event?: {
-          clearInstanceListeners: (instance: any) => void;
+          clearInstanceListeners: (instance: unknown) => void;
         };
       };
     };
   }
 }
 
-const categories = [
-  { value: "cars", label: "Voitures", icon: Car },
-  { value: "utility", label: "Utilitaires", icon: Fuel },
-  { value: "subscription", label: "Abonnement", icon: TrendingUp },
-];
+// Catégorie unique : Voitures (sélecteur de catégorie supprimé car une seule catégorie disponible)
 
 // Tableau statique pour les libraries Google Maps (évite le rechargement)
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ["places"];
@@ -45,7 +40,7 @@ function getTodayDateString(): string {
 
 // Composant interne pour le widget de recherche avec Google Places
 function SearchWidgetContent() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("cars");
+  const selectedCategory = "cars"; // Catégorie fixe : Voitures uniquement
   const [showDifferentReturn, setShowDifferentReturn] = useState(false);
   const [pickupValue, setPickupValue] = useState("");
   const [pickupPlaceId, setPickupPlaceId] = useState("");
@@ -72,7 +67,7 @@ function SearchWidgetContent() {
   // Utiliser useMemo pour recalculer seulement quand nécessaire
   const minStartTime = useMemo(() => {
     return isStartDateToday ? getMinTimeForToday() : "00:00";
-  }, [isStartDateToday, startDate]); // Recalculer si la date change ou si c'est aujourd'hui
+  }, [isStartDateToday]); // Recalculer si c'est aujourd'hui (isStartDateToday change déjà si startDate change)
   const returnInputRef = useRef<HTMLInputElement>(null);
   const autocompletePickupRef = useRef<google.maps.places.Autocomplete | null>(null);
   const autocompleteReturnRef = useRef<google.maps.places.Autocomplete | null>(null);
@@ -264,28 +259,6 @@ function SearchWidgetContent() {
           </button>
         </div>
       )}
-      <div className="flex flex-wrap gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl bg-slate-100 p-1">
-        {categories.map((category) => {
-          const Icon = category.icon;
-          const isActive = selectedCategory === category.value;
-          return (
-            <Button
-              key={category.value}
-              type="button"
-              onClick={() => setSelectedCategory(category.value)}
-              className={cn(
-                "flex-1 justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition px-2 sm:px-3",
-                isActive ? "bg-white text-slate-900 shadow" : "bg-transparent text-slate-500 hover:bg-white",
-              )}
-              variant={isActive ? "default" : "ghost"}
-            >
-              <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{category.label}</span>
-              <span className="sm:hidden">{category.label.split(" ")[0]}</span>
-            </Button>
-          );
-        })}
-      </div>
 
       <form 
         className="mt-4 sm:mt-6 space-y-4 sm:space-y-6" 
