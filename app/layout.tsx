@@ -6,6 +6,7 @@ import { MotionProvider } from "@/components/providers/motion-provider";
 import { ConditionalHeaderFooter } from "@/components/layout/conditional-header-footer";
 import { FullCalendarStyles } from "@/components/providers/fullcalendar-styles";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +22,8 @@ export const metadata: Metadata = {
   title: "CarRental - Location de Voitures",
   description: "Réservez votre véhicule en ligne facilement",
 };
+
+const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
 export default function RootLayout({
   children,
@@ -41,6 +44,7 @@ export default function RootLayout({
         </MotionProvider>
         <ToasterProvider />
       </body>
+       {gaId && <GoogleAnalytics gaId={gaId} />}
     </html>
   );
 }

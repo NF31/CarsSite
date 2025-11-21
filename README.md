@@ -172,6 +172,9 @@ GMAIL_PASSWORD="votre-password"
 
 # Google Maps
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="votre-google-maps-key"
+
+# Google Analytics (optionnel)
+NEXT_PUBLIC_GA_ID="G-XXXXXXXXXX" # ID de mesure Google Analytics (GA4)
 ```
 
 **Important :** Si vous rencontrez l'erreur `RefererNotAllowedMapError`, consultez le guide de configuration dans `docs/google-maps-setup.md`
