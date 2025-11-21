@@ -3,7 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus, Prisma } from "@prisma/client";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/email";
 import { format } from "date-fns";
@@ -189,9 +189,9 @@ export async function POST(req: NextRequest) {
       // Vérifier isModificationPayment depuis les métadonnées OU depuis modificationDepositDifference dans la DB
       // (vérification de secours au cas où les métadonnées ne seraient pas présentes)
       const hasModificationDepositDifference = (booking.modificationDepositDifference ?? 0) > 0;
-      const isModificationPayment = 
-        session.metadata?.isModificationPayment === "true" || 
-        hasModificationDepositDifference;
+      const metadataIsModification = session.metadata?.isModificationPayment === "true" || 
+                                      session.metadata?.isModificationPayment === "1";
+      const isModificationPayment = metadataIsModification || hasModificationDepositDifference;
       
       console.log(`[Stripe Webhook] 🔍 Détection du type de paiement`, {
         bookingId,
@@ -202,9 +202,24 @@ export async function POST(req: NextRequest) {
         hasModificationDepositDifference,
         modificationDepositDifference: booking.modificationDepositDifference,
         metadataIsModificationPayment: session.metadata?.isModificationPayment,
+        metadataIsModificationRaw: metadataIsModification,
         metadata: session.metadata,
         timestamp: new Date().toISOString(),
       });
+      
+      // Vérification critique pour les paiements de modification
+      if (hasModificationDepositDifference || metadataIsModification) {
+        console.log(`[Stripe Webhook] ⚠️  PAIEMENT DE MODIFICATION DÉTECTÉ - Le statut DOIT passer à CONFIRMED`, {
+          bookingId,
+          hasModificationDepositDifference,
+          modificationDepositDifference: booking.modificationDepositDifference,
+          metadataIsModification,
+          metadataValue: session.metadata?.isModificationPayment,
+          currentStatus: booking.status,
+          expectedStatus: BookingStatus.CONFIRMED,
+          timestamp: new Date().toISOString(),
+        });
+      }
       
       // Récupérer l'acompte actuel de la réservation pour les paiements supplémentaires
       const currentDepositPaid = booking.depositPaid || 0;
@@ -280,13 +295,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Mettre à jour la réservation selon le type de paiement
-      let updateData: {
-        remainingAmount: number;
-        depositPaid?: number;
-        securityDepositPaid?: number;
-        status?: typeof BookingStatus[keyof typeof BookingStatus];
-        modificationDepositDifference?: null;
-      } = {
+      let updateData: Prisma.BookingUpdateInput = {
         remainingAmount: roundedRemainingAmount, // Le solde restant à payer à la remise
       };
 
@@ -306,6 +315,11 @@ export async function POST(req: NextRequest) {
           remainingAmount: newRemainingAmount,
           status: BookingStatus.CONFIRMED, // Confirmation automatique après paiement réussi
           modificationDepositDifference: null, // Nettoyer car le paiement est maintenant effectué
+          // Nettoyer les dates originales maintenant que le paiement est reçu
+          originalStartDate: null,
+          originalEndDate: null,
+          originalTotalPrice: null,
+          originalDepositPaid: null,
         };
         
         console.log(`[Stripe Webhook] 📝 Mise à jour de la réservation (paiement supplémentaire de modification)`, {
@@ -413,6 +427,36 @@ export async function POST(req: NextRequest) {
         isModificationPayment,
         timestamp: new Date().toISOString(),
       });
+      
+      // VÉRIFICATION CRITIQUE : Pour les paiements de modification, le statut DOIT être CONFIRMED
+      // Si ce n'est pas le cas, forcer la mise à jour
+      if (isModificationPayment && updatedBooking.status !== BookingStatus.CONFIRMED) {
+        console.error(`[Stripe Webhook] ❌ ERREUR CRITIQUE: Paiement de modification mais statut n'est pas CONFIRMED !`, {
+          bookingId: updatedBooking.id,
+          reference: updatedBooking.reference,
+          currentStatus: updatedBooking.status,
+          expectedStatus: BookingStatus.CONFIRMED,
+          isModificationPayment,
+          timestamp: new Date().toISOString(),
+        });
+        
+        // Forcer la mise à jour du statut à CONFIRMED
+        const correctedBooking = await prisma.booking.update({
+          where: { id: bookingId },
+          data: { status: BookingStatus.CONFIRMED },
+          select: { id: true, status: true },
+        });
+        
+        console.log(`[Stripe Webhook] ✅ Statut forcé à CONFIRMED`, {
+          bookingId: correctedBooking.id,
+          previousStatus: updatedBooking.status,
+          newStatus: correctedBooking.status,
+          timestamp: new Date().toISOString(),
+        });
+        
+        // Mettre à jour la variable pour les logs suivants
+        updatedBooking.status = correctedBooking.status;
+      }
 
       // Log pour les notifications admin
       if (isModificationPayment) {
@@ -794,6 +838,32 @@ export async function POST(req: NextRequest) {
         },
         timestamp: new Date().toISOString(),
       });
+
+      // Invalider le cache de la réservation et des pages concernées
+      try {
+        const { invalidateBookingCache, invalidateVehicleAvailabilityCache } = await import("@/lib/cache-invalidation");
+        const { revalidatePath } = await import("next/cache");
+        
+        await Promise.all([
+          invalidateBookingCache(bookingId).catch((error) => {
+            console.error("[Stripe Webhook] Error invalidating booking cache:", error);
+          }),
+          invalidateVehicleAvailabilityCache(updatedBooking.vehicleId).catch((error) => {
+            console.error("[Stripe Webhook] Error invalidating vehicle availability cache:", error);
+          }),
+        ]);
+
+        // Revalider les pages Next.js
+        revalidatePath("/dashboard");
+        revalidatePath("/admin/bookings");
+        revalidatePath(`/admin/bookings/${bookingId}`);
+        revalidatePath("/admin/dashboard");
+        
+        console.log(`[Stripe Webhook] ✅ Cache invalidé et pages revalidées pour la réservation ${bookingId}`);
+      } catch (cacheError) {
+        console.error("[Stripe Webhook] ❌ Erreur lors de l'invalidation du cache:", cacheError);
+        // Ne pas bloquer le webhook si l'invalidation de cache échoue
+      }
     } else if (event.type === "charge.refunded" || event.type === "refund.created" || event.type === "refund.updated") {
       // Gestion des événements de remboursement Stripe
       const refund = event.data.object as Stripe.Refund;
@@ -908,6 +978,27 @@ export async function POST(req: NextRequest) {
             refundAmount: `${refundAmount.toFixed(2)}€`,
             timestamp: new Date().toISOString(),
           });
+        }
+
+        // Invalider le cache de la réservation et des pages concernées après mise à jour
+        try {
+          const { invalidateBookingCache } = await import("@/lib/cache-invalidation");
+          const { revalidatePath } = await import("next/cache");
+          
+          await invalidateBookingCache(bookingId).catch((error) => {
+            console.error("[Stripe Webhook] Error invalidating booking cache:", error);
+          });
+
+          // Revalider les pages Next.js
+          revalidatePath("/dashboard");
+          revalidatePath("/admin/bookings");
+          revalidatePath(`/admin/bookings/${bookingId}`);
+          revalidatePath("/admin/dashboard");
+          
+          console.log(`[Stripe Webhook] ✅ Cache invalidé et pages revalidées pour le remboursement de la réservation ${bookingId}`);
+        } catch (cacheError) {
+          console.error("[Stripe Webhook] ❌ Erreur lors de l'invalidation du cache:", cacheError);
+          // Ne pas bloquer le webhook si l'invalidation de cache échoue
         }
       } else {
         console.log(`[Stripe Webhook] ℹ️  Statut du remboursement déjà à jour`, {

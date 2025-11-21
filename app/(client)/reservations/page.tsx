@@ -32,26 +32,8 @@ import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
-function deriveBookingStatus(
-  start: Date,
-  end: Date,
-  status: BookingStatus,
-  now: Date,
-): BookingStatus {
-  if (status === BookingStatus.CANCELLED) {
-    return BookingStatus.CANCELLED;
-  }
-
-  if (end <= now) {
-    return BookingStatus.COMPLETED;
-  }
-
-  if (start <= now && now < end) {
-    return BookingStatus.IN_PROGRESS;
-  }
-
-  return status;
-}
+// Utiliser la fonction centralisée depuis lib/booking-status-sync
+import { deriveBookingStatus } from "@/lib/booking-status-sync";
 
 type SearchParamsInput =
   | Record<string, string | string[] | undefined>
@@ -176,12 +158,14 @@ export default async function ClientReservationsPage({ searchParams }: ClientRes
   }
 
   const derivedBookings = bookings.map((booking) => {
-    const derivedStatus = deriveBookingStatus(
-      booking.startDate,
-      booking.endDate,
-      booking.status,
+    const derivedStatus = deriveBookingStatus({
+      status: booking.status,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      cancellationRequested: booking.cancellationRequested ?? false,
+      modificationRequested: booking.modificationRequested ?? false,
       now,
-    );
+    });
 
     return {
       ...booking,
