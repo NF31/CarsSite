@@ -78,21 +78,25 @@ export function HomeAdvantages() {
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full"
     >
       {advantages.map((advantage, index) => {
         const Icon = advantage.icon;
         return (
           <motion.div key={index} variants={itemVariants}>
-            <Card className="h-full border-2 hover:border-primary transition-all duration-300 hover:shadow-lg">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Icon className={`w-6 h-6 ${advantage.color}`} />
+            <Card className="h-full border-2 border-transparent hover:border-primary/20 transition-all duration-300 shadow-lg hover:shadow-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className={`rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 p-3 sm:p-4 shadow-sm flex-shrink-0`}>
+                    <Icon className={`w-5 w-5 sm:w-6 sm:h-6 ${advantage.color}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg sm:text-xl mb-1 break-words">{advantage.title}</CardTitle>
+                  </div>
                 </div>
-                <CardTitle className="text-xl">{advantage.title}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{advantage.description}</p>
+              <CardContent className="pt-0">
+                <p className="text-xs sm:text-sm text-muted-foreground break-words leading-relaxed">{advantage.description}</p>
               </CardContent>
             </Card>
           </motion.div>
