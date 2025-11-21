@@ -2,113 +2,126 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 /**
  * Sidebar pour la documentation CarRental
- * Organise les 29 fichiers markdown en catégories logiques
+ * Organise les fichiers markdown en catégories logiques selon la nouvelle structure
  * Note: Docusaurus ignore les préfixes numériques dans les noms de fichiers
  */
 const sidebars: SidebarsConfig = {
   docsSidebar: [
     'intro', // Page d'introduction
-    // Introduction et Vue d'ensemble
+    
+    // 🚀 Getting Started - Guides de démarrage
     {
       type: 'category',
-      label: '📋 Introduction',
+      label: '🚀 Getting Started',
       items: [
-        'user-stories-complete',
-        'technical-specifications',
-        'user-experience-design',
-        'roadmap-projet',
+        'getting-started/stripe-setup',
+        'getting-started/stripe-branding-setup',
+        'getting-started/google-maps-setup',
+        'getting-started/redis-integration',
+        'getting-started/redis-cache-strategy',
+        'getting-started/NEXTAUTH_STRUCTURE',
       ],
     },
     
-    // Architecture et Structure
+    // 📋 Requirements - Spécifications fonctionnelles
+    {
+      type: 'category',
+      label: '📋 Requirements',
+      items: [
+        'requirements/01-user-stories-complete',
+      ],
+    },
+    
+    // 📐 Specs - Spécifications techniques
+    {
+      type: 'category',
+      label: '📐 Specifications',
+      items: [
+        'specs/02-technical-specifications',
+      ],
+    },
+    
+    // 🏗️ Architecture - Architecture et structure
     {
       type: 'category',
       label: '🏗️ Architecture',
       items: [
-        'global-architecture-overview',
-        'admin-directory-structure',
-        'data-models',
-        'data-dictionary',
-        'prisma-schema',
+        'architecture/13-global-architecture-overview',
+        'architecture/09-admin-directory-structure',
+        'architecture/06-data-models',
+        'architecture/07-data-dictionary',
+        'architecture/08-prisma-schema',
       ],
     },
     
-    // Interface Admin
-    {
-      type: 'category',
-      label: '🎛️ Interface Admin',
-      items: [
-        'admin-interface-detailed',
-        'admin-navbar-dashboard',
-      ],
-    },
-    
-    // API et Implémentation
-    {
-      type: 'category',
-      label: '🔌 API & Implémentation',
-      items: [
-        'api-reference-complete',
-        'implementation-examples',
-      ],
-    },
-    
-    // Workflows et Processus
-    {
-      type: 'category',
-      label: '🔄 Workflows',
-      items: [
-        'workflows-detailed',
-        'workflow-modification-dates',
-        'explication-calcul-modification-dates',
-        'account-deletion-process',
-      ],
-    },
-    
-    // Services et Fonctionnalités
-    {
-      type: 'category',
-      label: '🛡️ Services',
-      items: [
-        'insurance-services-detailed',
-      ],
-    },
-    
-    // Design et UX
+    // 🎨 Design - Design et UX
     {
       type: 'category',
       label: '🎨 Design & UX',
       items: [
-        'design-system',
-        'content-strategy',
-        'competitive-analysis',
+        'design/design-system',
+        'design/content-strategy',
+        'design/03-user-experience-design',
+        'design/18-competitive-analysis',
       ],
     },
     
-    // Configuration et Setup
+    // 🎛️ Admin Interface - Interface admin
     {
       type: 'category',
-      label: '⚙️ Configuration',
+      label: '🎛️ Admin Interface',
       items: [
-        'NEXTAUTH_STRUCTURE',
-        'stripe-setup',
-        'stripe-branding-setup',
-        'google-maps-setup',
-        'redis-integration',
-        'redis-cache-strategy',
+        'admin-interface/04-admin-interface-detailed',
+        'admin-interface/05-admin-navbar-dashboard',
       ],
     },
     
-    // Évaluation et Statut
+    // 🔄 Workflows - Workflows métier
     {
       type: 'category',
-      label: '✅ Évaluation',
+      label: '🔄 Workflows',
       items: [
-        'documentation-checklist',
-        'complete-documentation-review',
-        'final-readiness-assessment',
-        'complete-project-status',
-        'documentation-update-summary',
+        'workflows/16-workflows-detailed',
+        'workflows/workflow-annulation-reservation',
+        'workflows/workflow-modification-dates-complet',
+        'workflows/workflow-modification-dates',
+        'workflows/workflow-remboursement-complet',
+        'workflows/explication-calcul-modification-dates',
+        'workflows/verification-flux-et-cache',
+      ],
+    },
+    
+    // 📖 Reference - Documentation de référence
+    {
+      type: 'category',
+      label: '📖 Reference',
+      items: [
+        'reference/14-api-reference-complete',
+        'reference/15-implementation-examples',
+        'reference/17-insurance-services-detailed',
+        'reference/account-deletion-process',
+      ],
+    },
+    
+    // 🗺️ Roadmap - Planification
+    {
+      type: 'category',
+      label: '🗺️ Roadmap',
+      items: [
+        'roadmap/roadmap-projet',
+      ],
+    },
+    
+    // ✅ Status - Statut du projet
+    {
+      type: 'category',
+      label: '✅ Project Status',
+      items: [
+        'status/10-documentation-checklist',
+        'status/11-complete-documentation-review',
+        'status/12-final-readiness-assessment',
+        'status/19-complete-project-status',
+        'status/20-documentation-update-summary',
       ],
     },
   ],
