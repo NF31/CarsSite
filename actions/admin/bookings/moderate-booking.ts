@@ -197,7 +197,7 @@ async function handleModificationRequest(
         reason: "booking_modification",
       });
 
-      if (!refundResult.success) {
+        if (!refundResult.success) {
         console.error(`\n❌ [Admin Moderation] ERREUR lors du remboursement:`);
         console.error(`   - Erreur: ${refundResult.error}`);
         console.error(`   - Booking ID: ${booking.id}`);
@@ -205,15 +205,33 @@ async function handleModificationRequest(
         console.error(`   - Nouvel acompte: ${booking.depositPaid}€`);
         console.error(`   - Montant à rembourser: ${refundAmount}€`);
         
-        // Si l'erreur est due à l'absence de paiement Stripe, on continue quand même
-        // mais on n'enregistre pas refundCreated = true
-        if (refundResult.error?.includes("Aucun paiement") || refundResult.error?.includes("paiement Stripe")) {
-          console.warn(`\n⚠️  [Admin Moderation] Aucun paiement Stripe trouvé pour cette réservation.`);
-          console.warn(`   La modification sera validée mais le remboursement devra être effectué manuellement.`);
-          console.warn(`   Montant à rembourser manuellement: ${refundAmount}€`);
-          // On continue sans remboursement automatique
+        // Si l'erreur est due à l'absence de paiement Stripe, au montant insuffisant,
+        // ou au fait que le Payment Intent a déjà été complètement remboursé,
+        // on continue quand même mais on n'enregistre pas refundCreated = true
+        const isRefundErrorRecoverable = 
+          refundResult.error?.includes("Aucun paiement") || 
+          refundResult.error?.includes("paiement Stripe") ||
+          refundResult.error?.includes("montant total disponible") ||
+          refundResult.error?.includes("montant insuffisant") ||
+          refundResult.error?.includes("dépasse le montant total") ||
+          refundResult.error?.includes("remboursement manuel") ||
+          refundResult.error?.includes("déjà été complètement remboursé") ||
+          refundResult.error?.includes("remboursable disponible : 0") ||
+          refundResult.error?.includes("greater than or equal to 1");
+        
+        if (isRefundErrorRecoverable) {
+          console.warn(`\n⚠️  [Admin Moderation] Erreur de remboursement récupérable, on continue sans remboursement Stripe`);
+          console.warn(`   - Le remboursement sera géré manuellement ou le Payment Intent a déjà été remboursé`);
+          console.warn(`   - Erreur: ${refundResult.error}`);
+          console.warn(`   - La modification sera validée mais le remboursement devra être effectué manuellement.`);
+          console.warn(`   - Montant à rembourser manuellement: ${refundAmount}€`);
+          console.warn(`   - Acompte original payé: ${originalDepositPaid}€`);
+          console.warn(`   - Nouvel acompte: ${booking.depositPaid}€`);
+          // On continue sans créer de remboursement Stripe
+          refundCreated = false;
+          refundAmountCreated = 0;
         } else {
-          // Pour les autres erreurs, on arrête
+          // Pour les autres erreurs (erreurs Stripe, etc.), on arrête
           return {
             success: false,
             error: `Erreur lors du remboursement: ${refundResult.error}`,
@@ -324,10 +342,13 @@ async function handleModificationRequest(
       data: {
         modificationRequested: false,
         modificationRequestedAt: null,
-        originalStartDate: null,
-        originalEndDate: null,
-        originalTotalPrice: null,
-        originalDepositPaid: null,
+        // IMPORTANT: Ne PAS supprimer les dates originales si un paiement est nécessaire
+        // On les garde pour pouvoir restaurer en cas de refus après acceptation
+        // Elles seront supprimées par le webhook Stripe après le paiement réussi
+        originalStartDate: requiresPayment ? booking.originalStartDate : null,
+        originalEndDate: requiresPayment ? booking.originalEndDate : null,
+        originalTotalPrice: requiresPayment ? booking.originalTotalPrice : null,
+        originalDepositPaid: requiresPayment ? booking.originalDepositPaid : null,
         // IMPORTANT: Ne PAS nettoyer modificationDepositDifference si un paiement est nécessaire
         // Il sera nettoyé par le webhook Stripe après le paiement réussi
         // Cela permet au webhook de savoir qu'il s'agit d'un paiement de modification
@@ -580,9 +601,16 @@ async function handleModificationRequest(
   } else {
     // Admin refuse la modification → restaurer les dates originales
     if (!booking.originalStartDate || !booking.originalEndDate) {
+      console.error(`\n❌ [Admin Moderation] Impossible de rejeter la modification : dates originales manquantes`);
+      console.error(`   - originalStartDate: ${booking.originalStartDate ? "✅ Présent" : "❌ Manquant"}`);
+      console.error(`   - originalEndDate: ${booking.originalEndDate ? "✅ Présent" : "❌ Manquant"}`);
+      console.error(`   - modificationRequested: ${booking.modificationRequested}`);
+      console.error(`   - modificationDepositDifference: ${booking.modificationDepositDifference ?? "N/A"}`);
+      console.error(`   - Note: Les dates originales devraient être conservées jusqu'au paiement du paiement supplémentaire.`);
+      
       return {
         success: false,
-        error: "Impossible de restaurer les dates originales. Les données sont manquantes.",
+        error: "Impossible de restaurer les dates originales. Les données sont manquantes. Si la modification a déjà été acceptée et payée, vous ne pouvez plus la rejeter.",
       };
     }
 
@@ -842,7 +870,11 @@ export async function moderateBookingStatusAction(
 
     // Gérer les demandes de modification de dates
     // IMPORTANT: Inclure aussi les cas où modificationDepositDifference existe (modification validée mais paiement en attente)
-    if (isModificationRequest) {
+    // MAIS si c'est une annulation ET une modification, prioriser l'annulation si action = "reject"
+    // (car "Conserver la réservation" signifie rejeter l'annulation, pas la modification)
+    
+    if (isModificationRequest && !(isCancellationRequest && action === "reject")) {
+      // Si c'est une modification ET pas de rejet d'annulation en même temps
       console.log(`\n🟢 [ModerateBooking] Appel de handleModificationRequest...`);
       const result = await handleModificationRequest(booking, action, emailModule, parsed.data.rejectionReason);
       console.log(`\n🟢 [ModerateBooking] Résultat de handleModificationRequest:`);
@@ -890,10 +922,28 @@ export async function moderateBookingStatusAction(
 
           if (!refundResult.success) {
             console.error("[Admin Moderation] Erreur lors du remboursement d'annulation:", refundResult.error);
-            return {
-              success: false,
-              error: `Erreur lors du remboursement: ${refundResult.error}`,
-            };
+            
+            // Vérifier si l'erreur est due au fait que le Payment Intent a déjà été complètement remboursé
+            const isRefundErrorRecoverable = 
+              refundResult.error?.includes("déjà été complètement remboursé") ||
+              refundResult.error?.includes("remboursable disponible : 0") ||
+              refundResult.error?.includes("remboursable est de") ||
+              refundResult.error?.includes("Aucun remboursement supplémentaire");
+            
+            if (isRefundErrorRecoverable) {
+              console.warn(`\n⚠️  [Admin Moderation] Erreur de remboursement récupérable pour l'annulation`);
+              console.warn(`   - Le Payment Intent a déjà été complètement remboursé`);
+              console.warn(`   - Erreur: ${refundResult.error}`);
+              console.warn(`   - L'annulation sera validée mais aucun remboursement automatique ne sera effectué`);
+              console.warn(`   - Le remboursement a déjà été géré précédemment`);
+              // On continue sans créer de remboursement Stripe - l'annulation peut quand même être acceptée
+            } else {
+              // Pour les autres erreurs (erreurs Stripe, etc.), on arrête
+              return {
+                success: false,
+                error: `Erreur lors du remboursement: ${refundResult.error}`,
+              };
+            }
           }
           console.log(`[Admin Moderation] ✅ Remboursement d'annulation créé: ${refundAmount}€ (${(refundRate * 100).toFixed(0)}%)`);
         } else if (refundAmount === 0 && depositPaid > 0) {
@@ -996,18 +1046,41 @@ export async function moderateBookingStatusAction(
           }
         }
       } else {
-        // Action "reject" - Refuser la demande d'annulation
+        // Action "reject" - Refuser la demande d'annulation (Conserver la réservation)
+        // IMPORTANT: Vérifier s'il y a aussi une modification en cours
+        // Si oui, on ne restaure pas les dates car elles sont déjà modifiées
+        // On remet juste cancellationRequested à false
+        
+        console.log(`\n🟢 [ModerateBooking] Rejet de l'annulation - Conservation de la réservation`);
+        console.log(`   - Statut précédent: ${previousStatus}`);
+        console.log(`   - Modification en cours: ${isModificationRequest}`);
+        console.log(`   - Dates originales disponibles: ${booking.originalStartDate ? "OUI" : "NON"}`);
+        
+        // Si une modification est en cours, on garde les dates actuelles
+        // et on nettoie juste la demande d'annulation
+        const updateData: Prisma.BookingUpdateInput = {
+          cancellationRequested: false,
+          cancellationRequestedAt: null,
+          cancellationRequestedRefundRate: null,
+          cancellationPreviousStatus: null,
+        };
+        
+        // Si PAS de modification en cours, on restaure le statut précédent
+        // Si une modification est en cours, on garde le statut actuel (qui est probablement PENDING pour la modification)
+        if (!isModificationRequest) {
+          updateData.status = previousStatus;
+          console.log(`   - Restauration du statut à: ${previousStatus}`);
+        } else {
+          console.log(`   - Modification en cours détectée - conservation du statut actuel: ${booking.status}`);
+        }
+        
+        // Ajouter le message de refus si fourni
+        updateData.cancellationReason = null;
+        updateData.cancellationRejectionReason = parsed.data.rejectionReason || null;
+        
         const restored = await prisma.booking.update({
           where: { id: bookingId },
-          data: {
-            status: previousStatus,
-            cancellationRequested: false,
-            cancellationRequestedAt: null,
-            cancellationRequestedRefundRate: null,
-            cancellationPreviousStatus: null,
-            cancellationReason: null,
-            cancellationRejectionReason: parsed.data.rejectionReason || null, // Stocker le message de refus
-          } as Prisma.BookingUpdateInput,
+          data: updateData,
           select: {
             startDate: true,
             endDate: true,

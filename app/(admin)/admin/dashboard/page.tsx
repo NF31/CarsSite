@@ -44,22 +44,25 @@ const STATUS_META: Record<BookingStatus, { label: string; badgeClass: string }> 
   },
 };
 
-function computeDynamicStatus(booking: { status: BookingStatus; startDate: Date; endDate: Date }) {
-  if (booking.status === BookingStatus.CANCELLED) {
-    return BookingStatus.CANCELLED;
-  }
+// Utiliser la fonction centralisée depuis lib/booking-status-sync
+import { deriveBookingStatus } from "@/lib/booking-status-sync";
 
-  const now = new Date();
-
-  if (booking.endDate <= now) {
-    return BookingStatus.COMPLETED;
-  }
-
-  if (booking.startDate <= now && now < booking.endDate) {
-    return BookingStatus.IN_PROGRESS;
-  }
-
-  return booking.status;
+function computeDynamicStatus(booking: { 
+  status: BookingStatus; 
+  startDate: Date; 
+  endDate: Date;
+  modificationRequested?: boolean | null;
+  modificationDepositDifference?: number | null;
+  cancellationRequested?: boolean | null;
+}) {
+  return deriveBookingStatus({
+    status: booking.status,
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    modificationRequested: booking.modificationRequested ?? false,
+    modificationDepositDifference: booking.modificationDepositDifference ?? null,
+    cancellationRequested: booking.cancellationRequested ?? false,
+  });
 }
 
 export default async function AdminDashboardPage() {
@@ -218,7 +221,16 @@ export default async function AdminDashboardPage() {
     orderBy: {
       createdAt: "desc",
     },
-    include: {
+    select: {
+      id: true,
+      reference: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      totalPrice: true,
+      modificationRequested: true,
+      modificationDepositDifference: true,
+      cancellationRequested: true,
       user: {
         select: {
           name: true,
