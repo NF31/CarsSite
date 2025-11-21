@@ -7,6 +7,7 @@ import { getBookingUpdateEmailTemplate } from "./templates/booking-update-email"
 import { getBookingCancellationEmailTemplate } from "./templates/booking-cancellation-email";
 import { getBookingCancellationRejectedEmailTemplate } from "./templates/booking-cancellation-rejected-email";
 import { getBookingCancellationRequestEmailTemplate } from "./templates/booking-cancellation-request-email";
+import { getContactConfirmationEmailTemplate, getContactNotificationEmailTemplate } from "./templates/contact-email";
 import { BookingStatus } from "@prisma/client";
 import {
   queueVerificationEmail,
@@ -17,6 +18,8 @@ import {
   queueBookingCancellationRejectedEmail,
   queueBookingCancellationRequestEmail,
   queueBookingCancellationEmail,
+  queueContactConfirmationEmail,
+  queueContactNotificationEmail,
 } from "./email-queue-sender";
 import { isRedisAvailable } from "./redis";
 
@@ -1034,6 +1037,134 @@ export async function sendBookingCancellationEmail({
     return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email d'annulation de réservation:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
+    };
+  }
+}
+
+interface ContactEmailParams {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}
+
+/**
+ * Envoie un email de confirmation à l'utilisateur après l'envoi d'une demande de contact
+ */
+export async function sendContactConfirmationEmail(data: ContactEmailParams) {
+  if (!hasEmailCredentials) {
+    console.warn(
+      "⚠️  Email credentials non configurés. L'email de confirmation de contact n'a pas pu être envoyé."
+    );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueContactConfirmationEmail(data);
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  const template = getContactConfirmationEmailTemplate(data);
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"CarRental" <${process.env.GMAIL_USER}>`,
+      to: data.email,
+      subject: `Confirmation de réception - ${data.subject}`,
+      html: template.html,
+      text: template.text,
+    });
+
+    return { success: true, messageId: info.messageId, queued: false };
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de confirmation de contact:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
+    };
+  }
+}
+
+/**
+ * Envoie un email de notification à l'admin lorsqu'une nouvelle demande de contact arrive
+ */
+export async function sendContactNotificationEmail(data: ContactEmailParams) {
+  if (!hasEmailCredentials) {
+    console.warn(
+      "⚠️  Email credentials non configurés. L'email de notification de contact n'a pas pu être envoyé."
+    );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueContactNotificationEmail(data);
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  const template = getContactNotificationEmailTemplate(data);
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER || "admin@carrental.fr";
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"CarRental" <${process.env.GMAIL_USER}>`,
+      to: adminEmail,
+      subject: `Nouvelle demande de contact - ${data.subject}`,
+      html: template.html,
+      text: template.text,
+      replyTo: data.email,
+    });
+
+    return { success: true, messageId: info.messageId, queued: false };
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de notification de contact:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
