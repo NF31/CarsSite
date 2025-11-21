@@ -89,24 +89,18 @@ function formatDateTime(value: string) {
   return capitalize(format(new Date(value), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr }));
 }
 
+// Utiliser la fonction centralisée depuis lib/booking-status-sync
+import { deriveBookingStatus } from "@/lib/booking-status-sync";
+
 function computeDynamicStatus(booking: BookingDetail): BookingStatus {
-  if (booking.status === BookingStatus.CANCELLED) {
-    return BookingStatus.CANCELLED;
-  }
-
-  const now = new Date();
-  const startDate = new Date(booking.startDate);
-  const endDate = new Date(booking.endDate);
-
-  if (endDate <= now) {
-    return BookingStatus.COMPLETED;
-  }
-
-  if (startDate <= now && now < endDate) {
-    return BookingStatus.IN_PROGRESS;
-  }
-
-  return booking.status;
+  return deriveBookingStatus({
+    status: booking.status,
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    cancellationRequested: booking.cancellationRequested ?? false,
+    modificationRequested: booking.modificationRequested ?? false,
+    modificationDepositDifference: booking.modificationDepositDifference ?? null,
+  });
 }
 
 export function BookingDetailsPageClient({ booking }: BookingDetailsPageClientProps) {

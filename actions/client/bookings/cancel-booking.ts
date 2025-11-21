@@ -10,6 +10,7 @@ import { sendBookingCancellationRequestEmail } from "@/lib/email";
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { canCancelBooking, calculateBookingStatus } from "@/lib/booking-status-sync";
 
 interface CancelBookingState {
   success: boolean;
@@ -147,46 +148,22 @@ export async function cancelClientBookingAction(
       };
     }
 
-    if (booking.status === BookingStatus.CANCELLED) {
-      return {
-        success: false,
-        error: "Cette réservation est déjà annulée.",
-      };
-    }
+    // Utiliser la fonction de synchronisation pour vérifier si l'annulation est possible
+    const { canCancel, reason } = canCancelBooking({
+      currentStatus: booking.status,
+      cancellationRequested: booking.cancellationRequested ?? false,
+      modificationRequested: false, // On ne vérifie pas la modification car l'annulation a priorité
+      startDate: booking.startDate,
+    });
 
-    if (booking.cancellationRequested) {
+    if (!canCancel) {
       return {
         success: false,
-        error: "Une demande d'annulation est déjà en cours pour cette réservation.",
-      };
-    }
-
-    if (booking.status === BookingStatus.COMPLETED) {
-      return {
-        success: false,
-        error: "Cette réservation est terminée et ne peut plus être annulée.",
+        error: reason || "Cette réservation ne peut pas être annulée.",
       };
     }
 
     const now = new Date();
-
-    if (booking.startDate <= now) {
-      return {
-        success: false,
-        error: "Cette réservation a commencé ou est en cours. Contactez le support si besoin.",
-      };
-    }
-
-    if (
-      booking.status !== BookingStatus.PENDING &&
-      booking.status !== BookingStatus.CONFIRMED
-    ) {
-      return {
-        success: false,
-        error: "Cette réservation ne peut pas être annulée depuis l'espace client.",
-      };
-    }
-
     const hoursBeforeStart = (booking.startDate.getTime() - now.getTime()) / 3600000;
     if (hoursBeforeStart < 0) {
       return {
@@ -200,10 +177,20 @@ export async function cancelClientBookingAction(
     const depositPaid = booking.depositPaid ?? 0;
     const refundAmount = roundCurrency(depositPaid * refundRate);
     const retentionAmount = roundCurrency(depositPaid - refundAmount);
+    
+    // Calculer le nouveau statut en tenant compte du contexte
+    const newStatus = calculateBookingStatus({
+      currentStatus: booking.status,
+      cancellationRequested: true, // Nouvelle demande d'annulation
+      modificationRequested: false, // L'annulation prend priorité
+      startDate: booking.startDate,
+      now,
+    });
+    
     await prisma.booking.update({
       where: { id: booking.id },
       data: {
-        status: BookingStatus.PENDING,
+        status: newStatus, // Utiliser le statut calculé par la synchronisation
         cancellationReason,
         cancellationRequested: true,
         cancellationRequestedAt: now,

@@ -197,7 +197,7 @@ export function getBookingUpdateEmailTemplate({
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px;">
                         <tr>
                           <td style="background-color:#f1f5f9; border-radius:18px; padding:16px 18px;">
-                            <p style="margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#475569; font-weight:600;">Nouvelle période</p>
+                            <p style="margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#475569; font-weight:600;">${isRejection ? "Période conservée" : "Nouvelle période"}</p>
                             <p style="margin:10px 0 0; font-size:15px; color:#0f172a; font-weight:500;">${period}</p>
                           </td>
                         </tr>
@@ -494,7 +494,7 @@ ${greeting} ${name},
 
 ${statusMessage}
 
-Nouvelle période : ${period}
+${isRejection ? "Période conservée" : "Nouvelle période"} : ${period}
 Véhicule : ${vehicle.label} (${vehicle.licensePlate})
 Prise en charge : ${locations.pickup}
 Retour : ${locations.return}
