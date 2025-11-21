@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import type Stripe from "stripe";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, ArrowRight } from "lucide-react";
@@ -26,7 +27,7 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
   const { session_id, booking_id } = await searchParams;
 
   let booking = null;
-  let stripeSession = null;
+  let stripeSession: Stripe.Checkout.Session | null = null;
   let actualDepositPaid = 0;
   let actualSecurityDepositPaid = 0;
   let expectedSecurityDeposit = 0; // Montant de la caution attendue (même si pas encore payée)
@@ -91,7 +92,7 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
               orderBy: {
                 createdAt: "desc",
               },
-              take: 1, // Prendre le paiement le plus récent
+              // Ne pas limiter pour pouvoir filtrer les remboursements
             },
           },
         });
@@ -122,37 +123,64 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
             const amountPaid = stripeSession.amount_total ? stripeSession.amount_total / 100 : 0;
 
             // PRIORITÉ 1 : Récupérer le montant depuis la table Payment (source de vérité)
+            // ⚠️ IMPORTANT : Filtrer les remboursements (montants négatifs) et les paiements de modification
             if (booking.payments && booking.payments.length > 0) {
-              const latestPayment = booking.payments[0];
-              const paymentMetadata = latestPayment.metadata as {
-                paymentType?: string;
-                downPayment?: number;
-                securityDeposit?: number;
-              } | null;
+              // Filtrer les paiements POSITIFS seulement (exclure les remboursements)
+              const positivePayments = booking.payments.filter(p => p.amount > 0);
               
-              console.log(`[Payment Success] 💳 Récupération du montant depuis la table Payment`, {
-                bookingId: booking.id,
-                paymentId: latestPayment.id,
-                paymentAmount: `${latestPayment.amount.toFixed(2)}€`,
-                paymentType: paymentMetadata?.paymentType || "unknown",
-                downPaymentInMetadata: paymentMetadata?.downPayment ? `${paymentMetadata.downPayment.toFixed(2)}€` : "N/A",
-                securityDepositInMetadata: paymentMetadata?.securityDeposit ? `${paymentMetadata.securityDeposit.toFixed(2)}€` : "N/A",
-                timestamp: new Date().toISOString(),
+              // Trouver le paiement correspondant à cette session Stripe
+              const sessionPayment = positivePayments.find(p => {
+                const metadata = p.metadata as { stripeSessionId?: string; stripePaymentIntentId?: string } | null;
+                return metadata?.stripeSessionId === session_id || 
+                       (stripeSession && metadata?.stripePaymentIntentId === stripeSession.payment_intent);
               });
+              
+              // Si pas trouvé, prendre le dernier paiement positif
+              const latestPayment = sessionPayment || positivePayments[0];
+              
+              if (latestPayment) {
+                const paymentMetadata = latestPayment.metadata as {
+                  paymentType?: string;
+                  downPayment?: number;
+                  securityDeposit?: number;
+                  isModificationPayment?: boolean;
+                } | null;
+                
+                isModificationPayment = paymentMetadata?.isModificationPayment === true;
+                
+                console.log(`[Payment Success] 💳 Récupération du montant depuis la table Payment`, {
+                  bookingId: booking.id,
+                  paymentId: latestPayment.id,
+                  paymentAmount: `${latestPayment.amount.toFixed(2)}€`,
+                  paymentType: paymentMetadata?.paymentType || "unknown",
+                  isModificationPayment: isModificationPayment,
+                  downPaymentInMetadata: paymentMetadata?.downPayment ? `${paymentMetadata.downPayment.toFixed(2)}€` : "N/A",
+                  securityDepositInMetadata: paymentMetadata?.securityDeposit ? `${paymentMetadata.securityDeposit.toFixed(2)}€` : "N/A",
+                  totalPositivePayments: positivePayments.length,
+                  timestamp: new Date().toISOString(),
+                });
 
-              // Utiliser les métadonnées du paiement pour déterminer ce qui a été payé
-              if (paymentMetadata?.paymentType === "deposit") {
-                // Acompte seulement - le montant dans Payment correspond à l'acompte
-                actualDepositPaid = latestPayment.amount;
-                actualSecurityDepositPaid = 0;
-              } else if (paymentMetadata?.paymentType === "authorization") {
-                // Empreinte bancaire - le montant dans Payment correspond à la caution bloquée
-                actualDepositPaid = 0;
-                actualSecurityDepositPaid = latestPayment.amount;
+                // Utiliser les métadonnées du paiement pour déterminer ce qui a été payé
+                if (paymentMetadata?.paymentType === "deposit") {
+                  // Acompte seulement - le montant dans Payment correspond à l'acompte
+                  actualDepositPaid = latestPayment.amount;
+                  actualSecurityDepositPaid = 0;
+                } else if (paymentMetadata?.paymentType === "authorization") {
+                  // Empreinte bancaire - le montant dans Payment correspond à la caution bloquée
+                  actualDepositPaid = 0;
+                  actualSecurityDepositPaid = latestPayment.amount;
+                } else {
+                  // Paiement complet - utiliser les métadonnées ou calculer
+                  actualDepositPaid = paymentMetadata?.downPayment || downPayment;
+                  actualSecurityDepositPaid = paymentMetadata?.securityDeposit || securityDeposit;
+                }
               } else {
-                // Paiement complet - utiliser les métadonnées ou calculer
-                actualDepositPaid = paymentMetadata?.downPayment || downPayment;
-                actualSecurityDepositPaid = paymentMetadata?.securityDeposit || securityDeposit;
+                console.warn(`[Payment Success] ⚠️ Aucun paiement positif trouvé, utilisation de la session Stripe`, {
+                  bookingId: booking.id,
+                  totalPayments: booking.payments.length,
+                  positivePayments: positivePayments.length,
+                  timestamp: new Date().toISOString(),
+                });
               }
             } else {
               // PRIORITÉ 2 : Utiliser le montant depuis la session Stripe si pas de Payment enregistré
@@ -193,13 +221,59 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
               actualDepositPaid = booking.depositPaid;
             }
 
-            // Si le webhook n'a pas encore mis à jour la réservation, mettre à jour maintenant
-            if (booking.depositPaid === 0 && actualDepositPaid > 0) {
+            // Détecter si c'est un paiement de modification
+            const isModification = isModificationPayment || 
+                                  (booking.payments && booking.payments.length > 0 && 
+                                   booking.payments.some(p => {
+                                     const metadata = p.metadata as { isModificationPayment?: boolean } | null;
+                                     return metadata?.isModificationPayment === true;
+                                   }));
+            
+            // Vérifier si le webhook a déjà traité ce paiement
+            // Si un Payment existe pour cette session Stripe, le webhook a été traité
+            const webhookProcessed = booking.payments && booking.payments.some(p => {
+              const metadata = p.metadata as { stripeSessionId?: string; stripePaymentIntentId?: string } | null;
+              return (session_id && metadata?.stripeSessionId === session_id) ||
+                     (stripeSession?.payment_intent && metadata?.stripePaymentIntentId === stripeSession.payment_intent);
+            });
+            
+            console.log(`[Payment Success] 🔍 Vérification de la mise à jour nécessaire`, {
+              bookingId: booking.id,
+              isModificationPayment: isModificationPayment,
+              isModification: isModification,
+              currentStatus: booking.status,
+              depositPaid: booking.depositPaid,
+              actualDepositPaid: actualDepositPaid,
+              webhookProcessed: webhookProcessed,
+              webhookNotProcessed: !webhookProcessed,
+              isPending: booking.status === BookingStatus.PENDING,
+              timestamp: new Date().toISOString(),
+            });
+            
+            // IMPORTANT: Pour les paiements de modification, on NE MET PAS le statut à CONFIRMED
+            // si le webhook n'a pas encore été traité. On attend que le webhook le fasse.
+            // On met à jour seulement depositPaid si nécessaire (si webhook pas encore passé)
+            
+            // Déterminer si une mise à jour est nécessaire
+            const needsUpdate = booking.depositPaid === 0 && actualDepositPaid > 0;
+            
+            console.log(`[Payment Success] 🔍 needsUpdate: ${needsUpdate}`, {
+              reason: needsUpdate ? "Webhook pas encore traité (mise à jour depositPaid uniquement)" : "N/A",
+              willUpdateStatus: isModification && needsUpdate ? "NON (attendre webhook)" : (needsUpdate && !isModification ? "OUI (paiement normal)" : "N/A"),
+              timestamp: new Date().toISOString(),
+            });
+            
+            if (needsUpdate) {
               console.log(`[Payment Success] 🔄 Mise à jour de la réservation depuis la page de succès`, {
                 bookingId: booking.id,
                 previousDepositPaid: booking.depositPaid,
                 newDepositPaid: actualDepositPaid,
+                previousStatus: booking.status,
                 paymentType,
+                isModificationPayment: isModification,
+                webhookProcessed: webhookProcessed,
+                reason: "Webhook pas encore traité",
+                willUpdateStatus: isModification ? "NON (paiement de modification - attendre webhook)" : "OUI (paiement normal)",
                 timestamp: new Date().toISOString(),
               });
 
@@ -208,20 +282,33 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                 securityDepositPaid?: number;
                 remainingAmount: number;
                 status?: BookingStatus;
+                modificationDepositDifference?: null;
               } = {
                 remainingAmount: priceResult.data.remainingAmount,
               };
 
               if (paymentType === "deposit") {
                 updateData.depositPaid = actualDepositPaid;
-                updateData.status = BookingStatus.CONFIRMED;
+                // IMPORTANT: Pour les paiements de modification, NE PAS mettre le statut à CONFIRMED
+                // Le webhook le fera après validation du paiement
+                if (!isModification) {
+                  // Pour les paiements normaux, on peut mettre à jour le statut
+                  updateData.status = BookingStatus.CONFIRMED;
+                }
+                // Ne pas nettoyer modificationDepositDifference ici - le webhook le fera
               } else if (paymentType === "authorization") {
                 updateData.securityDepositPaid = actualSecurityDepositPaid;
                 updateData.status = BookingStatus.PENDING;
               } else {
                 updateData.depositPaid = actualDepositPaid;
                 updateData.securityDepositPaid = actualSecurityDepositPaid;
-                updateData.status = BookingStatus.CONFIRMED;
+                // IMPORTANT: Pour les paiements de modification, NE PAS mettre le statut à CONFIRMED
+                // Le webhook le fera après validation du paiement
+                if (!isModification) {
+                  // Pour les paiements normaux, on peut mettre à jour le statut
+                  updateData.status = BookingStatus.CONFIRMED;
+                }
+                // Ne pas nettoyer modificationDepositDifference ici - le webhook le fera
               }
 
               await prisma.booking.update({
@@ -239,6 +326,7 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                   securityDepositPaid: true,
                   totalPrice: true,
                   remainingAmount: true,
+                  status: true,
                   vehicle: {
                     select: {
                       brand: true,
@@ -248,22 +336,48 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                   },
                 },
               });
+              
+              console.log(`[Payment Success] ✅ Mise à jour effectuée`, {
+                bookingId: booking?.id,
+                newDepositPaid: booking?.depositPaid,
+                newStatus: booking?.status,
+                isModificationPayment: isModification,
+                statusUpdated: !isModification,
+                statusWillBeUpdatedByWebhook: isModification,
+                timestamp: new Date().toISOString(),
+              });
             } else {
-              // Utiliser les valeurs de la réservation si elles sont déjà mises à jour
-              // Mais vérifier d'abord si on a un paiement enregistré qui est plus fiable
-              if (booking.payments && booking.payments.length > 0 && paymentType === "deposit") {
-                // Si on a un paiement enregistré, l'utiliser comme source de vérité
-                const latestPayment = booking.payments[0];
-                actualDepositPaid = latestPayment.amount;
-                console.log(`[Payment Success] ✅ Utilisation du montant depuis Payment (${actualDepositPaid.toFixed(2)}€) au lieu de booking.depositPaid (${booking.depositPaid.toFixed(2)}€)`, {
+              // Le webhook a déjà mis à jour la réservation
+              // Pour les paiements de modification, vérifier si le webhook a mis le statut à CONFIRMED
+              // Si oui, tout est bon. Si non (statut encore PENDING), on attend que le webhook le fasse.
+              
+              if (isModification && booking && booking.status === BookingStatus.PENDING && webhookProcessed) {
+                // Le webhook a été traité mais le statut est encore PENDING
+                // Cela peut arriver si le webhook n'a pas encore mis à jour le statut
+                // Dans ce cas, on peut vérifier si on doit attendre ou si on peut mettre à jour
+                // Mais en principe, on attend que le webhook termine son traitement
+                console.log(`[Payment Success] ⏳ Paiement de modification: webhook traité mais statut encore PENDING`, {
                   bookingId: booking.id,
-                  paymentId: latestPayment.id,
+                  currentStatus: booking.status,
+                  depositPaid: booking.depositPaid,
+                  note: "Le statut sera mis à jour par le webhook. Si cela persiste, vérifier les logs du webhook.",
                   timestamp: new Date().toISOString(),
                 });
-              } else {
-                actualDepositPaid = booking.depositPaid;
               }
-              actualSecurityDepositPaid = booking.securityDepositPaid || 0;
+              
+              // Utiliser les valeurs de la réservation déjà mises à jour par le webhook
+              if (booking) {
+                actualDepositPaid = booking.depositPaid;
+                actualSecurityDepositPaid = booking.securityDepositPaid || 0;
+                console.log(`[Payment Success] ✅ Utilisation des valeurs mises à jour par le webhook`, {
+                  bookingId: booking.id,
+                  depositPaid: `${actualDepositPaid.toFixed(2)}€`,
+                  securityDepositPaid: `${actualSecurityDepositPaid.toFixed(2)}€`,
+                  status: booking.status,
+                  isModificationPayment: isModification,
+                  timestamp: new Date().toISOString(),
+                });
+              }
             }
           }
         }

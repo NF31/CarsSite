@@ -259,23 +259,18 @@ export default async function DashboardPage({
     });
   }
 
-  const deriveBookingStatus = (booking: (typeof bookings)[number]): BookingStatus => {
-    if (booking.status === BookingStatus.CANCELLED) {
-      return BookingStatus.CANCELLED;
-    }
-
-    const start = booking.startDate;
-    const end = booking.endDate;
-
-    if (end <= now) {
-      return BookingStatus.COMPLETED;
-    }
-
-    if (start <= now && now < end) {
-      return BookingStatus.IN_PROGRESS;
-    }
-
-    return booking.status;
+  // Utiliser la fonction centralisée depuis lib/booking-status-sync
+  const { deriveBookingStatus } = await import("@/lib/booking-status-sync");
+  
+  const deriveBookingStatusLocal = (booking: (typeof bookings)[number]): BookingStatus => {
+    return deriveBookingStatus({
+      status: booking.status,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      cancellationRequested: booking.cancellationRequested ?? false,
+      modificationRequested: booking.modificationRequested ?? false,
+      now,
+    });
   };
 
   const derivedBookings = (bookings as DashboardBookingWithCancellation[]).map((booking) => {
@@ -285,7 +280,7 @@ export default async function DashboardPage({
       cancellationRequested,
       cancellationRequestedAt: booking.cancellationRequestedAt ?? null,
       cancellationRequestedRefundRate: booking.cancellationRequestedRefundRate ?? null,
-      derivedStatus: deriveBookingStatus(booking),
+      derivedStatus: deriveBookingStatusLocal(booking),
       isCancellationPending: cancellationRequested,
     };
   });

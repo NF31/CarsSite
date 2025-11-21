@@ -6,20 +6,16 @@ import { BookingStatus, InvoiceStatus } from "@prisma/client";
 
 const DEFAULT_LIMIT = 5;
 
+// Utiliser la fonction centralisée depuis lib/booking-status-sync
+import { deriveBookingStatus as deriveBookingStatusFromLib } from "@/lib/booking-status-sync";
+
 function deriveBookingStatus(start: Date, end: Date, status: BookingStatus, now: Date): BookingStatus {
-  if (status === BookingStatus.CANCELLED) {
-    return BookingStatus.CANCELLED;
-  }
-
-  if (end <= now) {
-    return BookingStatus.COMPLETED;
-  }
-
-  if (start <= now && now < end) {
-    return BookingStatus.IN_PROGRESS;
-  }
-
-  return status;
+  return deriveBookingStatusFromLib({
+    status,
+    startDate: start,
+    endDate: end,
+    now,
+  });
 }
 
 export interface ClientRecentBookingInvoice {

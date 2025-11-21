@@ -8,14 +8,14 @@ import {
   MaintenanceStatus,
   MaintenanceType,
 } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { headers } from "next/headers";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit-redis";
 import { sendBookingUpdateEmail } from "@/lib/email";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
-import { createRefundAction } from "@/actions/public/payments/create-refund";
-import { createCheckoutSessionAction } from "@/actions/public/payments/create-checkout-session";
+import { canModifyBooking, calculateBookingStatus } from "@/lib/booking-status-sync";
 
 function parseDate(value: FormDataEntryValue | null) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -129,6 +129,8 @@ export async function updateClientBookingAction(
         securityDepositPaid: true,
         remainingAmount: true,
         serviceIds: true,
+        cancellationRequested: true,
+        modificationRequested: true,
         user: {
           select: {
             name: true,
@@ -274,16 +276,40 @@ export async function updateClientBookingAction(
     // On stocke les informations pour que l'admin puisse valider/refuser
     // Les actions Stripe seront déclenchées uniquement après validation admin
 
+    // Vérifier si la réservation peut être modifiée
+    const { canModify, reason } = canModifyBooking({
+      currentStatus: existingBooking.status,
+      cancellationRequested: existingBooking.cancellationRequested ?? false,
+      modificationRequested: existingBooking.modificationRequested ?? false,
+      startDate: existingBooking.startDate,
+    });
+
+    if (!canModify) {
+      return {
+        success: false,
+        error: reason || "Cette réservation ne peut pas être modifiée.",
+      };
+    }
+
+    // Calculer le nouveau statut en tenant compte du contexte
+    const newStatus = calculateBookingStatus({
+      currentStatus: existingBooking.status,
+      modificationRequested: true, // Nouvelle demande de modification
+      cancellationRequested: existingBooking.cancellationRequested ?? false,
+      modificationDepositDifference: roundedDepositDifference,
+      startDate: startDateValue,
+    });
+
     // Mettre à jour la réservation avec les nouvelles dates
     // IMPORTANT: Préserver securityDepositPaid si elle a déjà été payée
     // IMPORTANT: Stocker les dates originales pour pouvoir les restaurer si refus
-    const updateData: any = {
+    const updateData: Prisma.BookingUpdateInput = {
       startDate: startDateValue,
       endDate: endDateValue,
       totalPrice: newTotalPrice,
       depositPaid: newDownPayment,
       remainingAmount: newRemainingAmount,
-      status: BookingStatus.PENDING, // Retour en attente pour validation admin
+      status: newStatus, // Utiliser le statut calculé par la synchronisation
       // Marquer comme demande de modification
       modificationRequested: true,
       modificationRequestedAt: new Date(),
@@ -293,12 +319,9 @@ export async function updateClientBookingAction(
       originalTotalPrice: existingBooking.totalPrice,
       originalDepositPaid: oldDepositPaid,
       modificationDepositDifference: roundedDepositDifference,
+      // Préserver la caution déjà payée (ne pas la réinitialiser si elle est > 0)
+      ...(securityDepositPaid > 0 ? { securityDepositPaid } : {}),
     };
-    
-    // Préserver la caution déjà payée (ne pas la réinitialiser si elle est > 0)
-    if (securityDepositPaid > 0) {
-      updateData.securityDepositPaid = securityDepositPaid;
-    }
     
     const updatedBooking = await prisma.booking.update({
       where: { id: existingBooking.id },
