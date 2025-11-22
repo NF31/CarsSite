@@ -7,6 +7,7 @@ import { ConditionalHeaderFooter } from "@/components/layout/conditional-header-
 import { FullCalendarStyles } from "@/components/providers/fullcalendar-styles";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { CookieConsent } from "@/components/layout/CookieConsent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,8 +44,9 @@ export default function RootLayout({
           </AuthProvider>
         </MotionProvider>
         <ToasterProvider />
+        <CookieConsent />
       </body>
-       {gaId && <GoogleAnalytics gaId={gaId} />}
+      {gaId && <GoogleAnalytics gaId={gaId} />}
     </html>
   );
 }
