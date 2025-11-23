@@ -39,6 +39,7 @@ import { CancelBookingDialog } from "@/components/client/dashboard/CancelBooking
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 import { getClientRecentBookingsAction } from "@/actions/client/bookings/get-recent";
 import { RecentActivityCard } from "@/components/client/dashboard/RecentActivityCard";
+import { RecentInvoicesCard } from "@/components/client/dashboard/RecentInvoicesCard";
 import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 import {
   BOOKING_STATUS_COLORS,
@@ -791,7 +792,7 @@ export default async function DashboardPage({
               </div>
             </div>
             <Button variant="outline" className="w-full" asChild>
-              <Link href="/client/invoices" className="inline-flex items-center justify-center gap-2 text-sm">
+              <Link href="/invoices" className="inline-flex items-center justify-center gap-2 text-sm">
                 Voir mes factures
                 <FileText className="h-4 w-4" />
               </Link>
@@ -820,38 +821,7 @@ export default async function DashboardPage({
             <CardDescription>Retrouvez vos cinq dernières factures générées.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentInvoices.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-muted-foreground">
-                Aucune facture disponible pour le moment.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentInvoices.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-white px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{invoice.invoiceNumber}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Émise le {dateFormatter.format(new Date(invoice.issuedAt))}
-                        {invoice.booking
-                          ? ` • Réservation ${invoice.booking.reference}`
-                          : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-gray-900">
-                        {currencyFormatter.format(invoice.total)}
-                      </span>
-                      <Badge className={`${INVOICE_STATUS_COLORS[invoice.status]} text-[10px]`}>
-                        {INVOICE_STATUS_LABELS[invoice.status]}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <RecentInvoicesCard invoices={recentInvoices} />
           </CardContent>
         </Card>
       </section>

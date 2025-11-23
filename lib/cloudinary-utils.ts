@@ -17,33 +17,42 @@ export function extractCloudinaryAssetInfo(value: string | null | undefined): Cl
   if (raw.startsWith("http://") || raw.startsWith("https://")) {
     try {
       const parsed = new URL(raw);
-      const match = parsed.pathname.match(/\/(?:image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
-      if (!match || !match[1]) {
-        return null;
+      // Gérer les URLs privées avec /private/
+      // Format: /raw/private/s--[signature]--/v[version]/[path]
+      const privateMatch = parsed.pathname.match(/\/raw\/private\/s--[^\/]+--\/v\d+\/(.+?)(?:\?|$)/);
+      if (privateMatch && privateMatch[1]) {
+        raw = privateMatch[1];
+      } else {
+        // URLs publiques standard
+        const match = parsed.pathname.match(/\/(?:image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
+        if (!match || !match[1]) {
+          return null;
+        }
+        raw = match[1];
       }
-      raw = match[1];
     } catch {
       return null;
     }
   }
 
-  const lastSlash = raw.lastIndexOf("/");
-  const lastSegment = lastSlash >= 0 ? raw.slice(lastSlash + 1) : raw;
-  const lastDot = lastSegment.lastIndexOf(".");
+  // Extraire le format (extension) si présent
+  const lastDot = raw.lastIndexOf(".");
+  let format = "pdf";
+  let publicIdWithoutFormat = raw;
 
-  if (lastDot === -1) {
-    return {
-      publicId: raw,
-      format: "pdf",
-    };
+  if (lastDot !== -1) {
+    const potentialFormat = raw.slice(lastDot + 1).toLowerCase();
+    // Vérifier si c'est une extension valide
+    if (["pdf", "jpg", "jpeg", "png", "gif", "webp"].includes(potentialFormat)) {
+      format = potentialFormat;
+      publicIdWithoutFormat = raw.slice(0, lastDot);
+    }
   }
 
-  const format = lastSegment.slice(lastDot + 1).toLowerCase();
-  const publicId = raw.slice(0, raw.length - (lastSegment.length - lastDot));
-
+  // Le public_id doit conserver le dossier complet (ex: "vehicles/{vehicleId}/invoices/{userId}/invoice-XXX")
   return {
-    publicId,
-    format: format || "pdf",
+    publicId: publicIdWithoutFormat,
+    format,
   };
 }
 
