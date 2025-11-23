@@ -3,11 +3,12 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { BookingStatus, Prisma } from "@prisma/client";
+import { BookingStatus, Prisma, PaymentStatus } from "@prisma/client";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/email";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { updateInvoiceStatusAfterPayment } from "@/lib/invoice-status-update";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -476,7 +477,7 @@ export async function POST(req: NextRequest) {
 
       // Créer un enregistrement de paiement AVANT l'envoi de l'email
       // Note: PaymentStatus n'a pas "AUTHORIZED", on utilise "PENDING" pour l'empreinte
-      const paymentStatus = isAuthorization ? "PENDING" : "COMPLETED";
+      const paymentStatus = isAuthorization ? PaymentStatus.PENDING : PaymentStatus.COMPLETED;
       
       // Déterminer le montant à enregistrer dans Payment selon le type de paiement
       const paymentAmount = roundedAmountPaid; // Montant réellement payé via Stripe
@@ -567,6 +568,39 @@ export async function POST(req: NextRequest) {
         },
         timestamp: new Date().toISOString(),
       });
+
+      // Mettre à jour le statut des factures liées à cette réservation
+      // Seulement si le paiement est complété (pas pour les autorisations)
+      if (paymentStatus === PaymentStatus.COMPLETED && !isAuthorization) {
+        console.log(`[Stripe Webhook] 📋 Mise à jour du statut des factures pour la réservation ${bookingId}`, {
+          bookingId,
+          paymentId: createdPayment.id,
+          paymentAmount: paymentAmount,
+          timestamp: new Date().toISOString(),
+        });
+
+        try {
+          await updateInvoiceStatusAfterPayment(
+            bookingId,
+            createdPayment.id,
+            paymentAmount
+          );
+
+          console.log(`[Stripe Webhook] ✅ Statut des factures mis à jour pour la réservation ${bookingId}`, {
+            bookingId,
+            paymentId: createdPayment.id,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (invoiceUpdateError) {
+          console.error(`[Stripe Webhook] ❌ Erreur lors de la mise à jour du statut des factures`, {
+            bookingId,
+            paymentId: createdPayment.id,
+            error: invoiceUpdateError instanceof Error ? invoiceUpdateError.message : String(invoiceUpdateError),
+            timestamp: new Date().toISOString(),
+          });
+          // Ne pas bloquer le webhook en cas d'erreur de mise à jour des factures
+        }
+      }
 
       // Envoyer l'email de confirmation si le statut est CONFIRMED
       if (updatedBooking.status === BookingStatus.CONFIRMED) {
