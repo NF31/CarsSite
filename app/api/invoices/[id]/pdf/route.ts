@@ -198,8 +198,9 @@ export async function GET(
           
           // Si on a le buffer PDF directement, l'utiliser (plus rapide et plus fiable)
           if (generateResult.data.pdfBuffer) {
-            // NextResponse accepte Buffer directement, donc pas besoin de conversion
-            return new NextResponse(generateResult.data.pdfBuffer as unknown as BodyInit, {
+            // Convertir le Buffer en Uint8Array pour NextResponse
+            const pdfArray = new Uint8Array(generateResult.data.pdfBuffer);
+            return new NextResponse(pdfArray, {
               headers: {
                 "Content-Type": "application/pdf",
                 "Content-Disposition": `inline; filename="facture_${invoice.invoiceNumber}.pdf"`,
