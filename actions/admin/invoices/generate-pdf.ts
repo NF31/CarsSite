@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { InvoiceStatus } from "@prisma/client";
 import { generateInvoicePDF } from "@/lib/invoice-pdf";
 import { uploadPDF, getSignedDownloadUrl } from "@/lib/cloudinary";
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
@@ -182,11 +183,13 @@ export async function generateInvoicePDFAction(
         publicIdForSigning = `vehicles/${vehicleId}/invoices/${userId}/${uploadResult.public_id}`;
       }
 
-      // Stocker l'URL privée dans la base de données (pour référence)
+      // Stocker l'URL privée dans la base de données et mettre à jour le statut
+      // Une fois le PDF généré et uploadé, la facture passe de DRAFT à SENT
       await prisma.invoice.update({
         where: { id: invoiceId },
         data: {
           pdfUrl: uploadResult.secure_url, // Stocker l'URL (contiendra /private/)
+          status: invoice.status === InvoiceStatus.DRAFT ? InvoiceStatus.SENT : invoice.status, // Passer de DRAFT à SENT si c'est un brouillon
         },
       });
 

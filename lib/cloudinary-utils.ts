@@ -24,11 +24,11 @@ export function extractCloudinaryAssetInfo(value: string | null | undefined): Cl
         raw = privateMatch[1];
       } else {
         // URLs publiques standard
-        const match = parsed.pathname.match(/\/(?:image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
-        if (!match || !match[1]) {
-          return null;
-        }
-        raw = match[1];
+      const match = parsed.pathname.match(/\/(?:image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
+      if (!match || !match[1]) {
+        return null;
+      }
+      raw = match[1];
       }
     } catch {
       return null;

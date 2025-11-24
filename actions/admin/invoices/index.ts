@@ -49,21 +49,13 @@ export async function downloadInvoiceAction(
       };
     }
 
-    // Si le PDF existe déjà, utiliser notre route API qui gère correctement les URLs signées
+    // Si le PDF existe déjà, utiliser la route API qui gère correctement
+    // les différents formats de public_id et génère les URLs signées appropriées
+    // La route API /api/invoices/[id]/pdf essaie plusieurs méthodes pour télécharger le PDF
     if (invoice.pdfUrl) {
-      // Pour les fichiers privés, toujours utiliser notre route API
-      // Pour les fichiers publics, on peut retourner directement l'URL
-      if (invoice.pdfUrl.includes("/private/")) {
-        // Utiliser une URL relative qui sera résolue côté client
-        return {
-          success: true,
-          url: `/api/invoices/${invoiceId}/pdf`,
-        };
-      }
-      // Si l'URL est publique, retourner directement
       return {
         success: true,
-        url: invoice.pdfUrl,
+        url: `/api/invoices/${invoiceId}/pdf`,
       };
     }
 
