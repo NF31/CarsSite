@@ -1,4 +1,4 @@
-import { getInvoicesAction } from "@/actions/admin/invoices/get-invoices";
+import { getInvoicesAction } from "@/actions/admin/invoices";
 import { InvoicesPageClient } from "@/components/admin/invoices/InvoicesPageClient";
 import { Card, CardContent } from "@/components/ui/card";
 

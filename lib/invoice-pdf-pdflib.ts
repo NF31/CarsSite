@@ -15,10 +15,12 @@ export interface InvoiceData {
     startDate: Date;
     endDate: Date;
     totalPrice: number;
+    depositPaid?: number; // Acompte déjà payé
     vehicle: {
       brand: string;
       model: string;
       licensePlate: string;
+      pricePerDay: number;
     };
     pickupLocation: {
       name: string;
@@ -30,6 +32,10 @@ export interface InvoiceData {
       city: string;
       address: string | null;
     };
+    services?: Array<{
+      name: string;
+      price: number;
+    }>;
   };
   user: {
     name: string;
@@ -42,6 +48,21 @@ export interface InvoiceData {
     phone: string;
     email: string;
   };
+}
+
+/**
+ * Nettoie une chaîne de caractères en remplaçant les caractères Unicode non supportés
+ * par WinAnsi (notamment l'espace insécable fin 0x202f) par des caractères ASCII équivalents
+ */
+function sanitizeText(text: string): string {
+  if (!text) return "";
+  return String(text)
+    .replace(/\u202F/g, " ") // Espace insécable fin → espace normal
+    .replace(/\u00A0/g, " ") // Espace insécable → espace normal
+    .replace(/\u2009/g, " ") // Espace fine → espace normal
+    .replace(/\u2006/g, " ") // Espace six-per-em → espace normal
+    .normalize("NFKD") // Normaliser les caractères Unicode
+    .replace(/[\u0300-\u036F]/g, ""); // Supprimer les diacritiques combinés
 }
 
 export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buffer> {
@@ -82,7 +103,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   let yPosition = height - 50;
 
   // Header avec informations de l'agence (texte blanc sur fond bleu)
-  page.drawText(invoiceData.agency?.name || "CarRental", {
+  page.drawText(sanitizeText(invoiceData.agency?.name || "CarRental"), {
     x: 50,
     y: yPosition,
     size: 22,
@@ -91,7 +112,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   });
 
   yPosition -= 25;
-  page.drawText(invoiceData.agency?.address || "123 Avenue de la Liberté, 75000 Paris", {
+  page.drawText(sanitizeText(invoiceData.agency?.address || "123 Avenue de la Liberte, 75000 Paris"), {
     x: 50,
     y: yPosition,
     size: 10,
@@ -101,7 +122,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
   yPosition -= 15;
   page.drawText(
-    `Téléphone: ${invoiceData.agency?.phone || "+33 1 23 45 67 89"} | Email: ${invoiceData.agency?.email || "contact@carrental.com"}`,
+    sanitizeText(`Telephone: ${invoiceData.agency?.phone || "+33 1 23 45 67 89"} | Email: ${invoiceData.agency?.email || "contact@carrental.com"}`),
     {
       x: 50,
       y: yPosition,
@@ -155,7 +176,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   });
 
   yPosition -= 35;
-  page.drawText(invoiceData.user.name, {
+  page.drawText(sanitizeText(invoiceData.user.name), {
     x: 60,
     y: yPosition,
     size: 10,
@@ -165,7 +186,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
   if (invoiceData.user.email) {
     yPosition -= 15;
-    page.drawText(invoiceData.user.email, {
+    page.drawText(sanitizeText(invoiceData.user.email), {
       x: 60,
       y: yPosition,
       size: 10,
@@ -176,7 +197,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
   if (invoiceData.user.phone) {
     yPosition -= 15;
-    page.drawText(invoiceData.user.phone, {
+    page.drawText(sanitizeText(invoiceData.user.phone), {
       x: 60,
       y: yPosition,
       size: 10,
@@ -197,7 +218,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
     borderColor: primaryColor,
     borderWidth: 1,
   });
-  const dateEmissionText = `Date d'émission: ${formatDate(invoiceData.issuedAt)}`;
+  const dateEmissionText = sanitizeText(`Date d'emission: ${formatDate(invoiceData.issuedAt)}`);
   const dateEmissionWidth = helveticaFont.widthOfTextAtSize(dateEmissionText, 10);
   page.drawText(dateEmissionText, {
     x: width - 50 - dateEmissionWidth,
@@ -208,7 +229,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   });
 
   yPosition -= 15;
-  const dateEcheanceText = `Date d'échéance: ${formatDate(invoiceData.dueDate)}`;
+  const dateEcheanceText = sanitizeText(`Date d'echeance: ${formatDate(invoiceData.dueDate)}`);
   const dateEcheanceWidth = helveticaFont.widthOfTextAtSize(dateEcheanceText, 10);
   page.drawText(dateEcheanceText, {
     x: width - 50 - dateEcheanceWidth,
@@ -267,7 +288,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
     borderWidth: 1,
   });
   
-  page.drawText(`Référence: ${invoiceData.booking.reference}`, {
+  page.drawText(sanitizeText(`Reference: ${invoiceData.booking.reference}`), {
     x: 60,
     y: yPosition,
     size: 10,
@@ -277,7 +298,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
   yPosition -= 15;
   page.drawText(
-    `Véhicule: ${invoiceData.booking.vehicle.brand} ${invoiceData.booking.vehicle.model} (${invoiceData.booking.vehicle.licensePlate})`,
+    sanitizeText(`Vehicule: ${invoiceData.booking.vehicle.brand} ${invoiceData.booking.vehicle.model} (${invoiceData.booking.vehicle.licensePlate})`),
     {
       x: 60,
       y: yPosition,
@@ -289,7 +310,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
   yPosition -= 15;
   page.drawText(
-    `Période: Du ${formatDate(invoiceData.booking.startDate)} au ${formatDate(invoiceData.booking.endDate)}`,
+    sanitizeText(`Periode: Du ${formatDate(invoiceData.booking.startDate)} au ${formatDate(invoiceData.booking.endDate)}`),
     {
       x: 60,
       y: yPosition,
@@ -301,7 +322,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
   yPosition -= 15;
   page.drawText(
-    `Lieu de prise en charge: ${invoiceData.booking.pickupLocation.name}, ${invoiceData.booking.pickupLocation.city}`,
+    sanitizeText(`Lieu de prise en charge: ${invoiceData.booking.pickupLocation.name}, ${invoiceData.booking.pickupLocation.city}`),
     {
       x: 60,
       y: yPosition,
@@ -313,7 +334,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
 
   yPosition -= 15;
   page.drawText(
-    `Lieu de retour: ${invoiceData.booking.returnLocation.name}, ${invoiceData.booking.returnLocation.city}`,
+    sanitizeText(`Lieu de retour: ${invoiceData.booking.returnLocation.name}, ${invoiceData.booking.returnLocation.city}`),
     {
       x: 60,
       y: yPosition,
@@ -352,20 +373,87 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
     color: rgb(1, 1, 1), // Blanc
   });
 
+  // Calculer le nombre de jours
+  const days = Math.ceil(
+    (invoiceData.booking.endDate.getTime() - invoiceData.booking.startDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const vehiclePrice = invoiceData.booking.vehicle.pricePerDay * days;
+
+  // Calculer la hauteur nécessaire pour la box (ajouter de l'espace pour l'acompte si présent)
+  const servicesCount = invoiceData.booking.services?.length || 0;
+  const hasDeposit = invoiceData.booking.depositPaid && invoiceData.booking.depositPaid > 0;
+  const depositHeight = hasDeposit ? 60 : 0; // Espace pour acompte payé + solde restant
+  const boxHeight = 70 + (servicesCount > 0 ? servicesCount * 15 : 0) + 20 + depositHeight; // Base + services + ligne véhicule + acompte
+
   yPosition -= 35;
   
   // Box pour le récapitulatif
   page.drawRectangle({
     x: 50,
-    y: yPosition - 70,
+    y: yPosition - boxHeight,
     width: width - 100,
-    height: 70,
+    height: boxHeight,
     color: neutralLight,
     borderColor: secondaryColor,
     borderWidth: 2,
   });
+
+  // Ligne véhicule
+  const vehicleLineText = sanitizeText(`Location véhicule (${days} jour${days > 1 ? "s" : ""} × ${formatCurrency(invoiceData.booking.vehicle.pricePerDay)}):`);
+  page.drawText(vehicleLineText, {
+    x: 60,
+    y: yPosition,
+    size: 10,
+    font: helveticaFont,
+    color: neutralDark,
+  });
+  const vehicleValueText = formatCurrency(vehiclePrice);
+  const vehicleValueWidth = helveticaFont.widthOfTextAtSize(vehicleValueText, 10);
+  page.drawText(vehicleValueText, {
+    x: width - 60 - vehicleValueWidth,
+    y: yPosition,
+    size: 10,
+    font: helveticaFont,
+    color: neutralDark,
+  });
+
+  yPosition -= 20;
+
+  // Services additionnels
+  if (invoiceData.booking.services && invoiceData.booking.services.length > 0) {
+    for (const service of invoiceData.booking.services) {
+      const serviceText = sanitizeText(`• ${service.name}:`);
+      page.drawText(serviceText, {
+        x: 60,
+        y: yPosition,
+        size: 10,
+        font: helveticaFont,
+        color: neutralDark,
+      });
+      const serviceValueText = formatCurrency(service.price);
+      const serviceValueWidth = helveticaFont.widthOfTextAtSize(serviceValueText, 10);
+      page.drawText(serviceValueText, {
+        x: width - 60 - serviceValueWidth,
+        y: yPosition,
+        size: 10,
+        font: helveticaFont,
+        color: neutralDark,
+      });
+      yPosition -= 15;
+    }
+  }
   
-  const subtotalText = `Sous-total:`;
+  // Ligne de séparation avant le sous-total
+  yPosition -= 5;
+  page.drawLine({
+    start: { x: 60, y: yPosition },
+    end: { x: width - 60, y: yPosition },
+    thickness: 1,
+    color: secondaryColor,
+  });
+
+  yPosition -= 15;
+  const subtotalText = sanitizeText(`Sous-total:`);
   page.drawText(subtotalText, {
     x: 60,
     y: yPosition,
@@ -384,7 +472,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   });
 
   yPosition -= 20;
-  const taxText = `TVA (20%):`;
+  const taxText = sanitizeText(`TVA (20%):`);
   page.drawText(taxText, {
     x: 60,
     y: yPosition,
@@ -412,7 +500,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   });
 
   yPosition -= 15;
-  const totalText = `Total:`;
+  const totalText = sanitizeText(`Total:`);
   page.drawText(totalText, {
     x: 60,
     y: yPosition,
@@ -430,6 +518,58 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
     color: secondaryColor, // Vert pour le total
   });
 
+  // Afficher l'acompte payé et le solde restant si un acompte a été payé
+  if (invoiceData.booking.depositPaid && invoiceData.booking.depositPaid > 0) {
+    yPosition -= 20;
+    page.drawLine({
+      start: { x: 60, y: yPosition },
+      end: { x: width - 60, y: yPosition },
+      thickness: 1,
+      color: secondaryColor,
+    });
+
+    yPosition -= 15;
+    const depositPaidText = sanitizeText(`Acompte paye:`);
+    page.drawText(depositPaidText, {
+      x: 60,
+      y: yPosition,
+      size: 11,
+      font: helveticaFont,
+      color: neutralDark,
+    });
+    const depositPaidValueText = formatCurrency(invoiceData.booking.depositPaid);
+    const depositPaidValueWidth = helveticaFont.widthOfTextAtSize(depositPaidValueText, 11);
+    page.drawText(depositPaidValueText, {
+      x: width - 60 - depositPaidValueWidth,
+      y: yPosition,
+      size: 11,
+      font: helveticaFont,
+      color: secondaryColor,
+    });
+
+    const remainingBalance = invoiceData.total - invoiceData.booking.depositPaid;
+    if (remainingBalance > 0) {
+      yPosition -= 18;
+      const remainingText = sanitizeText(`Solde restant:`);
+      page.drawText(remainingText, {
+        x: 60,
+        y: yPosition,
+        size: 12,
+        font: helveticaBoldFont,
+        color: primaryColor,
+      });
+      const remainingValueText = formatCurrency(remainingBalance);
+      const remainingValueWidth = helveticaBoldFont.widthOfTextAtSize(remainingValueText, 12);
+      page.drawText(remainingValueText, {
+        x: width - 60 - remainingValueWidth,
+        y: yPosition,
+        size: 12,
+        font: helveticaBoldFont,
+        color: primaryColor,
+      });
+    }
+  }
+
   // Footer avec ligne de séparation
   yPosition = 80;
   page.drawLine({
@@ -439,7 +579,7 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
     color: neutralLight,
   });
   
-  const footerText = `Facture générée par ${invoiceData.agency?.name || "CarRental"}. Tous droits réservés.`;
+  const footerText = sanitizeText(`Facture generee par ${invoiceData.agency?.name || "CarRental"}. Tous droits reserves.`);
   const footerWidth = helveticaFont.widthOfTextAtSize(footerText, 8);
   page.drawText(footerText, {
     x: (width - footerWidth) / 2,
@@ -454,19 +594,27 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
   return Buffer.from(pdfBytes);
 }
 
+
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", {
+  const formatted = new Intl.DateTimeFormat("fr-FR", {
     year: "numeric",
     month: "long",
     day: "numeric",
   }).format(date);
+  // Nettoyer le texte pour supprimer les caractères Unicode non supportés
+  return sanitizeText(formatted);
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", {
+  // Utiliser une locale qui n'introduit pas d'espaces insécables
+  const formatted = new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
+    // Forcer un espace normal comme séparateur de milliers
+    useGrouping: true,
   }).format(amount);
+  // Nettoyer le texte pour supprimer les caractères Unicode non supportés (0x202f)
+  return sanitizeText(formatted);
 }
 
 

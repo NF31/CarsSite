@@ -2,8 +2,17 @@
 
 import { prisma } from "@/lib/prisma";
 import { generateInvoicePDFAction } from "./generate-pdf";
-import { getSignedDownloadUrl } from "@/lib/cloudinary";
-import { extractCloudinaryAssetInfo } from "@/lib/cloudinary-utils";
+import { getInvoicesAction } from "./get-invoices";
+
+// Re-exports pour éviter les erreurs "use server"
+// Note: Dans Next.js 16, les re-exports fonctionnent si on importe d'abord la fonction
+export { generateInvoicePDFAction, getInvoicesAction };
+export type {
+  InvoiceListItem,
+  InvoiceClientItem,
+  InvoicesSummary,
+  GetInvoicesResult,
+} from "./get-invoices";
 
 interface DownloadInvoiceResult {
   success: boolean;

@@ -23,13 +23,20 @@ export async function generateInvoicePDFAction(
       where: { id: invoiceId },
       include: {
         booking: {
-          include: {
+          select: {
+            reference: true,
+            startDate: true,
+            endDate: true,
+            totalPrice: true,
+            depositPaid: true,
+            serviceIds: true,
             vehicle: {
               select: {
                 id: true,
                 brand: true,
                 model: true,
                 licensePlate: true,
+                pricePerDay: true,
               },
             },
             pickupLocation: {
@@ -94,6 +101,19 @@ export async function generateInvoicePDFAction(
       email: typeof agencyEmail === "string" ? agencyEmail : (defaultSettings.agency.email || "contact@carrental.com"),
     };
 
+    // Récupérer les services de la réservation
+    const services = invoice.booking.serviceIds && invoice.booking.serviceIds.length > 0
+      ? await prisma.service.findMany({
+          where: {
+            id: { in: invoice.booking.serviceIds },
+          },
+          select: {
+            name: true,
+            price: true,
+          },
+        })
+      : [];
+
     // Générer le PDF
     const pdfBuffer = await generateInvoicePDF({
       id: invoice.id,
@@ -109,10 +129,12 @@ export async function generateInvoicePDFAction(
         startDate: invoice.booking.startDate,
         endDate: invoice.booking.endDate,
         totalPrice: invoice.booking.totalPrice,
+        depositPaid: invoice.booking.depositPaid || 0,
         vehicle: {
           brand: invoice.booking.vehicle.brand,
           model: invoice.booking.vehicle.model,
           licensePlate: invoice.booking.vehicle.licensePlate,
+          pricePerDay: invoice.booking.vehicle.pricePerDay,
         },
         pickupLocation: {
           name: invoice.booking.pickupLocation.name,
@@ -124,6 +146,10 @@ export async function generateInvoicePDFAction(
           city: invoice.booking.returnLocation.city,
           address: invoice.booking.returnLocation.address,
         },
+        services: services.map((s) => ({
+          name: s.name,
+          price: s.price,
+        })),
       },
       user: {
         name: invoice.user.name,
