@@ -239,6 +239,11 @@ interface BookingConfirmationEmailParams {
     pickup: string;
     return: string;
   };
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
 }
 
 export async function sendBookingConfirmationEmail({
@@ -248,6 +253,7 @@ export async function sendBookingConfirmationEmail({
   booking,
   vehicle,
   locations,
+  attachments,
 }: BookingConfirmationEmailParams) {
   if (!hasEmailCredentials) {
     console.warn(
@@ -272,6 +278,7 @@ export async function sendBookingConfirmationEmail({
         booking,
         vehicle,
         locations,
+        attachments,
       });
       if (result.success && result.queued) {
         return { success: true, queued: true, messageId: undefined };
@@ -332,13 +339,24 @@ export async function sendBookingConfirmationEmail({
   });
 
   try {
-    const info = await transporter.sendMail({
+    const mailOptions: nodemailer.SendMailOptions = {
       from: `"CarRental" <${process.env.GMAIL_USER}>`,
       to,
       subject: `Confirmation de réservation ${booking.reference}`,
       html: template.html,
       text: template.text,
-    });
+    };
+
+    // Ajouter les pièces jointes si présentes
+    if (attachments && attachments.length > 0) {
+      mailOptions.attachments = attachments.map((att) => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType || "application/pdf",
+      }));
+    }
+
+    const info = await transporter.sendMail(mailOptions);
 
     return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {

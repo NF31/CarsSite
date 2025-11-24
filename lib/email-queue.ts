@@ -10,7 +10,9 @@ export type EmailJobType =
   | "booking-update"
   | "booking-cancellation"
   | "booking-cancellation-rejected"
-  | "booking-cancellation-request";
+  | "booking-cancellation-request"
+  | "contact-confirmation"
+  | "contact-notification";
 
 // Interface pour les données d'un job email
 export interface EmailJobData {
@@ -21,6 +23,12 @@ export interface EmailJobData {
   text?: string;
   // Données spécifiques pour chaque type d'email
   metadata?: Record<string, string | undefined>;
+  // Pièces jointes (en base64 pour le stockage dans Redis)
+  attachments?: Array<{
+    filename: string;
+    contentBase64: string; // Buffer converti en base64
+    contentType?: string;
+  }>;
 }
 
 // Configuration de la queue
