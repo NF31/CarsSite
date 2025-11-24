@@ -106,6 +106,8 @@ export async function POST(req: NextRequest) {
           modificationDepositDifference: true, // Pour détecter les paiements de modification
           originalStartDate: true, // Pour vérifier si c'est une modification
           originalEndDate: true, // Pour vérifier si c'est une modification
+          originalTotalPrice: true, // Pour les emails de modification
+          originalDepositPaid: true, // Pour les emails de modification
           vehicle: {
             select: {
               id: true,
@@ -428,6 +430,42 @@ export async function POST(req: NextRequest) {
         isModificationPayment,
         timestamp: new Date().toISOString(),
       });
+
+      // Créer automatiquement une facture si la réservation est confirmée
+      if (updatedBooking.status === BookingStatus.CONFIRMED && !isModificationPayment) {
+        console.log(`[Stripe Webhook] 📋 Création automatique de facture pour la réservation ${bookingId}`, {
+          bookingId: updatedBooking.id,
+          reference: updatedBooking.reference,
+          status: updatedBooking.status,
+          timestamp: new Date().toISOString(),
+        });
+
+        try {
+          const { createInvoiceForBooking } = await import("@/lib/invoice-creation");
+          const invoiceResult = await createInvoiceForBooking(bookingId);
+
+          if (invoiceResult.success) {
+            console.log(`[Stripe Webhook] ✅ Facture créée automatiquement pour la réservation ${bookingId}`, {
+              bookingId: updatedBooking.id,
+              invoiceId: invoiceResult.invoiceId,
+              timestamp: new Date().toISOString(),
+            });
+          } else {
+            console.warn(`[Stripe Webhook] ⚠️  Impossible de créer la facture automatiquement pour la réservation ${bookingId}`, {
+              bookingId: updatedBooking.id,
+              error: invoiceResult.error,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch (invoiceCreationError) {
+          console.error(`[Stripe Webhook] ❌ Erreur lors de la création automatique de la facture`, {
+            bookingId: updatedBooking.id,
+            error: invoiceCreationError instanceof Error ? invoiceCreationError.message : String(invoiceCreationError),
+            timestamp: new Date().toISOString(),
+          });
+          // Ne pas bloquer le webhook en cas d'erreur de création de facture
+        }
+      }
       
       // VÉRIFICATION CRITIQUE : Pour les paiements de modification, le statut DOIT être CONFIRMED
       // Si ce n'est pas le cas, forcer la mise à jour
@@ -673,14 +711,70 @@ export async function POST(req: NextRequest) {
               });
               
               // Récupérer les informations de modification depuis les métadonnées de la session Stripe
-              // (car les champs peuvent être nettoyés dans la DB avant le paiement)
-              const originalTotalPrice = session.metadata?.originalTotalPrice ? parseFloat(session.metadata.originalTotalPrice) : null;
-              const originalDepositPaid = session.metadata?.originalDepositPaid ? parseFloat(session.metadata.originalDepositPaid) : null;
-              const originalRemainingAmount = session.metadata?.originalRemainingAmount ? parseFloat(session.metadata.originalRemainingAmount) : null;
-              const depositDifference = session.metadata?.depositDifference ? parseFloat(session.metadata.depositDifference) : null;
-              const securityDepositPaid = session.metadata?.securityDepositPaid ? parseFloat(session.metadata.securityDepositPaid) : 0;
+              // Si les métadonnées ne sont pas présentes, récupérer depuis la base de données
+              let originalTotalPrice = session.metadata?.originalTotalPrice ? parseFloat(session.metadata.originalTotalPrice) : null;
+              let originalDepositPaid = session.metadata?.originalDepositPaid ? parseFloat(session.metadata.originalDepositPaid) : null;
+              let originalRemainingAmount = session.metadata?.originalRemainingAmount ? parseFloat(session.metadata.originalRemainingAmount) : null;
+              let depositDifference = session.metadata?.depositDifference ? parseFloat(session.metadata.depositDifference) : null;
+              let securityDepositPaid = session.metadata?.securityDepositPaid ? parseFloat(session.metadata.securityDepositPaid) : 0;
               
-              console.log(`[Stripe Webhook] 📊 Métadonnées de modification récupérées`, {
+              // Si les métadonnées ne sont pas présentes, essayer de récupérer depuis la base de données
+              // ou calculer à partir des valeurs actuelles de la réservation
+              if (originalTotalPrice == null || originalDepositPaid == null) {
+                console.log(`[Stripe Webhook] ⚠️  Métadonnées incomplètes, tentative de récupération depuis la DB`, {
+                  bookingId: updatedBooking.id,
+                  hasMetadata: !!session.metadata,
+                  metadataKeys: session.metadata ? Object.keys(session.metadata) : [],
+                  timestamp: new Date().toISOString(),
+                });
+                
+                // Récupérer les valeurs depuis la réservation (originalTotalPrice/originalDepositPaid peuvent être encore présents)
+                if (originalTotalPrice == null && booking.originalTotalPrice != null) {
+                  originalTotalPrice = booking.originalTotalPrice;
+                  console.log(`[Stripe Webhook] ✅ originalTotalPrice récupéré depuis la DB: ${originalTotalPrice}`);
+                }
+                if (originalDepositPaid == null && booking.originalDepositPaid != null) {
+                  originalDepositPaid = booking.originalDepositPaid;
+                  console.log(`[Stripe Webhook] ✅ originalDepositPaid récupéré depuis la DB: ${originalDepositPaid}`);
+                }
+                
+                // Si toujours null, essayer de calculer approximativement à partir des valeurs actuelles
+                if (originalTotalPrice == null) {
+                  // Estimer depuis le nouveau prix et la différence payée
+                  const newDepositPaid = updatedBooking.depositPaid || 0;
+                  const oldDepositPaid = newDepositPaid - roundedAmountPaid;
+                  originalTotalPrice = oldDepositPaid > 0 ? (oldDepositPaid / 0.3) : updatedBooking.totalPrice - (roundedAmountPaid / 0.3);
+                  console.log(`[Stripe Webhook] ⚠️  originalTotalPrice estimé: ${originalTotalPrice}`);
+                }
+                if (originalDepositPaid == null) {
+                  // Calculer depuis l'acompte actuel moins le montant supplémentaire payé
+                  originalDepositPaid = (updatedBooking.depositPaid || 0) - roundedAmountPaid;
+                  console.log(`[Stripe Webhook] ⚠️  originalDepositPaid estimé: ${originalDepositPaid}`);
+                }
+                
+                console.log(`[Stripe Webhook] 📊 Valeurs estimées depuis la réservation`, {
+                  bookingId: updatedBooking.id,
+                  originalTotalPrice,
+                  originalDepositPaid,
+                  currentTotalPrice: updatedBooking.totalPrice,
+                  currentDepositPaid: updatedBooking.depositPaid,
+                  roundedAmountPaid,
+                  timestamp: new Date().toISOString(),
+                });
+              }
+              
+              // Calculer les valeurs manquantes si nécessaire
+              if (originalRemainingAmount == null && originalTotalPrice != null && originalDepositPaid != null) {
+                originalRemainingAmount = originalTotalPrice - originalDepositPaid;
+              }
+              if (depositDifference == null) {
+                depositDifference = roundedAmountPaid; // Le montant payé est la différence
+              }
+              if (securityDepositPaid == 0 && updatedBooking.securityDepositPaid) {
+                securityDepositPaid = updatedBooking.securityDepositPaid;
+              }
+              
+              console.log(`[Stripe Webhook] 📊 Métadonnées de modification finales`, {
                 bookingId: updatedBooking.id,
                 originalTotalPrice,
                 originalDepositPaid,
@@ -693,15 +787,25 @@ export async function POST(req: NextRequest) {
 
               // Construire modificationInfo pour l'email
               // IMPORTANT: paymentConfirmed = true car le webhook est appelé APRÈS le paiement réussi
+              // Toujours créer modificationInfo si possible, même avec des valeurs estimées
               const modificationInfo = originalTotalPrice != null && originalDepositPaid != null ? {
                 originalTotalPrice,
                 originalDepositPaid,
                 originalRemainingAmount: originalRemainingAmount ?? (originalTotalPrice - originalDepositPaid),
-                depositDifference: depositDifference ?? 0,
+                depositDifference: depositDifference ?? roundedAmountPaid,
                 additionalPaymentAmount: roundedAmountPaid, // Montant payé (la différence)
                 securityDepositPaid,
                 paymentConfirmed: true, // ✅ Paiement confirmé (webhook appelé après paiement réussi)
-              } : undefined;
+              } : {
+                // Fallback: utiliser les valeurs minimales nécessaires
+                originalTotalPrice: updatedBooking.totalPrice - (roundedAmountPaid / 0.3 * 0.7),
+                originalDepositPaid: (updatedBooking.depositPaid || 0) - roundedAmountPaid,
+                originalRemainingAmount: (updatedBooking.totalPrice - (roundedAmountPaid / 0.3 * 0.7)) - ((updatedBooking.depositPaid || 0) - roundedAmountPaid),
+                depositDifference: roundedAmountPaid,
+                additionalPaymentAmount: roundedAmountPaid,
+                securityDepositPaid: updatedBooking.securityDepositPaid || 0,
+                paymentConfirmed: true,
+              };
 
               console.log(`[Stripe Webhook] 📧 Envoi de l'email de mise à jour (paiement supplémentaire)`, {
                 bookingId: updatedBooking.id,

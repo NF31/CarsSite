@@ -40,6 +40,7 @@ import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 import { getClientRecentBookingsAction } from "@/actions/client/bookings/get-recent";
 import { RecentActivityCard } from "@/components/client/dashboard/RecentActivityCard";
 import { RecentInvoicesCard } from "@/components/client/dashboard/RecentInvoicesCard";
+import { BookingInvoiceDownload } from "@/components/client/dashboard/BookingInvoiceDownload";
 import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 import {
   BOOKING_STATUS_COLORS,
@@ -149,6 +150,38 @@ export default async function DashboardPage({
   const userId = session.user.id;
 
   const defaultSettings = createDefaultAdminSettings();
+
+  // Créer automatiquement les factures manquantes pour les réservations confirmées
+  // (pour les réservations confirmées avant l'implémentation de la création automatique)
+  try {
+    const { createInvoiceForBooking } = await import("@/lib/invoice-creation");
+    const confirmedBookingsWithoutInvoices = await prisma.booking.findMany({
+      where: {
+        userId,
+        status: "CONFIRMED",
+        invoices: {
+          none: {},
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    // Créer les factures manquantes avant de charger les données
+    if (confirmedBookingsWithoutInvoices.length > 0) {
+      await Promise.all(
+        confirmedBookingsWithoutInvoices.map((booking) =>
+          createInvoiceForBooking(booking.id).catch((error) => {
+            console.error(`[Dashboard] Erreur lors de la création de la facture pour ${booking.id}:`, error);
+          })
+        )
+      );
+    }
+  } catch (error) {
+    // Ignorer les erreurs pour ne pas bloquer le chargement du dashboard
+    console.error("[Dashboard] Erreur lors de la création automatique des factures manquantes:", error);
+  }
 
   const [bookings, invoices, cancellationPolicySetting] = await Promise.all([
     prisma.booking.findMany({
@@ -452,15 +485,7 @@ export default async function DashboardPage({
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {booking.invoices[0] ? (
-                        <Badge variant="outline" className="text-xs">
-                          Facture {booking.invoices[0].invoiceNumber}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs text-muted-foreground">
-                          Facture en cours
-                        </Badge>
-                      )}
+                      <BookingInvoiceDownload invoice={booking.invoices[0] || null} />
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" className="inline-flex items-center gap-1 text-xs sm:text-sm">
