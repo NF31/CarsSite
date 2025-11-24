@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus, PaymentStatus } from "@prisma/client";
 
 interface PaymentSuccessPageProps {
   searchParams: Promise<{
@@ -315,6 +315,438 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                 where: { id: booking.id },
                 data: updateData,
               });
+
+              // CRITIQUE: Créer le paiement si le webhook ne l'a pas fait
+              if (!webhookProcessed && session_id && stripeSession) {
+                console.log(`[Payment Success] ⚠️  Webhook pas encore traité, création du paiement de secours`, {
+                  bookingId: booking.id,
+                  sessionId: session_id,
+                  amountPaid: stripeSession.amount_total ? (stripeSession.amount_total / 100).toFixed(2) + "€" : "N/A",
+                  timestamp: new Date().toISOString(),
+                });
+
+                try {
+                  // Vérifier si un paiement existe déjà (au cas où)
+                  const existingPayment = await prisma.payment.findFirst({
+                    where: {
+                      transactionId: session_id,
+                    },
+                  });
+
+                  if (!existingPayment) {
+                    // Déterminer le statut du paiement
+                    const paymentStatus = paymentType === "authorization" ? PaymentStatus.PENDING : PaymentStatus.COMPLETED;
+                    const paymentAmount = stripeSession.amount_total ? stripeSession.amount_total / 100 : 0;
+
+                    // Déterminer les métadonnées
+                    let metadataDownPayment: number;
+                    let metadataSecurityDeposit: number;
+
+                    if (isModificationPayment) {
+                      metadataDownPayment = paymentAmount;
+                      metadataSecurityDeposit = 0;
+                    } else if (paymentType === "authorization") {
+                      metadataDownPayment = 0;
+                      metadataSecurityDeposit = actualSecurityDepositPaid;
+                    } else if (paymentType === "deposit") {
+                      metadataDownPayment = actualDepositPaid;
+                      metadataSecurityDeposit = 0;
+                    } else {
+                      metadataDownPayment = actualDepositPaid;
+                      metadataSecurityDeposit = actualSecurityDepositPaid;
+                    }
+
+                    const createdPayment = await prisma.payment.create({
+                      data: {
+                        bookingId: booking.id,
+                        userId: session.user.id,
+                        amount: paymentAmount,
+                        method: "STRIPE",
+                        status: paymentStatus,
+                        transactionId: session_id,
+                        metadata: {
+                          stripeSessionId: session_id,
+                          stripePaymentIntentId: stripeSession.payment_intent as string | undefined,
+                          paymentType: paymentType,
+                          isModificationPayment: isModificationPayment,
+                          downPayment: metadataDownPayment,
+                          securityDeposit: metadataSecurityDeposit,
+                          amountPaid: paymentAmount,
+                          createdByFallback: true, // Indiquer que c'est une création de secours
+                        },
+                      },
+                    });
+
+                    console.log(`[Payment Success] ✅ Paiement de secours créé avec succès`, {
+                      paymentId: createdPayment.id,
+                      bookingId: booking.id,
+                      amount: `${paymentAmount.toFixed(2)}€`,
+                      status: paymentStatus,
+                      timestamp: new Date().toISOString(),
+                    });
+                  } else {
+                    console.log(`[Payment Success] ℹ️  Paiement existe déjà, pas de création de secours nécessaire`, {
+                      paymentId: existingPayment.id,
+                      bookingId: booking.id,
+                      timestamp: new Date().toISOString(),
+                    });
+                  }
+                } catch (paymentCreationError) {
+                  console.error(`[Payment Success] ❌ Erreur lors de la création du paiement de secours`, {
+                    bookingId: booking.id,
+                    error: paymentCreationError instanceof Error ? paymentCreationError.message : String(paymentCreationError),
+                    timestamp: new Date().toISOString(),
+                  });
+                  // Ne pas bloquer l'affichage de la page en cas d'erreur
+                }
+              }
+
+              // CRITIQUE: Si le webhook n'a pas été traité, déclencher TOUS les workflows manquants
+              const finalPaymentStatus = paymentType === "authorization" ? PaymentStatus.PENDING : PaymentStatus.COMPLETED;
+              
+              if (!webhookProcessed && booking && booking.status === BookingStatus.CONFIRMED && !isModification) {
+                console.log(`[Payment Success] ⚠️  Webhook non traité, déclenchement de tous les workflows manquants`, {
+                  bookingId: booking.id,
+                  reference: booking.reference,
+                  currentStatus: booking.status,
+                  isModification,
+                  webhookProcessed,
+                  timestamp: new Date().toISOString(),
+                });
+
+                try {
+                  // 1. Créer la facture si elle n'existe pas
+                  console.log(`[Payment Success] 🔍 Vérification de l'existence de la facture...`, {
+                    bookingId: booking.id,
+                    timestamp: new Date().toISOString(),
+                  });
+
+                  const existingInvoice = await prisma.invoice.findFirst({
+                    where: { bookingId: booking.id },
+                    select: { id: true, invoiceNumber: true },
+                  });
+
+                  if (!existingInvoice) {
+                    console.log(`[Payment Success] 📋 Création de la facture (webhook non traité)`, {
+                      bookingId: booking.id,
+                      timestamp: new Date().toISOString(),
+                    });
+
+                    const { createInvoiceForBooking } = await import("@/lib/invoice-creation");
+                    const invoiceResult = await createInvoiceForBooking(booking.id);
+
+                    if (invoiceResult.success) {
+                      console.log(`[Payment Success] ✅ Facture créée avec succès`, {
+                        bookingId: booking.id,
+                        invoiceId: invoiceResult.invoiceId,
+                        timestamp: new Date().toISOString(),
+                      });
+                    } else {
+                      console.warn(`[Payment Success] ⚠️  Impossible de créer la facture`, {
+                        bookingId: booking.id,
+                        error: invoiceResult.error,
+                        timestamp: new Date().toISOString(),
+                      });
+                    }
+                  } else {
+                    console.log(`[Payment Success] ✅ Facture déjà existante`, {
+                      bookingId: booking.id,
+                      invoiceId: existingInvoice.id,
+                      invoiceNumber: existingInvoice.invoiceNumber,
+                      timestamp: new Date().toISOString(),
+                    });
+                  }
+
+                  // 2. Mettre à jour le statut des factures
+                  console.log(`[Payment Success] 🔍 Recherche du paiement pour mise à jour des factures...`, {
+                    bookingId: booking.id,
+                    sessionId: session_id,
+                    paymentStatus: finalPaymentStatus,
+                    timestamp: new Date().toISOString(),
+                  });
+
+                  const paymentRecord = await prisma.payment.findFirst({
+                    where: { transactionId: session_id || "" },
+                    select: { id: true, amount: true, status: true },
+                  });
+
+                  if (paymentRecord) {
+                    console.log(`[Payment Success] ✅ Paiement trouvé pour mise à jour des factures`, {
+                      paymentId: paymentRecord.id,
+                      amount: paymentRecord.amount,
+                      status: paymentRecord.status,
+                      timestamp: new Date().toISOString(),
+                    });
+                  } else {
+                    console.warn(`[Payment Success] ⚠️  Paiement non trouvé pour la mise à jour des factures`, {
+                      sessionId: session_id,
+                      timestamp: new Date().toISOString(),
+                    });
+                  }
+
+                  if (paymentRecord && finalPaymentStatus === PaymentStatus.COMPLETED) {
+                    const { updateInvoiceStatusAfterPayment } = await import("@/lib/invoice-status-update");
+                    await updateInvoiceStatusAfterPayment(
+                      booking.id,
+                      paymentRecord.id,
+                      paymentRecord.amount
+                    );
+                    console.log(`[Payment Success] ✅ Statut des factures mis à jour`, {
+                      bookingId: booking.id,
+                      timestamp: new Date().toISOString(),
+                    });
+                  }
+
+                  // 3. Envoyer l'email de confirmation avec PDFs (en arrière-plan, ne pas bloquer)
+                  console.log(`[Payment Success] 📧 Démarrage de l'envoi de l'email avec PDFs (workflow de secours)`, {
+                    bookingId: booking.id,
+                    reference: booking.reference,
+                    timestamp: new Date().toISOString(),
+                  });
+
+                  Promise.resolve().then(async () => {
+                    try {
+                      const { sendBookingConfirmationEmail } = await import("@/lib/email");
+                      const { generateInvoicePDFAction } = await import("@/actions/admin/invoices/generate-pdf");
+                      const { generateBookingPDF } = await import("@/lib/booking-pdf");
+                      const { createDefaultAdminSettings } = await import("@/actions/admin/settings/shared");
+                      const { format } = await import("date-fns");
+                      const { fr } = await import("date-fns/locale");
+
+                      console.log(`[Payment Success] 🔍 Récupération des données pour l'email...`, {
+                        bookingId: booking.id,
+                        timestamp: new Date().toISOString(),
+                      });
+
+                      // Récupérer toutes les données nécessaires
+                      const [userData, vehicleData, pickupLocData, returnLocData, bookingWithServices] = await Promise.all([
+                        prisma.user.findUnique({
+                          where: { id: booking.userId || session.user.id },
+                          select: { email: true, name: true, phone: true },
+                        }),
+                        prisma.vehicle.findUnique({
+                          where: { id: booking.vehicleId },
+                          select: { brand: true, model: true, licensePlate: true, pricePerDay: true },
+                        }),
+                        prisma.location.findUnique({
+                          where: { id: booking.pickupLocationId },
+                          select: { name: true, city: true, address: true },
+                        }),
+                        prisma.location.findUnique({
+                          where: { id: booking.returnLocationId },
+                          select: { name: true, city: true, address: true },
+                        }),
+                        prisma.booking.findUnique({
+                          where: { id: booking.id },
+                          select: { serviceIds: true },
+                        }),
+                      ]);
+
+                      console.log(`[Payment Success] ✅ Données récupérées pour l'email`, {
+                        bookingId: booking.id,
+                        userFound: !!userData,
+                        vehicleFound: !!vehicleData,
+                        pickupLocFound: !!pickupLocData,
+                        returnLocFound: !!returnLocData,
+                        bookingWithServicesFound: !!bookingWithServices,
+                        timestamp: new Date().toISOString(),
+                      });
+
+                      if (userData && vehicleData && pickupLocData && returnLocData && bookingWithServices) {
+                        const attachments: Array<{ filename: string; content: Buffer; contentType?: string }> = [];
+
+                        // Générer PDF de réservation
+                        const services = bookingWithServices.serviceIds && bookingWithServices.serviceIds.length > 0
+                          ? await prisma.service.findMany({
+                              where: { id: { in: bookingWithServices.serviceIds } },
+                              select: { name: true, price: true },
+                            })
+                          : [];
+
+                        const agencySettings = await prisma.setting.findMany({
+                          where: {
+                            key: { in: ["agency.name", "agency.address", "agency.phone", "agency.email"] },
+                          },
+                        });
+                        const defaultSettings = createDefaultAdminSettings();
+                        const settingsMap = new Map(agencySettings.map((s) => [s.key, s.value]));
+                        const agencyName = settingsMap.get("agency.name");
+                        const agencyAddress = settingsMap.get("agency.address");
+                        const agencyPhone = settingsMap.get("agency.phone");
+                        const agencyEmail = settingsMap.get("agency.email");
+                        const agency = {
+                          name: typeof agencyName === "string" ? agencyName : (defaultSettings.agency.name || "CarRental"),
+                          address: typeof agencyAddress === "string" ? agencyAddress : (defaultSettings.agency.address || "123 Avenue de la Liberté, 75000 Paris"),
+                          phone: typeof agencyPhone === "string" ? agencyPhone : (defaultSettings.agency.phone || "+33 1 23 45 67 89"),
+                          email: typeof agencyEmail === "string" ? agencyEmail : (defaultSettings.agency.email || "contact@carrental.com"),
+                        };
+
+                        console.log(`[Payment Success] 📄 Génération des PDFs pour l'email...`, {
+                          bookingId: booking.id,
+                          timestamp: new Date().toISOString(),
+                        });
+
+                        try {
+                          const bookingPdfBuffer = await generateBookingPDF({
+                            reference: booking.reference,
+                            status: booking.status || BookingStatus.CONFIRMED,
+                            startDate: booking.startDate,
+                            endDate: booking.endDate,
+                            totalPrice: booking.totalPrice,
+                            depositPaid: booking.depositPaid || 0,
+                            remainingAmount: booking.remainingAmount || 0,
+                            vehicle: {
+                              brand: vehicleData.brand,
+                              model: vehicleData.model,
+                              licensePlate: vehicleData.licensePlate,
+                              pricePerDay: vehicleData.pricePerDay,
+                            },
+                            pickupLocation: {
+                              name: pickupLocData.name,
+                              city: pickupLocData.city || "",
+                              address: pickupLocData.address,
+                            },
+                            returnLocation: {
+                              name: returnLocData.name,
+                              city: returnLocData.city || "",
+                              address: returnLocData.address,
+                            },
+                            services: services.map((s) => ({ name: s.name, price: s.price })),
+                            user: {
+                              name: userData.name || "Client",
+                              email: userData.email,
+                              phone: userData.phone,
+                            },
+                            agency,
+                          });
+                          attachments.push({
+                            filename: `Reservation_${booking.reference}.pdf`,
+                            content: bookingPdfBuffer,
+                            contentType: "application/pdf",
+                          });
+
+                          console.log(`[Payment Success] ✅ PDF de réservation généré`, {
+                            bookingId: booking.id,
+                            filename: `Reservation_${booking.reference}.pdf`,
+                            timestamp: new Date().toISOString(),
+                          });
+
+                          // Générer PDF de facture si elle existe
+                          const invoice = await prisma.invoice.findFirst({
+                            where: { bookingId: booking.id },
+                            select: { id: true },
+                          });
+
+                          if (invoice) {
+                            console.log(`[Payment Success] 📄 Génération du PDF de facture...`, {
+                              bookingId: booking.id,
+                              invoiceId: invoice.id,
+                              timestamp: new Date().toISOString(),
+                            });
+
+                            const invoicePdfResult = await generateInvoicePDFAction(invoice.id);
+                            if (invoicePdfResult.success && invoicePdfResult.data?.pdfBuffer) {
+                              attachments.push({
+                                filename: `Facture_${booking.reference}.pdf`,
+                                content: invoicePdfResult.data.pdfBuffer,
+                                contentType: "application/pdf",
+                              });
+                              console.log(`[Payment Success] ✅ PDF de facture généré`, {
+                                bookingId: booking.id,
+                                filename: `Facture_${booking.reference}.pdf`,
+                                timestamp: new Date().toISOString(),
+                              });
+                            } else {
+                              console.warn(`[Payment Success] ⚠️  Impossible de générer le PDF de facture`, {
+                                bookingId: booking.id,
+                                invoiceId: invoice.id,
+                                error: invoicePdfResult.error,
+                                timestamp: new Date().toISOString(),
+                              });
+                            }
+                          } else {
+                            console.log(`[Payment Success] ℹ️  Aucune facture trouvée pour générer le PDF`, {
+                              bookingId: booking.id,
+                              timestamp: new Date().toISOString(),
+                            });
+                          }
+                        } catch (pdfError) {
+                          console.error(`[Payment Success] ❌ Erreur lors de la génération des PDFs`, {
+                            bookingId: booking.id,
+                            error: pdfError instanceof Error ? pdfError.message : String(pdfError),
+                            timestamp: new Date().toISOString(),
+                          });
+                        }
+
+                        console.log(`[Payment Success] 📧 Envoi de l'email avec ${attachments.length} pièce(s) jointe(s)...`, {
+                          bookingId: booking.id,
+                          attachmentsCount: attachments.length,
+                          attachments: attachments.map(a => a.filename),
+                          timestamp: new Date().toISOString(),
+                        });
+
+                        // Envoyer l'email
+                        const bookingPeriod = `${format(booking.startDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })} → ${format(booking.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
+                        const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
+
+                        const emailResult = await sendBookingConfirmationEmail({
+                          to: userData.email || "",
+                          name: userData.name || "Client",
+                          greeting,
+                          booking: {
+                            reference: booking.reference,
+                            totalPrice: booking.totalPrice,
+                            depositPaid: booking.depositPaid || 0,
+                            remainingAmount: booking.remainingAmount || 0,
+                            startDate: booking.startDate,
+                            endDate: booking.endDate,
+                            status: booking.status || BookingStatus.CONFIRMED,
+                            period: bookingPeriod,
+                          },
+                          vehicle: {
+                            label: `${vehicleData.brand} ${vehicleData.model}`,
+                            licensePlate: vehicleData.licensePlate,
+                          },
+                          locations: {
+                            pickup: pickupLocData.name,
+                            return: returnLocData.name,
+                          },
+                          attachments: attachments.length > 0 ? attachments : undefined,
+                        });
+
+                        if (emailResult.success) {
+                          console.log(`[Payment Success] ✅ Email de confirmation envoyé avec PDFs (workflow de secours)`, {
+                            bookingId: booking.id,
+                            messageId: emailResult.messageId,
+                            attachmentsCount: attachments.length,
+                            timestamp: new Date().toISOString(),
+                          });
+                        } else {
+                          console.error(`[Payment Success] ❌ Échec de l'envoi de l'email (workflow de secours)`, {
+                            bookingId: booking.id,
+                            error: emailResult.error,
+                            timestamp: new Date().toISOString(),
+                          });
+                        }
+                      }
+                    } catch (emailWorkflowError) {
+                      console.error(`[Payment Success] ❌ Erreur lors de l'exécution du workflow email (secours)`, {
+                        bookingId: booking.id,
+                        error: emailWorkflowError instanceof Error ? emailWorkflowError.message : String(emailWorkflowError),
+                        timestamp: new Date().toISOString(),
+                      });
+                    }
+                  }).catch(() => {
+                    // Ignorer les erreurs pour ne pas bloquer la page
+                  });
+                } catch (workflowError) {
+                  console.error(`[Payment Success] ❌ Erreur lors de l'exécution des workflows de secours`, {
+                    bookingId: booking.id,
+                    error: workflowError instanceof Error ? workflowError.message : String(workflowError),
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+              }
 
               // Recharger la réservation mise à jour
               booking = await prisma.booking.findUnique({

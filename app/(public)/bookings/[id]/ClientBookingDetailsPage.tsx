@@ -70,7 +70,27 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
           : booking.status;
 
   const mainImage = booking.vehicle.images[0] || "/placeholder-car.jpg";
-  const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  // Calculer la durée exacte (même logique que calculate-price.ts)
+  const diffMs = endDate.getTime() - startDate.getTime();
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const exactDuration = Math.max(diffMs / msPerDay, 1); // Minimum 1 jour, division exacte
+  
+  // Formater la durée de manière professionnelle pour l'affichage
+  // Arrondir intelligemment : si la partie décimale est significative (> 0.05), arrondir vers le haut
+  // Sinon, arrondir vers le bas pour éviter d'afficher des décimales
+  const formatDuration = (days: number): string => {
+    const wholeDays = Math.floor(days);
+    const decimalPart = days - wholeDays;
+    
+    // Si la partie décimale est significative (> 0.05), arrondir vers le haut
+    const roundedDays = decimalPart > 0.05 ? Math.ceil(days) : wholeDays;
+    
+    return `${roundedDays} jour${roundedDays > 1 ? "s" : ""}`;
+  };
+  
+  const durationDisplay = formatDuration(exactDuration);
+  // Utiliser la durée exacte pour les calculs, mais la version formatée pour l'affichage
+  const duration = exactDuration;
 
   // Calculer les prix réels des services
   useEffect(() => {
@@ -255,7 +275,7 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Durée de location</p>
                   <p className="text-lg font-semibold">
-                    {duration} jour{duration > 1 ? "s" : ""}
+                    {durationDisplay}
                   </p>
                 </div>
               </CardContent>
@@ -365,7 +385,7 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
               <CardContent className="pt-6 space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Location ({duration} jour{duration > 1 ? "s" : ""})</span>
+                    <span className="text-sm text-muted-foreground">Location ({durationDisplay})</span>
                     <span className="font-semibold">
                       {currencyFormatter.format(booking.vehicle.pricePerDay * duration)}
                     </span>
