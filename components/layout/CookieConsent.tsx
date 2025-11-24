@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { X, Cookie } from "lucide-react";
@@ -10,18 +10,23 @@ import { getCookieConsent, setCookieConsentClient } from "@/lib/cookies";
 import { setCookieConsentAction } from "@/actions/public/cookies/set-cookie-consent";
 
 export function CookieConsent() {
-  const [isVisible, setIsVisible] = useState(() => {
-    // Vérifier si le consentement a déjà été donné (utilise uniquement les cookies HTTP)
-    if (typeof window === "undefined") {
-      return false;
-    }
+  // Éviter l'erreur d'hydratation en ne vérifiant le cookie qu'après le montage
+  const [mounted, setMounted] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Marquer le composant comme monté (côté client uniquement)
+    // Note: Pattern standard pour éviter les erreurs d'hydratation
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
     
+    // Vérifier si le consentement a déjà été donné
     const consent = getCookieConsent();
     
     // Aucun consentement enregistré, afficher le bandeau
-    return consent === null;
-  });
-  const [isLoading, setIsLoading] = useState(false);
+    setIsVisible(consent === null);
+  }, []);
 
   const handleAccept = async () => {
     setIsLoading(true);
@@ -71,7 +76,9 @@ export function CookieConsent() {
     setIsVisible(false);
   };
 
-  if (!isVisible) {
+  // Ne rien rendre jusqu'à ce que le composant soit monté côté client
+  // Cela évite les erreurs d'hydratation
+  if (!mounted || !isVisible) {
     return null;
   }
 
