@@ -71,8 +71,24 @@ export function ClientInvoicesPageClient({
         }
 
         // Ouvrir le PDF dans un nouvel onglet
-        window.open(result.url, "_blank", "noopener,noreferrer");
-        toast.success("Facture téléchargée avec succès");
+        const newWindow = window.open(result.url, "_blank", "noopener,noreferrer");
+        
+        // Vérifier que la fenêtre s'est bien ouverte (pas bloquée par un bloqueur de popup)
+        if (!newWindow) {
+          toast.error("Impossible d'ouvrir la facture. Veuillez autoriser les fenêtres popup pour ce site.");
+          return;
+        }
+
+        // Attendre un court instant pour vérifier si la fenêtre se ferme immédiatement (erreur)
+        setTimeout(() => {
+          if (newWindow.closed) {
+            // La fenêtre s'est fermée, probablement une erreur
+            toast.error("Erreur lors du chargement de la facture. Veuillez réessayer.");
+          } else {
+            // Tout semble OK, afficher le message de succès
+            toast.success("Facture téléchargée avec succès");
+          }
+        }, 500);
       } catch (error) {
         console.error("Error downloading invoice:", error);
         toast.error("Une erreur est survenue lors du téléchargement");
