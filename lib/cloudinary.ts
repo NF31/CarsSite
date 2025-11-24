@@ -110,15 +110,12 @@ export const getSignedDownloadUrl = (
   const cleanPublicId = publicId.replace(/\.pdf$/, "");
   const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
 
-  // Pour les fichiers privés avec type: "private", utiliser cloudinary.url() avec sign_url
-  // Cette méthode génère automatiquement une URL signée correcte
-  return cloudinary.url(cleanPublicId, {
+  // Pour les fichiers privés, utiliser cloudinary.utils.private_download_url()
+  // Cette méthode génère une URL signée correcte pour les fichiers privés
+  return cloudinary.utils.private_download_url(cleanPublicId, format, {
     resource_type: "raw",
     type: "private",
-    secure: true,
-    sign_url: true,
     expires_at: expiresAt,
-    format: format, // Inclure le format dans les options
   });
 };
 
