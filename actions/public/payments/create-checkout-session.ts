@@ -31,9 +31,11 @@ export interface CreateCheckoutSessionResult {
 export async function createCheckoutSessionAction(
   input: CreateCheckoutSessionInput
 ): Promise<CreateCheckoutSessionResult> {
-  console.log(`\n💳 [CreateCheckoutSession] ==========================================`);
-  console.log(`💳 [CreateCheckoutSession] 🚀 DÉBUT createCheckoutSessionAction`);
-  console.log(`💳 [CreateCheckoutSession] ==========================================\n`);
+    console.log(`\n💳 [📋 WORKFLOW ÉTAPE 3] ==========================================`);
+    console.log(`💳 [📋 WORKFLOW ÉTAPE 3] 🚀 DÉBUT - CRÉATION SESSION STRIPE`);
+    console.log(`💳 [📋 WORKFLOW ÉTAPE 3] ==========================================`);
+    console.log(`💳 [📋 WORKFLOW ÉTAPE 3] Workflow Step: 3/4 - PAIEMENT STRIPE`);
+    console.log(`💳 [📋 WORKFLOW ÉTAPE 3] ==========================================\n`);
 
   try {
     const session = await auth();
@@ -204,13 +206,24 @@ export async function createCheckoutSessionAction(
     
     const checkoutSession = await stripe.checkout.sessions.create(checkoutSessionConfig);
 
-    console.log(`\n✅ [CreateCheckoutSession] Session Stripe créée avec succès:`);
-    console.log(`   - Session ID: ${checkoutSession.id}`);
-    console.log(`   - URL: ${checkoutSession.url ?? "N/A"}`);
-    console.log(`   - Status: ${checkoutSession.status ?? "N/A"}`);
-    console.log(`\n💳 [CreateCheckoutSession] ==========================================`);
-    console.log(`💳 [CreateCheckoutSession] 🎉 FIN createCheckoutSessionAction - SUCCÈS`);
-    console.log(`💳 [CreateCheckoutSession] ==========================================\n`);
+    console.log(`\n💳 [📋 WORKFLOW ÉTAPE 3] ✅ Session Stripe créée avec succès:`, {
+      sessionId: checkoutSession.id,
+      url: checkoutSession.url ?? "N/A",
+      status: checkoutSession.status ?? "N/A",
+      bookingId: booking.id,
+      bookingReference: booking.reference,
+      amount: `${input.amount.toFixed(2)}€`,
+      paymentType,
+      isModificationPayment: input.isModificationPayment ? "OUI" : "NON",
+      expiresAt: new Date(expiresAt * 1000).toISOString(),
+      timestamp: new Date().toISOString(),
+      workflowStep: "3/4 - PAIEMENT STRIPE",
+      nextStep: "4/4 - WEBHOOK STRIPE (automatique après paiement)",
+      action: "Utilisateur redirigé vers Stripe Checkout",
+    });
+    console.log(`\n💳 [📋 WORKFLOW ÉTAPE 3] ==========================================`);
+    console.log(`💳 [📋 WORKFLOW ÉTAPE 3] 🎉 FIN - SESSION CRÉÉE, EN ATTENTE PAIEMENT`);
+    console.log(`💳 [📋 WORKFLOW ÉTAPE 3] ==========================================\n`);
 
     return {
       success: true,

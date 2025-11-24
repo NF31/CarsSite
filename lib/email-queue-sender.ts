@@ -123,6 +123,11 @@ interface BookingConfirmationEmailParams {
     pickup: string;
     return: string;
   };
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
 }
 
 /**
@@ -135,6 +140,7 @@ export async function queueBookingConfirmationEmail({
   booking,
   vehicle,
   locations,
+  attachments,
 }: BookingConfirmationEmailParams): Promise<{ success: boolean; queued: boolean }> {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
@@ -178,6 +184,13 @@ export async function queueBookingConfirmationEmail({
       dashboardUrl,
     });
 
+    // Convertir les attachments en base64 pour le stockage dans Redis
+    const attachmentsBase64 = attachments?.map((att) => ({
+      filename: att.filename,
+      contentBase64: att.content.toString("base64"),
+      contentType: att.contentType || "application/pdf",
+    }));
+
     await addEmailToQueue({
       type: "booking-confirmation",
       to,
@@ -188,6 +201,7 @@ export async function queueBookingConfirmationEmail({
         name,
         bookingReference: booking.reference,
       },
+      attachments: attachmentsBase64,
     });
 
     return { success: true, queued: true };
