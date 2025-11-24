@@ -9,6 +9,9 @@ import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/emai
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { updateInvoiceStatusAfterPayment } from "@/lib/invoice-status-update";
+import { generateInvoicePDFAction } from "@/actions/admin/invoices/generate-pdf";
+import { generateBookingPDF } from "@/lib/booking-pdf";
+import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -44,15 +47,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4] ==========================================`);
+    console.log(`📋 [📋 WORKFLOW ÉTAPE 4] 🔔 WEBHOOK STRIPE REÇU`);
+    console.log(`📋 [📋 WORKFLOW ÉTAPE 4] ==========================================`);
     console.log(`[Stripe Webhook] Received event: ${event.type}`, {
       eventId: event.id,
       sessionId: event.data.object && "id" in event.data.object ? event.data.object.id : "N/A",
+      workflowStep: "4/4 - WEBHOOK STRIPE",
+      timestamp: new Date().toISOString(),
     });
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      console.log(`[Stripe Webhook] 🔔 Event checkout.session.completed reçu`, {
+      console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4] 🔔 ÉVÉNEMENT checkout.session.completed REÇU`, {
         eventId: event.id,
         sessionId: session.id,
         paymentStatus: session.payment_status,
@@ -61,10 +69,21 @@ export async function POST(req: NextRequest) {
         customerEmail: session.customer_email || "N/A",
         metadata: session.metadata,
         timestamp: new Date().toISOString(),
+        workflowStep: "4/4 - WEBHOOK STRIPE",
+        stepNumber: "4.1 - RÉCEPTION ÉVÉNEMENT",
       });
 
       const bookingId = session.metadata?.bookingId;
       const userId = session.metadata?.userId;
+      
+      console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.1] ✅ Événement reçu, début du traitement`, {
+        bookingId,
+        userId,
+        sessionId: session.id,
+        workflowStep: "4/4 - WEBHOOK STRIPE",
+        stepNumber: "4.1 - RÉCEPTION ÉVÉNEMENT",
+        timestamp: new Date().toISOString(),
+      });
 
       if (!bookingId || !userId) {
         console.error("[Stripe Webhook] ❌ Métadonnées manquantes dans la session Stripe", {
@@ -169,7 +188,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      console.log(`[Stripe Webhook] ✅ Calcul du prix réussi`, {
+              console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.2] ✅ Calcul du prix réussi`, {
         bookingId,
         priceBreakdown: {
           vehiclePrice: `${priceResult.data.vehiclePrice.toFixed(2)}€`,
@@ -196,7 +215,7 @@ export async function POST(req: NextRequest) {
                                       session.metadata?.isModificationPayment === "1";
       const isModificationPayment = metadataIsModification || hasModificationDepositDifference;
       
-      console.log(`[Stripe Webhook] 🔍 Détection du type de paiement`, {
+              console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.3] 🔍 Détection du type de paiement`, {
         bookingId,
         paymentType,
         isAuthorization,
@@ -298,9 +317,8 @@ export async function POST(req: NextRequest) {
       }
 
       // Mettre à jour la réservation selon le type de paiement
-      let updateData: Prisma.BookingUpdateInput = {
-        remainingAmount: roundedRemainingAmount, // Le solde restant à payer à la remise
-      };
+      // Le remainingAmount sera recalculé selon le type de paiement ci-dessous
+      let updateData: Prisma.BookingUpdateInput = {};
 
       if (isModificationPayment) {
         // Pour un paiement supplémentaire de modification :
@@ -343,9 +361,11 @@ export async function POST(req: NextRequest) {
       } else if (isAuthorization) {
         // Pour l'empreinte bancaire : on ne met à jour que securityDepositPaid (bloqué, pas payé)
         // Le statut reste PENDING jusqu'à confirmation manuelle
+        // Le remainingAmount reste inchangé car aucun acompte n'est payé
         updateData = {
           ...updateData,
           securityDepositPaid: roundedSecurityDeposit,
+          remainingAmount: roundedRemainingAmount, // Reste inchangé (basé sur le calcul initial)
           status: BookingStatus.PENDING, // Reste en attente, pas de confirmation automatique
         };
         console.log(`[Stripe Webhook] 📝 Mise à jour de la réservation (empreinte bancaire)`, {
@@ -360,10 +380,15 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString(),
         });
       } else if (isDepositOnly) {
-        // Pour l'acompte seulement : on met à jour depositPaid
+        // Pour l'acompte seulement : on utilise le montant RÉELLEMENT PAYÉ (roundedAmountPaid)
+        // au lieu du montant calculé, pour garantir la cohérence avec le paiement Stripe
+        const actualDepositPaid = roundedAmountPaid;
+        const actualRemainingAmount = Math.round((booking.totalPrice - actualDepositPaid) * 100) / 100;
+        
         updateData = {
           ...updateData,
-          depositPaid: roundedDownPayment,
+          depositPaid: actualDepositPaid, // Utiliser le montant réellement payé
+          remainingAmount: actualRemainingAmount, // Recalculer le solde avec le montant réel
           status: BookingStatus.CONFIRMED, // Confirmation automatique après paiement de l'acompte
         };
         console.log(`[Stripe Webhook] 📝 Mise à jour de la réservation (acompte seulement)`, {
@@ -372,18 +397,25 @@ export async function POST(req: NextRequest) {
             previousStatus: booking.status,
             newStatus: BookingStatus.CONFIRMED,
             previousDepositPaid: `${(booking.depositPaid || 0).toFixed(2)}€`,
-            newDepositPaid: `${roundedDownPayment.toFixed(2)}€`,
-            remainingAmount: `${roundedRemainingAmount.toFixed(2)}€`,
-            note: "Caution sera bloquée lors de la confirmation",
+            newDepositPaid: `${actualDepositPaid.toFixed(2)}€`,
+            amountPaidFromStripe: `${roundedAmountPaid.toFixed(2)}€`,
+            calculatedDownPayment: `${roundedDownPayment.toFixed(2)}€`,
+            remainingAmount: `${actualRemainingAmount.toFixed(2)}€`,
+            note: "Utilisation du montant réellement payé via Stripe pour garantir la cohérence",
           },
           timestamp: new Date().toISOString(),
         });
       } else {
-        // Pour le paiement complet : on met à jour depositPaid ET securityDepositPaid
+        // Pour le paiement complet : on utilise le montant RÉELLEMENT PAYÉ pour l'acompte
+        // et on déduit la caution du montant total payé
+        const actualDepositPaid = roundedAmountPaid - roundedSecurityDeposit;
+        const actualRemainingAmount = Math.round((booking.totalPrice - actualDepositPaid) * 100) / 100;
+        
         updateData = {
           ...updateData,
-          depositPaid: roundedDownPayment,
+          depositPaid: actualDepositPaid, // Montant payé moins la caution
           securityDepositPaid: roundedSecurityDeposit,
+          remainingAmount: actualRemainingAmount, // Recalculer le solde avec le montant réel
           status: BookingStatus.CONFIRMED, // Confirmation automatique après paiement réussi
         };
         console.log(`[Stripe Webhook] 📝 Mise à jour de la réservation (paiement complet)`, {
@@ -392,9 +424,12 @@ export async function POST(req: NextRequest) {
             previousStatus: booking.status,
             newStatus: BookingStatus.CONFIRMED,
             previousDepositPaid: `${(booking.depositPaid || 0).toFixed(2)}€`,
-            newDepositPaid: `${roundedDownPayment.toFixed(2)}€`,
+            newDepositPaid: `${actualDepositPaid.toFixed(2)}€`,
+            amountPaidFromStripe: `${roundedAmountPaid.toFixed(2)}€`,
+            calculatedDownPayment: `${roundedDownPayment.toFixed(2)}€`,
             securityDepositPaid: `${roundedSecurityDeposit.toFixed(2)}€`,
-            remainingAmount: `${roundedRemainingAmount.toFixed(2)}€`,
+            remainingAmount: `${actualRemainingAmount.toFixed(2)}€`,
+            note: "Utilisation du montant réellement payé via Stripe pour garantir la cohérence",
           },
           timestamp: new Date().toISOString(),
         });
@@ -431,12 +466,44 @@ export async function POST(req: NextRequest) {
         timestamp: new Date().toISOString(),
       });
 
+      // VÉRIFICATION CRITIQUE : Pour les paiements de modification, le statut DOIT être CONFIRMED
+      // Si ce n'est pas le cas, forcer la mise à jour AVANT de créer la facture
+      if (isModificationPayment && updatedBooking.status !== BookingStatus.CONFIRMED) {
+        console.error(`[Stripe Webhook] ❌ ERREUR CRITIQUE: Paiement de modification mais statut n'est pas CONFIRMED !`, {
+          bookingId: updatedBooking.id,
+          reference: updatedBooking.reference,
+          currentStatus: updatedBooking.status,
+          expectedStatus: BookingStatus.CONFIRMED,
+          isModificationPayment,
+          timestamp: new Date().toISOString(),
+        });
+        
+        // Forcer la mise à jour du statut à CONFIRMED
+        const correctedBooking = await prisma.booking.update({
+          where: { id: bookingId },
+          data: { status: BookingStatus.CONFIRMED },
+          select: { id: true, status: true, reference: true },
+        });
+        
+        console.log(`[Stripe Webhook] ✅ Statut forcé à CONFIRMED`, {
+          bookingId: correctedBooking.id,
+          previousStatus: updatedBooking.status,
+          newStatus: correctedBooking.status,
+          timestamp: new Date().toISOString(),
+        });
+        
+        // Mettre à jour la variable pour les workflows suivants
+        updatedBooking.status = correctedBooking.status;
+      }
+
       // Créer automatiquement une facture si la réservation est confirmée
-      if (updatedBooking.status === BookingStatus.CONFIRMED && !isModificationPayment) {
+      // IMPORTANT: Après avoir corrigé le statut si nécessaire
+      if (updatedBooking.status === BookingStatus.CONFIRMED) {
         console.log(`[Stripe Webhook] 📋 Création automatique de facture pour la réservation ${bookingId}`, {
           bookingId: updatedBooking.id,
           reference: updatedBooking.reference,
           status: updatedBooking.status,
+          isModificationPayment,
           timestamp: new Date().toISOString(),
         });
 
@@ -445,7 +512,7 @@ export async function POST(req: NextRequest) {
           const invoiceResult = await createInvoiceForBooking(bookingId);
 
           if (invoiceResult.success) {
-            console.log(`[Stripe Webhook] ✅ Facture créée automatiquement pour la réservation ${bookingId}`, {
+                    console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.5] ✅ Facture créée automatiquement`, {
               bookingId: updatedBooking.id,
               invoiceId: invoiceResult.invoiceId,
               timestamp: new Date().toISOString(),
@@ -465,36 +532,13 @@ export async function POST(req: NextRequest) {
           });
           // Ne pas bloquer le webhook en cas d'erreur de création de facture
         }
-      }
-      
-      // VÉRIFICATION CRITIQUE : Pour les paiements de modification, le statut DOIT être CONFIRMED
-      // Si ce n'est pas le cas, forcer la mise à jour
-      if (isModificationPayment && updatedBooking.status !== BookingStatus.CONFIRMED) {
-        console.error(`[Stripe Webhook] ❌ ERREUR CRITIQUE: Paiement de modification mais statut n'est pas CONFIRMED !`, {
+      } else {
+        console.log(`[Stripe Webhook] ⏭️  Facture non créée (statut: ${updatedBooking.status}, requis: CONFIRMED)`, {
           bookingId: updatedBooking.id,
           reference: updatedBooking.reference,
           currentStatus: updatedBooking.status,
-          expectedStatus: BookingStatus.CONFIRMED,
-          isModificationPayment,
           timestamp: new Date().toISOString(),
         });
-        
-        // Forcer la mise à jour du statut à CONFIRMED
-        const correctedBooking = await prisma.booking.update({
-          where: { id: bookingId },
-          data: { status: BookingStatus.CONFIRMED },
-          select: { id: true, status: true },
-        });
-        
-        console.log(`[Stripe Webhook] ✅ Statut forcé à CONFIRMED`, {
-          bookingId: correctedBooking.id,
-          previousStatus: updatedBooking.status,
-          newStatus: correctedBooking.status,
-          timestamp: new Date().toISOString(),
-        });
-        
-        // Mettre à jour la variable pour les logs suivants
-        updatedBooking.status = correctedBooking.status;
       }
 
       // Log pour les notifications admin
@@ -539,7 +583,7 @@ export async function POST(req: NextRequest) {
         metadataSecurityDeposit = roundedSecurityDeposit;
       }
       
-      console.log(`[Stripe Webhook] 💳 Création de l'enregistrement de paiement dans la table Payment`, {
+              console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.6] 💳 Création de l'enregistrement de paiement`, {
         bookingId,
         userId,
         paymentDetails: {
@@ -559,23 +603,11 @@ export async function POST(req: NextRequest) {
         timestamp: new Date().toISOString(),
       });
 
-      const createdPayment = await prisma.payment.create({
-        data: {
-          bookingId: bookingId,
-          userId: userId,
-          amount: paymentAmount, // Montant réellement payé (93.75€ pour l'acompte seul)
-          method: "STRIPE",
-          status: paymentStatus,
+      // CRITIQUE: Vérifier si un paiement existe déjà pour cette session (éviter les doublons)
+      let createdPayment;
+      const existingPayment = await prisma.payment.findFirst({
+        where: {
           transactionId: session.id,
-          metadata: {
-            stripeSessionId: session.id,
-            stripePaymentIntentId: session.payment_intent as string | undefined,
-            paymentType: paymentType,
-            isModificationPayment: isModificationPayment,
-            downPayment: metadataDownPayment,
-            securityDeposit: metadataSecurityDeposit,
-            amountPaid: paymentAmount, // Montant total enregistré dans Payment
-          },
         },
         select: {
           id: true,
@@ -586,31 +618,81 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      console.log(`[Stripe Webhook] ✅ Enregistrement de paiement créé dans la table Payment`, {
-        paymentId: createdPayment.id,
-        bookingId,
-        paymentRecord: {
-          amount: `${createdPayment.amount.toFixed(2)}€`,
-          status: createdPayment.status,
-          transactionId: createdPayment.transactionId,
-          createdAt: createdPayment.createdAt.toISOString(),
-        },
-        bookingUpdate: {
-          depositPaid: `${roundedDownPayment.toFixed(2)}€`,
-          securityDepositPaid: isAuthorization ? `${roundedSecurityDeposit.toFixed(2)}€ (bloqué)` : (isDepositOnly ? "0.00€" : `${roundedSecurityDeposit.toFixed(2)}€`),
-          status: isDepositOnly ? "CONFIRMED" : (isAuthorization ? "PENDING" : "CONFIRMED"),
-        },
-        verification: {
-          paymentAmountMatches: paymentAmount === roundedAmountPaid ? "✅ Oui" : "❌ Non",
-          depositPaidMatches: isDepositOnly ? (paymentAmount === roundedDownPayment ? "✅ Oui" : "❌ Non") : "N/A (paiement complet)",
-        },
-        timestamp: new Date().toISOString(),
-      });
+      if (existingPayment) {
+        console.log(`[Stripe Webhook] ⚠️  Un paiement existe déjà pour cette session Stripe, utilisation de l'existant`, {
+          paymentId: existingPayment.id,
+          transactionId: existingPayment.transactionId,
+          amount: `${existingPayment.amount.toFixed(2)}€`,
+          timestamp: new Date().toISOString(),
+        });
+        createdPayment = existingPayment;
+      } else {
+        try {
+          createdPayment = await prisma.payment.create({
+            data: {
+              bookingId: bookingId,
+              userId: userId,
+              amount: paymentAmount, // Montant réellement payé (93.75€ pour l'acompte seul)
+              method: "STRIPE",
+              status: paymentStatus,
+              transactionId: session.id,
+              metadata: {
+                stripeSessionId: session.id,
+                stripePaymentIntentId: session.payment_intent as string | undefined,
+                paymentType: paymentType,
+                isModificationPayment: isModificationPayment,
+                downPayment: metadataDownPayment,
+                securityDeposit: metadataSecurityDeposit,
+                amountPaid: paymentAmount, // Montant total enregistré dans Payment
+              },
+            },
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              transactionId: true,
+              createdAt: true,
+            },
+          });
+
+          console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.6] ✅ Enregistrement de paiement créé`, {
+            paymentId: createdPayment.id,
+            bookingId,
+            paymentRecord: {
+              amount: `${createdPayment.amount.toFixed(2)}€`,
+              status: createdPayment.status,
+              transactionId: createdPayment.transactionId,
+              createdAt: createdPayment.createdAt.toISOString(),
+            },
+            bookingUpdate: {
+              depositPaid: `${roundedDownPayment.toFixed(2)}€`,
+              securityDepositPaid: isAuthorization ? `${roundedSecurityDeposit.toFixed(2)}€ (bloqué)` : (isDepositOnly ? "0.00€" : `${roundedSecurityDeposit.toFixed(2)}€`),
+              status: isDepositOnly ? "CONFIRMED" : (isAuthorization ? "PENDING" : "CONFIRMED"),
+            },
+            verification: {
+              paymentAmountMatches: paymentAmount === roundedAmountPaid ? "✅ Oui" : "❌ Non",
+              depositPaidMatches: isDepositOnly ? (paymentAmount === roundedDownPayment ? "✅ Oui" : "❌ Non") : "N/A (paiement complet)",
+            },
+            timestamp: new Date().toISOString(),
+          });
+        } catch (paymentCreationError) {
+          console.error(`[Stripe Webhook] ❌ ERREUR CRITIQUE lors de la création du paiement`, {
+            bookingId,
+            userId,
+            sessionId: session.id,
+            error: paymentCreationError instanceof Error ? paymentCreationError.message : String(paymentCreationError),
+            stack: paymentCreationError instanceof Error ? paymentCreationError.stack : undefined,
+            timestamp: new Date().toISOString(),
+          });
+          // NE PAS continuer si le paiement n'est pas créé - c'est critique
+          throw paymentCreationError;
+        }
+      } 
 
       // Mettre à jour le statut des factures liées à cette réservation
       // Seulement si le paiement est complété (pas pour les autorisations)
       if (paymentStatus === PaymentStatus.COMPLETED && !isAuthorization) {
-        console.log(`[Stripe Webhook] 📋 Mise à jour du statut des factures pour la réservation ${bookingId}`, {
+                console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.7] 📋 Mise à jour du statut des factures`, {
           bookingId,
           paymentId: createdPayment.id,
           paymentAmount: paymentAmount,
@@ -624,7 +706,7 @@ export async function POST(req: NextRequest) {
             paymentAmount
           );
 
-          console.log(`[Stripe Webhook] ✅ Statut des factures mis à jour pour la réservation ${bookingId}`, {
+                  console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.7] ✅ Statut des factures mis à jour`, {
             bookingId,
             paymentId: createdPayment.id,
             timestamp: new Date().toISOString(),
@@ -652,13 +734,14 @@ export async function POST(req: NextRequest) {
         });
 
         try {
-          // Récupérer les informations nécessaires pour l'email
-          const [user, vehicle, pickupLocation, returnLocation] = await Promise.all([
+          // Récupérer les informations nécessaires pour l'email et les PDFs
+          const [user, vehicle, pickupLocation, returnLocation, bookingWithDetails] = await Promise.all([
             prisma.user.findUnique({
               where: { id: updatedBooking.userId },
               select: {
                 email: true,
                 name: true,
+                phone: true,
               },
             }),
             prisma.vehicle.findUnique({
@@ -667,36 +750,48 @@ export async function POST(req: NextRequest) {
                 brand: true,
                 model: true,
                 licensePlate: true,
+                pricePerDay: true,
               },
             }),
             prisma.location.findUnique({
               where: { id: updatedBooking.pickupLocationId },
               select: {
                 name: true,
+                city: true,
+                address: true,
               },
             }),
             prisma.location.findUnique({
               where: { id: updatedBooking.returnLocationId },
               select: {
                 name: true,
+                city: true,
+                address: true,
+              },
+            }),
+            prisma.booking.findUnique({
+              where: { id: updatedBooking.id },
+              select: {
+                serviceIds: true,
               },
             }),
           ]);
 
-          if (!user || !vehicle || !pickupLocation || !returnLocation) {
+          if (!user || !vehicle || !pickupLocation || !returnLocation || !bookingWithDetails) {
             console.error(`[Stripe Webhook] ❌ Données manquantes pour l'envoi de l'email`, {
               bookingId: updatedBooking.id,
               userFound: !!user,
               vehicleFound: !!vehicle,
               pickupLocationFound: !!pickupLocation,
               returnLocationFound: !!returnLocation,
+              bookingWithDetailsFound: !!bookingWithDetails,
               timestamp: new Date().toISOString(),
             });
           } else {
             // Formater la période de réservation
             const bookingPeriod = `${format(updatedBooking.startDate, "dd MMMM yyyy 'à' HH:mm", {
               locale: fr,
-            })} → ${format(updatedBooking.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
+            })} -> ${format(updatedBooking.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
 
             // Déterminer le message de salutation
             const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
@@ -869,6 +964,192 @@ export async function POST(req: NextRequest) {
               }
             } else {
               // Envoyer l'email de confirmation pour les paiements normaux
+              // Générer les PDFs (facture et réservation) en pièces jointes
+              const attachments: Array<{ filename: string; content: Buffer; contentType?: string }> = [];
+
+              try {
+                // 1. Générer le PDF de réservation
+                console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.8] 📄 Génération des PDFs pour l'email`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  workflowStep: "4/4 - WEBHOOK STRIPE",
+                  stepNumber: "4.2.8 - GÉNÉRATION PDFS",
+                  pdfsToGenerate: ["Réservation", "Facture"],
+                  timestamp: new Date().toISOString(),
+                });
+                
+                console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.8.1] 📄 Génération du PDF de réservation`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  workflowStep: "4/4 - WEBHOOK STRIPE",
+                  stepNumber: "4.2.8.1 - PDF RÉSERVATION",
+                  timestamp: new Date().toISOString(),
+                });
+                
+                // Récupérer les services si présents
+                const services = bookingWithDetails?.serviceIds && bookingWithDetails.serviceIds.length > 0
+                  ? await prisma.service.findMany({
+                      where: { id: { in: bookingWithDetails.serviceIds } },
+                      select: { name: true, price: true },
+                    })
+                  : [];
+
+                // Récupérer les paramètres de l'agence pour le PDF
+                const agencySettings = await prisma.setting.findMany({
+                  where: {
+                    key: {
+                      in: [
+                        "agency.name",
+                        "agency.address",
+                        "agency.phone",
+                        "agency.email",
+                      ],
+                    },
+                  },
+                });
+                const defaultSettings = createDefaultAdminSettings();
+                const settingsMap = new Map(agencySettings.map((s) => [s.key, s.value]));
+                
+                const agencyName = settingsMap.get("agency.name");
+                const agencyAddress = settingsMap.get("agency.address");
+                const agencyPhone = settingsMap.get("agency.phone");
+                const agencyEmail = settingsMap.get("agency.email");
+                
+                const agency = {
+                  name: typeof agencyName === "string" ? agencyName : (defaultSettings.agency.name || "CarRental"),
+                  address: typeof agencyAddress === "string" ? agencyAddress : (defaultSettings.agency.address || "123 Avenue de la Liberté, 75000 Paris"),
+                  phone: typeof agencyPhone === "string" ? agencyPhone : (defaultSettings.agency.phone || "+33 1 23 45 67 89"),
+                  email: typeof agencyEmail === "string" ? agencyEmail : (defaultSettings.agency.email || "contact@carrental.com"),
+                };
+
+                const bookingPdfBuffer = await generateBookingPDF({
+                  reference: updatedBooking.reference,
+                  status: updatedBooking.status,
+                  startDate: updatedBooking.startDate,
+                  endDate: updatedBooking.endDate,
+                  totalPrice: updatedBooking.totalPrice,
+                  depositPaid: updatedBooking.depositPaid || 0,
+                  remainingAmount: updatedBooking.remainingAmount || 0,
+                  vehicle: {
+                    brand: vehicle.brand,
+                    model: vehicle.model,
+                    licensePlate: vehicle.licensePlate,
+                    pricePerDay: vehicle.pricePerDay,
+                  },
+                  pickupLocation: {
+                    name: pickupLocation.name,
+                    city: pickupLocation.city || "",
+                    address: pickupLocation.address,
+                  },
+                  returnLocation: {
+                    name: returnLocation.name,
+                    city: returnLocation.city || "",
+                    address: returnLocation.address,
+                  },
+                  services: services.map((s) => ({ name: s.name, price: s.price })),
+                  user: {
+                    name: user.name || "Client",
+                    email: user.email,
+                    phone: user.phone,
+                  },
+                  agency,
+                });
+
+                attachments.push({
+                  filename: `Reservation_${updatedBooking.reference}.pdf`,
+                  content: bookingPdfBuffer,
+                  contentType: "application/pdf",
+                });
+
+                console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.8.1] ✅ PDF de réservation généré avec succès`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  filename: `Reservation_${updatedBooking.reference}.pdf`,
+                  sizeBytes: bookingPdfBuffer.length,
+                  workflowStep: "4/4 - WEBHOOK STRIPE",
+                  stepNumber: "4.2.8.1 - PDF RÉSERVATION",
+                  timestamp: new Date().toISOString(),
+                });
+
+                // 2. Générer/récupérer le PDF de facture
+                console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.8.2] 📄 Génération du PDF de facture`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  workflowStep: "4/4 - WEBHOOK STRIPE",
+                  stepNumber: "4.2.8.2 - PDF FACTURE",
+                  timestamp: new Date().toISOString(),
+                });
+                
+                // Récupérer la facture créée précédemment
+                const invoice = await prisma.invoice.findFirst({
+                  where: { bookingId: updatedBooking.id },
+                  select: { id: true },
+                });
+
+                if (invoice) {
+                  // Générer le PDF de facture
+                  const invoicePdfResult = await generateInvoicePDFAction(invoice.id);
+                  
+                  if (invoicePdfResult.success && invoicePdfResult.data?.pdfBuffer) {
+                    attachments.push({
+                      filename: `Facture_${updatedBooking.reference}.pdf`,
+                      content: invoicePdfResult.data.pdfBuffer,
+                      contentType: "application/pdf",
+                    });
+                    console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.8.2] ✅ PDF de facture généré avec succès`, {
+                      bookingId: updatedBooking.id,
+                      reference: updatedBooking.reference,
+                      invoiceId: invoice.id,
+                      filename: `Facture_${updatedBooking.reference}.pdf`,
+                      sizeBytes: invoicePdfResult.data.pdfBuffer.length,
+                      workflowStep: "4/4 - WEBHOOK STRIPE",
+                      stepNumber: "4.2.8.2 - PDF FACTURE",
+                      timestamp: new Date().toISOString(),
+                    });
+                  } else {
+                    console.warn(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.8.2] ⚠️  Impossible de générer le PDF de facture`, {
+                      bookingId: updatedBooking.id,
+                      reference: updatedBooking.reference,
+                      invoiceId: invoice.id,
+                      error: invoicePdfResult.error,
+                      workflowStep: "4/4 - WEBHOOK STRIPE",
+                      stepNumber: "4.2.8.2 - PDF FACTURE",
+                      timestamp: new Date().toISOString(),
+                    });
+                  }
+                } else {
+                  console.warn(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.8.2] ⚠️  Aucune facture trouvée pour générer le PDF`, {
+                    bookingId: updatedBooking.id,
+                    reference: updatedBooking.reference,
+                    workflowStep: "4/4 - WEBHOOK STRIPE",
+                    stepNumber: "4.2.8.2 - PDF FACTURE",
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+              } catch (pdfError) {
+                console.error(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.8] ❌ Erreur lors de la génération des PDFs`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  error: pdfError instanceof Error ? pdfError.message : String(pdfError),
+                  workflowStep: "4/4 - WEBHOOK STRIPE",
+                  stepNumber: "4.2.8 - GÉNÉRATION PDFS",
+                  timestamp: new Date().toISOString(),
+                  note: "L'envoi de l'email continuera sans PDFs",
+                });
+                // Continuer quand même l'envoi de l'email même si les PDFs échouent
+              }
+
+              console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.9] 📧 Envoi de l'email de confirmation`, {
+                bookingId: updatedBooking.id,
+                reference: updatedBooking.reference,
+                recipient: user.email,
+                attachmentsCount: attachments.length,
+                attachments: attachments.map(a => a.filename),
+                workflowStep: "4/4 - WEBHOOK STRIPE",
+                stepNumber: "4.2.9 - ENVOI EMAIL",
+                timestamp: new Date().toISOString(),
+              });
+
               const emailResult = await sendBookingConfirmationEmail({
                 to: user.email,
                 name: user.name || "Client",
@@ -891,6 +1172,7 @@ export async function POST(req: NextRequest) {
                   pickup: pickupLocation.name,
                   return: returnLocation.name,
                 },
+                attachments: attachments.length > 0 ? attachments : undefined,
               });
 
               if (emailResult.skipped) {
@@ -907,14 +1189,36 @@ export async function POST(req: NextRequest) {
                   timestamp: new Date().toISOString(),
                 });
               } else {
-                console.log(`[Stripe Webhook] ✅ Email de confirmation envoyé avec succès`, {
+                console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4.2.9] ✅ Email de confirmation envoyé avec succès`, {
                   bookingId: updatedBooking.id,
                   reference: updatedBooking.reference,
                   recipient: user.email,
                   messageId: emailResult.messageId,
                   queued: emailResult.queued,
+                  attachmentsCount: attachments.length,
+                  attachments: attachments.map(a => a.filename),
+                  workflowStep: "4/4 - WEBHOOK STRIPE",
+                  stepNumber: "4.2.9 - ENVOI EMAIL",
                   timestamp: new Date().toISOString(),
                 });
+                
+                console.log(`\n📋 [📋 WORKFLOW ÉTAPE 4] ==========================================`);
+                console.log(`📋 [📋 WORKFLOW ÉTAPE 4] ✅ WORKFLOW WEBHOOK TERMINÉ AVEC SUCCÈS`);
+                console.log(`📋 [📋 WORKFLOW ÉTAPE 4] ==========================================`, {
+                  bookingId: updatedBooking.id,
+                  reference: updatedBooking.reference,
+                  summary: {
+                    reservationUpdated: "✅",
+                    invoiceCreated: "✅",
+                    paymentCreated: "✅",
+                    invoiceStatusUpdated: "✅",
+                    pdfsGenerated: attachments.length > 0 ? `✅ (${attachments.length})` : "⚠️",
+                    emailSent: "✅",
+                  },
+                  timestamp: new Date().toISOString(),
+                  workflowStep: "4/4 - WEBHOOK STRIPE - TERMINÉ",
+                });
+                console.log(`📋 [📋 WORKFLOW ÉTAPE 4] ==========================================\n`);
               }
             }
           }

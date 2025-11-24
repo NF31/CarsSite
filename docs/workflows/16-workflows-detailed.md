@@ -97,42 +97,73 @@ Ce document détaille tous les workflows du système avec diagrammes de flux, é
                             │
                             ▼
         ┌───────────────────────────────┐
+        │  Création Réservation          │
+        │  (Status: PENDING)             │
+        │  - depositPaid: 0              │
+        │  - remainingAmount: totalPrice │
+        └───────────┬───────────────────┘
+                    │
+                    ▼
+        ┌───────────────────────────────┐
+        │  Email Création Envoyé         │
+        │  (Statut: PENDING)             │
+        │  - Pas de PDF à ce stade       │
+        └───────────┬───────────────────┘
+                    │
+                    ▼
+        ┌───────────────────────────────┐
         │  ÉTAPE 4 : PAIEMENT           │
         │  - Récapitulatif              │
-        │  - Méthode paiement           │
-        │  - Formulaire Stripe          │
+        │  - Options:                   │
+        │    • Acompte (30%)            │
+        │    • Paiement complet         │
+        │    • Empreinte bancaire       │
         └───────────┬───────────────────┘
                     │
                     ▼
         ┌───────────────────────────────┐
-        │  Création Payment Intent       │
-        │  (API Stripe)                  │
-        └───────────┬───────────────────┘
-                    │
-                    ├─── Succès ────┐
-                    │               │
-                    ▼               ▼
-        ┌──────────────────┐  ┌──────────────┐
-        │  Confirmation     │  │  Erreur      │
-        │  Paiement         │  │  Afficher    │
-        └─────────┬─────────┘  └──────────────┘
-                  │
-                  ▼
-        ┌───────────────────────────────┐
-        │  Création Réservation          │
-        │  (Status: CONFIRMED)           │
+        │  Création Session Stripe       │
+        │  (Checkout Session)            │
+        │  - Métadonnées:                │
+        │    • bookingId                 │
+        │    • userId                    │
+        │    • paymentType               │
         └───────────┬───────────────────┘
                     │
                     ▼
         ┌───────────────────────────────┐
-        │  Génération Facture            │
-        │  (Status: DRAFT)               │
+        │  Redirection Stripe Checkout   │
+        │  (Paiement externe)            │
+        └───────────┬───────────────────┘
+                    │
+                    ├─── Paiement réussi ────┐
+                    │                         │
+                    ▼                         ▼
+        ┌──────────────────────┐    ┌──────────────┐
+        │  Page Succès         │    │  Page Erreur │
+        │  (/payment/success)   │    │              │
+        └──────┬───────────────┘    └──────────────┘
+               │
+               ▼
+        ┌───────────────────────────────┐
+        │  Webhook Stripe Reçu           │
+        │  (checkout.session.completed)  │
         └───────────┬───────────────────┘
                     │
                     ▼
         ┌───────────────────────────────┐
-        │  Envoi Email Confirmation      │
-        │  (Template HTML)               │
+        │  WORKFLOW WEBHOOK              │
+        │  1. Récupération réservation   │
+        │  2. Calcul prix                │
+        │  3. Détection type paiement    │
+        │  4. Mise à jour réservation    │
+        │     (Status: CONFIRMED)        │
+        │  5. Création facture (DRAFT)   │
+        │  6. Création Payment DB        │
+        │  7. Mise à jour statut facture │
+        │  8. Génération PDF réservation │
+        │  9. Génération PDF facture     │
+        │  10. Envoi email avec PDFs ✅  │
         └───────────┬───────────────────┘
                     │
                     ▼
@@ -140,7 +171,7 @@ Ce document détaille tous les workflows du système avec diagrammes de flux, é
         │  Page Confirmation             │
         │  - Référence                    │
         │  - Détails                     │
-        │  - Prochaines étapes           │
+        │  - Lien facture                │
         └───────────────────────────────┘
 ```
 
@@ -170,9 +201,14 @@ CONFIRMED ──[Annulation]──> CANCELLED
 
 1. **Disponibilité** : Vérifier qu'aucune réservation en conflit n'existe
 2. **Dates** : `endDate` doit être > `startDate`
-3. **Paiement** : 30% d'acompte minimum, solde à la remise
-4. **Annulation** : Remboursement selon politique (jours avant début)
-5. **Véhicule** : Marquer comme RESERVED lors de la confirmation
+3. **Paiement** : 
+   - 30% d'acompte minimum pour confirmer
+   - Solde à payer à la remise du véhicule
+   - Caution bloquée (empreinte) ou payée avec acompte
+4. **Création Réservation** : Statut initial `PENDING` (en attente de paiement)
+5. **Confirmation** : Statut passe à `CONFIRMED` après paiement réussi (webhook Stripe)
+6. **Facture** : Créée automatiquement après confirmation (statut `DRAFT` → `SENT` après génération PDF)
+7. **Annulation** : Remboursement selon politique (jours avant début)
 
 ---
 
@@ -285,13 +321,14 @@ CONFIRMED ──[Annulation]──> CANCELLED
 
 ---
 
-## 🔄 Workflow : Paiement Stripe
+## 🔄 Workflow : Paiement Stripe (Checkout Session)
 
-### Flux de Paiement Complet
+### Flux de Paiement Complet avec Webhook
 
 ```
 ┌─────────────────────────────────────┐
 │  Client → Étape Paiement            │
+│  (Réservation créée: PENDING)       │
 └───────────────┬─────────────────────┘
                 │
                 ▼
@@ -299,13 +336,16 @@ CONFIRMED ──[Annulation]──> CANCELLED
     │  Récapitulatif Affiché     │
     │  - Montant total           │
     │  - Acompte (30%)           │
+    │  - Caution                 │
+    │  - Solde à la remise       │
     └───────────┬────────────────┘
                 │
                 ▼
     ┌───────────────────────────┐
-    │  Sélection Méthode         │
-    │  - Carte bancaire          │
-    │  - PayPal (optionnel)      │
+    │  Sélection Option Paiement │
+    │  - Acompte seulement       │
+    │  - Paiement complet        │
+    │  - Empreinte bancaire      │
     └───────────┬────────────────┘
                 │
                 ▼
@@ -315,85 +355,122 @@ CONFIRMED ──[Annulation]──> CANCELLED
                 │
                 ▼
     ┌───────────────────────────┐
-    │  POST /api/payments/       │
-    │  create-intent             │
-    └───────────┬────────────────┘
-                │
-                ▼
-    ┌───────────────────────────┐
-    │  Création Payment Intent   │
+    │  Création Checkout Session │
     │  (Stripe API)              │
+    │  - Métadonnées incluses    │
+    │    • bookingId             │
+    │    • userId                │
+    │    • paymentType           │
     └───────────┬────────────────┘
                 │
                 ├─── Succès ────┐
                 │               │
                 ▼               ▼
     ┌──────────────────┐  ┌──────────────┐
-    │  clientSecret     │  │  Erreur      │
-    │  retourné         │  │  Afficher    │
+    │  Redirection      │  │  Erreur      │
+    │  Stripe Checkout  │  │  Afficher    │
     └──────┬────────────┘  └──────────────┘
            │
            ▼
     ┌───────────────────────────┐
-    │  Formulaire Stripe         │
-    │  (CardElement)              │
+    │  Paiement sur Stripe       │
+    │  (Page externe)            │
     └───────────┬────────────────┘
                 │
-                ▼
-    ┌───────────────────────────┐
-    │  Saisie Carte             │
-    │  (Client)                  │
-    └───────────┬────────────────┘
-                │
-                ▼
-    ┌───────────────────────────┐
-    │  Soumission Formulaire     │
-    │  (confirmCardPayment)       │
-    └───────────┬────────────────┘
-                │
-                ├─── Succès ────┐
-                │               │
-                ▼               ▼
-    ┌──────────────────┐  ┌──────────────┐
-    │  Payment Intent   │  │  Erreur      │
-    │  succeeded        │  │  Carte       │
-    └──────┬────────────┘  └──────────────┘
+                ├─── Paiement réussi ────┐
+                │                         │
+                ▼                         ▼
+    ┌──────────────────┐          ┌──────────────┐
+    │  Redirection      │          │  Page Annul  │
+    │  /payment/success │          │              │
+    └──────┬────────────┘          └──────────────┘
            │
            ▼
     ┌───────────────────────────┐
-    │  Webhook Stripe             │
-    │  (payment_intent.succeeded) │
+    │  WEBHOOK STRIPE            │
+    │  (checkout.session.completed) │
+    │  /api/webhooks/stripe      │
     └───────────┬────────────────┘
                 │
                 ▼
     ┌───────────────────────────┐
-    │  Mise à jour Réservation   │
-    │  (Status: CONFIRMED)        │
+    │  Ordre d'exécution:        │
+    │  1. Vérification signature │
+    │  2. Récupération réservation│
+    │  3. Calcul prix            │
+    │  4. Détection type paiement│
     └───────────┬────────────────┘
                 │
                 ▼
     ┌───────────────────────────┐
-    │  Création Payment Record   │
-    │  (Status: COMPLETED)       │
+    │  5. Mise à jour Réservation│
+    │     - Status: CONFIRMED    │
+    │     - depositPaid          │
+    │     - remainingAmount      │
     └───────────┬────────────────┘
                 │
                 ▼
     ┌───────────────────────────┐
-    │  Mise à jour Facture       │
-    │  (Status: PAID)            │
+    │  6. Création Facture       │
+    │     - Numéro: INV-YYYY-NNN │
+    │     - Status: DRAFT        │
     └───────────┬────────────────┘
                 │
                 ▼
     ┌───────────────────────────┐
-    │  Envoi Email Confirmation  │
-    │  (Paiement + Facture)      │
+    │  7. Création Payment DB    │
+    │     - Status: COMPLETED    │
+    │     - Métadonnées Stripe   │
     └───────────┬────────────────┘
                 │
                 ▼
     ┌───────────────────────────┐
-    │  Redirection Confirmation  │
-    │  (Page succès)             │
+    │  8. Mise à jour Statut     │
+    │     Facture (PAID si total)│
+    └───────────┬────────────────┘
+                │
+                ▼
+    ┌───────────────────────────┐
+    │  9. Génération PDFs        │
+    │     - PDF Réservation      │
+    │     - PDF Facture          │
+    └───────────┬────────────────┘
+                │
+                ▼
+    ┌───────────────────────────┐
+    │  10. Envoi Email           │
+    │      - Avec 2 PDFs         │
+    │      - Via Queue (BullMQ)  │
+    └───────────┬────────────────┘
+                │
+                ▼
+    ┌───────────────────────────┐
+    │  Page Succès Affichée      │
+    │  - Détails réservation     │
+    │  - Lien télécharger facture│
     └───────────────────────────┘
+```
+
+### Fallback: Page de Succès
+
+Si le webhook est lent ou n'a pas été traité, la page `/payment/success` exécute les workflows manquants :
+
+```
+┌───────────────────────────┐
+│  Vérification Webhook      │
+│  (Payment existe?)         │
+└───────────┬────────────────┘
+            │
+            ├─── Webhook traité ────┐
+            │                        │
+            ▼                        ▼
+    ┌──────────────┐        ┌──────────────────┐
+    │  Afficher     │        │  Exécuter         │
+    │  Page succès  │        │  Workflows:       │
+    │               │        │  - Création facture│
+    │               │        │  - Génération PDFs │
+    │               │        │  - Envoi email     │
+    └───────────────┘        └───────────────────┘
 ```
 
 ### États du Paiement

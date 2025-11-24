@@ -119,13 +119,23 @@ async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
 
   try {
     // Préparer les options d'email
-    const mailOptions = {
+    const mailOptions: any = {
       from: `"CarRental" <${credentials.user}>`,
       to,
       subject,
       html,
       text: text || undefined,
     };
+
+    // Ajouter les pièces jointes si présentes (décoder depuis base64)
+    if (job.data.attachments && job.data.attachments.length > 0) {
+      mailOptions.attachments = job.data.attachments.map((att) => ({
+        filename: att.filename,
+        content: Buffer.from(att.contentBase64, "base64"),
+        contentType: att.contentType || "application/pdf",
+      }));
+      console.log(`[Email Worker] 📎 ${job.data.attachments.length} pièce(s) jointe(s) ajoutée(s)`);
+    }
 
     console.log(`[Email Worker] 📧 Envoi de l'email ${type} à ${to}...`);
     console.log(`[Email Worker] 📧 Depuis: ${credentials.user}`);

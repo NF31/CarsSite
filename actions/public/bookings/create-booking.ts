@@ -411,7 +411,39 @@ export async function createPublicBookingAction(
         },
       });
 
+      console.log(`[📋 WORKFLOW ÉTAPE 1] ✅ Réservation créée avec succès`, {
+        bookingId: created.id,
+        reference: created.reference,
+        userId: user.id,
+        userEmail: user.email,
+        vehicleId: data.vehicleId,
+        vehicleBrand: vehicle.brand,
+        vehicleModel: vehicle.model,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        totalPrice: `${totalPrice.toFixed(2)}€`,
+        depositPaid: "0.00€",
+        remainingAmount: `${totalPrice.toFixed(2)}€`,
+        status: "PENDING",
+        serviceIds: serviceIds.length > 0 ? serviceIds : "Aucun service",
+        pickupLocation: pickupLocation.name,
+        returnLocation: returnLocation.name,
+        timestamp: new Date().toISOString(),
+        workflowStep: "1/4 - CRÉATION RÉSERVATION",
+        nextStep: "2/4 - EMAIL DE CRÉATION",
+      });
+
       // Envoyer l'email de confirmation
+      console.log(`[📋 WORKFLOW ÉTAPE 2] 📧 Préparation de l'envoi de l'email de création`, {
+        bookingId: created.id,
+        reference: created.reference,
+        recipient: user.email,
+        emailType: "Création (statut PENDING)",
+        pdfAttachments: "Aucun (réservation non confirmée)",
+        timestamp: new Date().toISOString(),
+        workflowStep: "2/4 - EMAIL DE CRÉATION",
+      });
+
       const bookingPeriod = `${format(startDate, "dd MMMM yyyy 'à' HH:mm", {
         locale: fr,
       })} → ${format(endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
@@ -443,19 +475,35 @@ export async function createPublicBookingAction(
 
       if (emailResult.skipped) {
         console.warn(
-          `[Public Booking] ⚠️  Email de confirmation ignoré pour la réservation ${created.reference} (credentials non configurés). Vérifiez GMAIL_USER et GMAIL_PASSWORD dans .env`,
+          `[📋 WORKFLOW ÉTAPE 2] ⚠️  Email de création ignoré (credentials non configurés)`,
+          {
+            bookingId: created.id,
+            reference: created.reference,
+            reason: "GMAIL_USER ou GMAIL_PASSWORD non configurés dans .env",
+            timestamp: new Date().toISOString(),
+            workflowStep: "2/4 - EMAIL DE CRÉATION",
+          },
         );
       } else if (!emailResult.success) {
-        console.warn(
-          "[Public Booking] ❌ Échec de l'envoi de l'email de confirmation pour la réservation",
-          created.reference,
-          emailResult.error ?? "raison inconnue",
-        );
-      } else {
-        console.log("[Public Booking] ✅ Email de confirmation envoyé", {
+        console.warn(`[📋 WORKFLOW ÉTAPE 2] ❌ Échec de l'envoi de l'email de création`, {
+          bookingId: created.id,
           reference: created.reference,
+          recipient: user.email,
+          error: emailResult.error ?? "raison inconnue",
+          timestamp: new Date().toISOString(),
+          workflowStep: "2/4 - EMAIL DE CRÉATION",
+        });
+      } else {
+        console.log(`[📋 WORKFLOW ÉTAPE 2] ✅ Email de création envoyé avec succès`, {
+          bookingId: created.id,
+          reference: created.reference,
+          recipient: user.email,
           messageId: emailResult.messageId,
           queued: emailResult.queued,
+          emailType: "Création (statut PENDING)",
+          timestamp: new Date().toISOString(),
+          workflowStep: "2/4 - EMAIL DE CRÉATION",
+          nextStep: "3/4 - PAIEMENT STRIPE",
         });
       }
 
@@ -471,10 +519,28 @@ export async function createPublicBookingAction(
 
       // La réservation avec le statut PENDING sera automatiquement visible dans les notifications admin
       // via getAdminNotificationData() qui récupère toutes les réservations avec status PENDING
-      console.log("[Public Booking] Réservation créée - Notification admin générée automatiquement", {
+      console.log(`[📋 WORKFLOW ÉTAPE 2] 📢 Notification admin générée automatiquement`, {
+        bookingId: created.id,
         reference: created.reference,
         status: "PENDING",
         note: "Visible dans les notifications admin (navbar + dashboard)",
+        timestamp: new Date().toISOString(),
+        workflowStep: "2/4 - EMAIL DE CRÉATION",
+      });
+
+      console.log(`[📋 WORKFLOW ÉTAPE 1-2] ✅ PHASE 1 TERMINÉE : CRÉATION RÉSERVATION`, {
+        bookingId: created.id,
+        reference: created.reference,
+        status: "PENDING",
+        summary: {
+          totalPrice: `${totalPrice.toFixed(2)}€`,
+          depositPaid: "0.00€",
+          remainingAmount: `${totalPrice.toFixed(2)}€`,
+          emailSent: emailResult.success || emailResult.skipped,
+          nextAction: "Paiement Stripe requis pour confirmer",
+        },
+        timestamp: new Date().toISOString(),
+        workflowStep: "FIN PHASE 1 - En attente paiement",
       });
 
       return {
