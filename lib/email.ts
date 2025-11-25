@@ -8,6 +8,7 @@ import { getBookingCancellationEmailTemplate } from "./templates/booking-cancell
 import { getBookingCancellationRejectedEmailTemplate } from "./templates/booking-cancellation-rejected-email";
 import { getBookingCancellationRequestEmailTemplate } from "./templates/booking-cancellation-request-email";
 import { getContactConfirmationEmailTemplate, getContactNotificationEmailTemplate } from "./templates/contact-email";
+import { getInvoiceEmailTemplate } from "./templates/invoice-email";
 import { BookingStatus } from "@prisma/client";
 import {
   queueVerificationEmail,
@@ -1185,6 +1186,93 @@ export async function sendContactNotificationEmail(data: ContactEmailParams) {
     console.error("Erreur lors de l'envoi de l'email de notification de contact:", error);
     return {
       success: false,
+      error: error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
+    };
+  }
+}
+
+interface InvoiceEmailParams {
+  to: string;
+  name: string;
+  invoiceNumber: string;
+  bookingReference: string;
+  pdfBuffer?: Buffer;
+}
+
+export async function sendInvoiceEmail({
+  to,
+  name,
+  invoiceNumber,
+  bookingReference,
+  pdfBuffer,
+}: InvoiceEmailParams): Promise<{ success: boolean; messageId?: string; queued: boolean; error?: string; skipped?: boolean }> {
+  if (!hasEmailCredentials) {
+    console.warn(
+      "⚠️  Email credentials non configurés. L'email de facture n'a pas pu être envoyé."
+    );
+    return {
+      success: false,
+      skipped: true,
+      queued: false,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    // TODO: Implémenter queueInvoiceEmail si nécessaire
+    // Pour l'instant, on envoie directement
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
+    return {
+      success: false,
+      skipped: true,
+      queued: false,
+      error: "Configuration email manquante",
+    };
+  }
+
+  const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
+
+  const template = getInvoiceEmailTemplate({
+    greeting,
+    name,
+    invoiceNumber,
+    bookingReference,
+  });
+
+  try {
+    const mailOptions: nodemailer.SendMailOptions = {
+      from: `"CarRental" <${process.env.GMAIL_USER}>`,
+      to,
+      subject: `Facture ${invoiceNumber} - CarRental`,
+      html: template.html,
+      text: template.text,
+    };
+
+    // Ajouter le PDF en pièce jointe si disponible
+    if (pdfBuffer) {
+      mailOptions.attachments = [
+        {
+          filename: `Facture_${invoiceNumber}.pdf`,
+          content: pdfBuffer,
+          contentType: "application/pdf",
+        },
+      ];
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+
+    return { success: true, messageId: info.messageId, queued: false };
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de facture:", error);
+    return {
+      success: false,
+      queued: false,
       error: error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
     };
   }

@@ -147,13 +147,20 @@ export function InvoicesGridView({
                     </Badge>
                   </div>
                   <div className="rounded-md bg-slate-50 px-3 py-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Car className="h-4 w-4 text-primary" />
-                      <span>
-                        {invoice.booking.vehicle.brand} {invoice.booking.vehicle.model} •{" "}
-                        {invoice.booking.vehicle.licensePlate}
-                      </span>
-                    </div>
+                    {invoice.booking.vehicle ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Car className="h-4 w-4 text-primary" />
+                        <span>
+                          {invoice.booking.vehicle.brand} {invoice.booking.vehicle.model} •{" "}
+                          {invoice.booking.vehicle.licensePlate}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Car className="h-4 w-4 text-primary" />
+                        <span>Véhicule non disponible</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -23,6 +23,11 @@ export interface InvoiceListItem {
     id: string;
     reference: string;
     startDate: string;
+    vehicle: {
+      brand: string;
+      model: string;
+      licensePlate: string;
+    };
   };
 }
 
@@ -87,6 +92,13 @@ export async function getInvoicesAction(): Promise<GetInvoicesResult> {
               id: true,
               reference: true,
               startDate: true,
+              vehicle: {
+                select: {
+                  brand: true,
+                  model: true,
+                  licensePlate: true,
+                },
+              },
             },
           },
         },
@@ -115,12 +127,16 @@ export async function getInvoicesAction(): Promise<GetInvoicesResult> {
                   model: true,
                 },
               },
-              invoice: {
+              invoices: {
                 select: {
                   id: true,
                   invoiceNumber: true,
                   status: true,
                   total: true,
+                },
+                take: 1, // Prendre seulement la première facture
+                orderBy: {
+                  issuedAt: "desc",
                 },
               },
             },
@@ -152,6 +168,11 @@ export async function getInvoicesAction(): Promise<GetInvoicesResult> {
         id: invoice.booking.id,
         reference: invoice.booking.reference,
         startDate: invoice.booking.startDate.toISOString(),
+        vehicle: {
+          brand: invoice.booking.vehicle.brand,
+          model: invoice.booking.vehicle.model,
+          licensePlate: invoice.booking.vehicle.licensePlate,
+        },
       },
     }));
 
@@ -184,12 +205,12 @@ export async function getInvoicesAction(): Promise<GetInvoicesResult> {
             brand: booking.vehicle.brand,
             model: booking.vehicle.model,
           },
-          invoice: booking.invoice
+          invoice: booking.invoices && booking.invoices.length > 0
             ? {
-                id: booking.invoice.id,
-                invoiceNumber: booking.invoice.invoiceNumber,
-                status: booking.invoice.status,
-                total: booking.invoice.total,
+                id: booking.invoices[0].id,
+                invoiceNumber: booking.invoices[0].invoiceNumber,
+                status: booking.invoices[0].status,
+                total: booking.invoices[0].total,
               }
             : null,
         })),
