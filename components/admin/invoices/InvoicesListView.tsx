@@ -175,7 +175,9 @@ export function InvoicesListView({
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900">{invoice.booking.reference}</span>
                           <span className="text-xs text-muted-foreground">
-                            {invoice.booking.vehicle.brand} {invoice.booking.vehicle.model}
+                            {invoice.booking.vehicle
+                              ? `${invoice.booking.vehicle.brand} ${invoice.booking.vehicle.model}`
+                              : "Véhicule non disponible"}
                           </span>
                         </div>
                       </td>
