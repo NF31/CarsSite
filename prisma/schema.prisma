@@ -265,6 +265,7 @@ model Booking {
   originalDepositPaid             Float?
   modificationDepositDifference   Float?
   modificationRejectionReason     String? // Message de refus de l'admin pour une modification
+  reminderSent                     Boolean        @default(false) // Indique si le rappel 24h avant a été envoyé
   createdAt                       DateTime       @default(now())
   updatedAt                       DateTime       @updatedAt
 
