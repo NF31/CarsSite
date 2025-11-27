@@ -156,20 +156,33 @@ export default function SettingsPage() {
 
             <Separator />
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="booking-reminders" className="text-base">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1 flex-1">
+                <Label htmlFor="booking-reminders" className="text-base font-semibold">
                   Rappels de réservation
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Recevoir des rappels avant vos réservations
+                  Recevoir des rappels par email avant le début de vos réservations pour ne rien oublier
                 </p>
+                {bookingReminders && emailNotifications && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-xs text-blue-800 font-medium">
+                      ✓ Vous recevrez un rappel 24h avant chaque réservation confirmée
+                    </p>
+                  </div>
+                )}
+                {!emailNotifications && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Activez les notifications par email pour utiliser cette fonctionnalité
+                  </p>
+                )}
               </div>
               <Switch
                 id="booking-reminders"
                 checked={bookingReminders}
                 onCheckedChange={setBookingReminders}
                 disabled={!emailNotifications}
+                className="mt-1"
               />
             </div>
 

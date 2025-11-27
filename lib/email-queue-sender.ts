@@ -1,9 +1,10 @@
-import { addEmailToQueue, EmailJobData } from "./email-queue";
+import { addEmailToQueue } from "./email-queue";
 import { getVerificationEmailTemplate } from "./templates/verification-email";
 import { getPasswordResetEmailTemplate } from "./templates/password-reset-email";
 import { getAccountDeletionEmailTemplate } from "./templates/account-deletion-email";
 import { getBookingConfirmationEmailTemplate } from "./templates/booking-confirmation-email";
 import { getBookingUpdateEmailTemplate } from "./templates/booking-update-email";
+import { getBookingReminderEmailTemplate } from "./templates/booking-reminder-email";
 import { getBookingCancellationEmailTemplate } from "./templates/booking-cancellation-email";
 import { getBookingCancellationRejectedEmailTemplate } from "./templates/booking-cancellation-rejected-email";
 import { getBookingCancellationRequestEmailTemplate } from "./templates/booking-cancellation-request-email";
@@ -580,6 +581,84 @@ interface BookingCancellationRejectedEmailParams {
   };
 }
 
+export interface BookingReminderEmailParams {
+  to: string;
+  name: string;
+  greeting: string;
+  booking: {
+    reference: string;
+    totalPrice: number;
+    depositPaid: number;
+    remainingAmount: number;
+    startDate: Date;
+    endDate: Date;
+    period: string;
+  };
+  vehicle: {
+    label: string;
+    licensePlate: string;
+  };
+  locations: {
+    pickup: string;
+    return: string;
+  };
+}
+
+/**
+ * Ajoute un email de rappel de réservation à la queue
+ */
+export async function queueBookingReminderEmail({
+  to,
+  name,
+  greeting,
+  booking,
+  vehicle,
+  locations,
+}: BookingReminderEmailParams): Promise<{ success: boolean; queued: boolean }> {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const dashboardUrl = `${baseUrl}/client/dashboard`;
+
+    const template = getBookingReminderEmailTemplate({
+      greeting,
+      name,
+      reference: booking.reference,
+      period: booking.period,
+      startDate: booking.startDate,
+      vehicle,
+      locations,
+      pricing: {
+        total: booking.totalPrice,
+        deposit: booking.depositPaid,
+        remaining: booking.remainingAmount,
+      },
+      dashboardUrl,
+    });
+
+    await addEmailToQueue({
+      type: "booking-reminder",
+      to,
+      subject: `⏰ Rappel : Votre réservation ${booking.reference} approche`,
+      html: template.html,
+      text: template.text,
+      metadata: {
+        bookingReference: booking.reference,
+        name,
+      },
+    });
+
+    console.log("[Email Queue] ✅ Rappel de réservation ajouté à la queue", {
+      reference: booking.reference,
+      to,
+    });
+
+    return { success: true, queued: true };
+  } catch (error) {
+    console.error("Erreur lors de l'ajout de l'email de rappel à la queue:", error);
+    return { success: false, queued: false };
+  }
+}
+
 /**
  * Ajoute un email de refus d'annulation à la queue
  */
@@ -846,8 +925,8 @@ export async function queueContactNotificationEmail(
         contactName: data.name,
         contactEmail: data.email,
         subject: data.subject,
+        replyTo: data.email,
       },
-      replyTo: data.email,
     });
 
     return { success: true, queued: true };

@@ -4,6 +4,7 @@ import { getPasswordResetEmailTemplate } from "./templates/password-reset-email"
 import { getAccountDeletionEmailTemplate } from "./templates/account-deletion-email";
 import { getBookingConfirmationEmailTemplate } from "./templates/booking-confirmation-email";
 import { getBookingUpdateEmailTemplate } from "./templates/booking-update-email";
+import { getBookingReminderEmailTemplate } from "./templates/booking-reminder-email";
 import { getBookingCancellationEmailTemplate } from "./templates/booking-cancellation-email";
 import { getBookingCancellationRejectedEmailTemplate } from "./templates/booking-cancellation-rejected-email";
 import { getBookingCancellationRequestEmailTemplate } from "./templates/booking-cancellation-request-email";
@@ -19,6 +20,7 @@ import {
   queueBookingCancellationRejectedEmail,
   queueBookingCancellationRequestEmail,
   queueBookingCancellationEmail,
+  queueBookingReminderEmail,
   queueContactConfirmationEmail,
   queueContactNotificationEmail,
 } from "./email-queue-sender";
@@ -701,6 +703,124 @@ export async function sendBookingUpdateEmail({
     return { success: true, messageId: info.messageId, queued: false };
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email de mise à jour:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur inconnue lors de l'envoi de l'email",
+    };
+  }
+}
+
+interface BookingReminderEmailParams {
+  to: string;
+  name: string;
+  greeting: string;
+  booking: {
+    reference: string;
+    totalPrice: number;
+    depositPaid: number;
+    remainingAmount: number;
+    startDate: Date;
+    endDate: Date;
+    period: string;
+  };
+  vehicle: {
+    label: string;
+    licensePlate: string;
+  };
+  locations: {
+    pickup: string;
+    return: string;
+  };
+}
+
+export async function sendBookingReminderEmail({
+  to,
+  name,
+  greeting,
+  booking,
+  vehicle,
+  locations,
+}: BookingReminderEmailParams) {
+  if (!hasEmailCredentials) {
+    console.warn(
+      "⚠️  Email credentials non configurés. L'email de rappel de réservation n'a pas pu être envoyé."
+    );
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  // Utiliser la queue si Redis est disponible, sinon envoyer directement
+  const useQueue = await isRedisAvailable().catch(() => false);
+
+  if (useQueue) {
+    try {
+      const result = await queueBookingReminderEmail({
+        to,
+        name,
+        greeting,
+        booking,
+        vehicle,
+        locations,
+      });
+      if (result.success && result.queued) {
+        return { success: true, queued: true, messageId: undefined };
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout à la queue, fallback vers envoi direct:", error);
+    }
+  }
+
+  // Fallback vers envoi direct si la queue n'est pas disponible
+  if (!transporter) {
+    return {
+      success: false,
+      skipped: true,
+      error: "Configuration email manquante",
+    };
+  }
+
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const dashboardUrl = `${baseUrl}/client/dashboard`;
+
+  const template = getBookingReminderEmailTemplate({
+    greeting,
+    name,
+    reference: booking.reference,
+    period: booking.period,
+    startDate: booking.startDate,
+    vehicle,
+    locations,
+    pricing: {
+      total: booking.totalPrice,
+      deposit: booking.depositPaid,
+      remaining: booking.remainingAmount,
+    },
+    dashboardUrl,
+  });
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"CarRental" <${process.env.GMAIL_USER}>`,
+      to,
+      subject: `⏰ Rappel : Votre réservation ${booking.reference} approche`,
+      html: template.html,
+      text: template.text,
+    });
+
+    console.log("[Email] ✅ Rappel de réservation envoyé", {
+      reference: booking.reference,
+      to,
+      messageId: info.messageId,
+      queued: false,
+    });
+
+    return { success: true, messageId: info.messageId, queued: false };
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de rappel:", error);
     return {
       success: false,
       error:
