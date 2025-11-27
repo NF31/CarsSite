@@ -11,6 +11,7 @@ export type EmailJobType =
   | "booking-cancellation"
   | "booking-cancellation-rejected"
   | "booking-cancellation-request"
+  | "booking-reminder"
   | "contact-confirmation"
   | "contact-notification";
 
