@@ -5,6 +5,8 @@ export { createQuickClientAction } from "./create-client";
 export { getDriverLicenseUrlAction } from "./get-driver-license-url";
 export { uploadDriverLicenseAction } from "./upload-driver-license";
 export { getCalendarEventsAction, type CalendarRange } from "./get-calendar-events";
+export { getCalendarStatsAction } from "./get-calendar-stats";
+export { getCalendarInitialDataAction } from "./get-calendar-initial-data";
 export {
   mapBookingToCalendarEvent,
   type BookingCalendarEvent,
