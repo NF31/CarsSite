@@ -110,31 +110,32 @@ enum SettingCategory {
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  email               String    @unique
-  name                String
-  phone               String?
-  role                UserRole  @default(CLIENT)
-  password            String
-  emailVerified       DateTime?
-  image               String?
-  driverLicense       String?
-  driverLicensePublicId String?
-  driverLicenseUploadCount Int @default(0)
+  id                          String    @id @default(cuid())
+  email                       String    @unique
+  name                        String
+  phone                       String?
+  role                        UserRole  @default(CLIENT)
+  password                    String
+  emailVerified               DateTime?
+  image                       String?
+  driverLicense               String?
+  driverLicensePublicId       String?
+  driverLicenseFileName       String?
+  driverLicenseUploadCount    Int       @default(0)
   driverLicenseLastUploadedAt DateTime?
-  termsAcceptedAt    DateTime? // Date d'acceptation des CGV et politique de confidentialité
-  lockedUntil         DateTime? // Verrouillage temporaire après échecs
-  failedLoginAttempts Int       @default(0) // Nombre d'échecs consécutifs
-  deletedAt           DateTime? // Soft delete pour conformité RGPD
-  originalEmailHash   String?   // Hash de l'email original pour traçabilité légale (SHA-256)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  termsAcceptedAt             DateTime? // Date d'acceptation des CGV et politique de confidentialité
+  lockedUntil                 DateTime? // Verrouillage temporaire après échecs
+  failedLoginAttempts         Int       @default(0) // Nombre d'échecs consécutifs
+  deletedAt                   DateTime? // Soft delete pour conformité RGPD
+  originalEmailHash           String? // Hash de l'email original pour traçabilité légale (SHA-256)
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
 
-  bookings      Booking[]
-  reviews       Review[]
-  invoices      Invoice[]
-  payments      Payment[]
-  preferences   UserPreferences?
+  bookings            Booking[]
+  reviews             Review[]
+  invoices            Invoice[]
+  payments            Payment[]
+  preferences         UserPreferences?
   viewedNotifications AdminNotificationView[]
 
   @@index([email])
@@ -143,17 +144,17 @@ model User {
 }
 
 model UserPreferences {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  emailNotifications    Boolean  @default(true)
-  bookingReminders      Boolean  @default(true)
-  promotionalEmails     Boolean  @default(false)
-  marketingEmails       Boolean  @default(false)
-  language              String   @default("fr")
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  emailNotifications Boolean  @default(true)
+  bookingReminders   Boolean  @default(true)
+  promotionalEmails  Boolean  @default(false)
+  marketingEmails    Boolean  @default(false)
+  language           String   @default("fr")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
 }
@@ -169,47 +170,47 @@ model Location {
   email        String?
   latitude     Float?
   longitude    Float?
-  openingHours Json     // Structure: { day: { open: string, close: string, closed?: boolean } }
+  openingHours Json // Structure: { day: { open: string, close: string, closed?: boolean } }
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  vehicles     Vehicle[]
-  pickupBookings  Booking[] @relation("PickupLocation")
-  returnBookings   Booking[] @relation("ReturnLocation")
+  vehicles       Vehicle[]
+  pickupBookings Booking[] @relation("PickupLocation")
+  returnBookings Booking[] @relation("ReturnLocation")
 
   @@map("locations")
 }
 
 model Vehicle {
-  id            String          @id @default(cuid())
-  brand         String
-  model         String
-  year          Int
-  licensePlate  String          @unique
-  mileage       Int
-  category      VehicleCategory
-  seats         Int
-  transmission  TransmissionType
-  fuelType      FuelType
-  color         String
-  pricePerDay   Float
-  pricePerWeek  Float?
-  pricePerMonth Float?
-  deposit       Float
-  status        VehicleStatus   @default(AVAILABLE)
-  locationId    String
-  features      String[]        @default([])
-  images        String[]
-  imagePublicIds String[]       @default([])
-  description   String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id             String           @id @default(cuid())
+  brand          String
+  model          String
+  year           Int
+  licensePlate   String           @unique
+  mileage        Int
+  category       VehicleCategory
+  seats          Int
+  transmission   TransmissionType
+  fuelType       FuelType
+  color          String
+  pricePerDay    Float
+  pricePerWeek   Float?
+  pricePerMonth  Float?
+  deposit        Float
+  status         VehicleStatus    @default(AVAILABLE)
+  locationId     String
+  features       String[]         @default([])
+  images         String[]
+  imagePublicIds String[]         @default([])
+  description    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  location      Location         @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  bookings      Booking[]
-  reviews       Review[]
-  maintenances  Maintenance[]
+  location     Location      @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  bookings     Booking[]
+  reviews      Review[]
+  maintenances Maintenance[]
 
   @@index([status, category])
   @@index([locationId])
@@ -218,64 +219,64 @@ model Vehicle {
 }
 
 model Service {
-  id                    String             @id @default(cuid())
-  name                  String
-  description           String?
-  price                 Float
-  pricingType           ServicePricingType
+  id                     String             @id @default(cuid())
+  name                   String
+  description            String?
+  price                  Float
+  pricingType            ServicePricingType
   availableForCategories VehicleCategory[]  @default([])
-  icon                  String?
-  active                Boolean            @default(true)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  icon                   String?
+  active                 Boolean            @default(true)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   @@index([active])
   @@map("services")
 }
 
 model Booking {
-  id                String        @id @default(cuid())
-  reference         String        @unique
-  userId            String
-  vehicleId         String
-  startDate         DateTime
-  endDate           DateTime
-  pickupLocationId  String
-  returnLocationId  String
-  totalPrice        Float
-  depositPaid       Float         @default(0)
-  securityDepositPaid Float       @default(0) // Caution de garantie payée (séparée de l'acompte)
-  remainingAmount   Float
-  status            BookingStatus @default(PENDING)
-  serviceIds        String[]      @default([]) // Array of Service IDs
-  notes             String?
-  cancellationReason String?
-  cancellationRejectionReason String? // Message de refus de l'admin
-  cancelledAt      DateTime?
-  cancellationRequested       Boolean       @default(false)
-  cancellationRequestedAt     DateTime?
+  id                              String         @id @default(cuid())
+  reference                       String         @unique
+  userId                          String
+  vehicleId                       String
+  startDate                       DateTime
+  endDate                         DateTime
+  pickupLocationId                String
+  returnLocationId                String
+  totalPrice                      Float
+  depositPaid                     Float          @default(0)
+  securityDepositPaid             Float          @default(0) // Caution de garantie payée (séparée de l'acompte)
+  remainingAmount                 Float
+  status                          BookingStatus  @default(PENDING)
+  serviceIds                      String[]       @default([]) // Array of Service IDs
+  notes                           String?
+  cancellationReason              String?
+  cancellationRejectionReason     String? // Message de refus de l'admin
+  cancelledAt                     DateTime?
+  cancellationRequested           Boolean        @default(false)
+  cancellationRequestedAt         DateTime?
   cancellationRequestedRefundRate Float?
-  cancellationPreviousStatus  BookingStatus?
-  modificationRequested       Boolean       @default(false)
-  modificationRequestedAt     DateTime?
-  originalStartDate            DateTime?
-  originalEndDate              DateTime?
-  originalTotalPrice           Float?
-  originalDepositPaid          Float?
-  modificationDepositDifference Float?
-  modificationRejectionReason  String? // Message de refus de l'admin pour une modification
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  cancellationPreviousStatus      BookingStatus?
+  modificationRequested           Boolean        @default(false)
+  modificationRequestedAt         DateTime?
+  originalStartDate               DateTime?
+  originalEndDate                 DateTime?
+  originalTotalPrice              Float?
+  originalDepositPaid             Float?
+  modificationDepositDifference   Float?
+  modificationRejectionReason     String? // Message de refus de l'admin pour une modification
+  createdAt                       DateTime       @default(now())
+  updatedAt                       DateTime       @updatedAt
 
-  user              User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  vehicle           Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  pickupLocation    Location      @relation("PickupLocation", fields: [pickupLocationId], references: [id], onDelete: Restrict)
-  returnLocation    Location      @relation("ReturnLocation", fields: [returnLocationId], references: [id], onDelete: Restrict)
-  
-  review            Review?
-  viewedByAdmins    AdminNotificationView[]
-  invoices          Invoice[]
-  payments          Payment[]
+  user           User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  pickupLocation Location @relation("PickupLocation", fields: [pickupLocationId], references: [id], onDelete: Restrict)
+  returnLocation Location @relation("ReturnLocation", fields: [returnLocationId], references: [id], onDelete: Restrict)
+
+  review         Review?
+  viewedByAdmins AdminNotificationView[]
+  invoices       Invoice[]
+  payments       Payment[]
 
   @@index([userId])
   @@index([vehicleId])
@@ -290,15 +291,15 @@ model Review {
   bookingId String       @unique
   userId    String
   vehicleId String
-  rating    Int          // 1-5
+  rating    Int // 1-5
   comment   String?
   status    ReviewStatus @default(PENDING)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  booking  Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  user     User         @relation(fields: [userId], references: [id], onDelete: Restrict)
-  vehicle  Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
 
   @@index([vehicleId])
   @@index([status])
@@ -319,7 +320,7 @@ model Maintenance {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
-  vehicle     Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId])
   @@index([status])
@@ -343,9 +344,9 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  payments      Payment[]
+  booking  Booking   @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  payments Payment[]
 
   @@index([bookingId])
   @@index([userId])
@@ -355,21 +356,21 @@ model Invoice {
 }
 
 model Payment {
-  id            String         @id @default(cuid())
+  id            String        @id @default(cuid())
   bookingId     String
   invoiceId     String?
   userId        String
   amount        Float
   method        PaymentMethod
-  status        PaymentStatus  @default(PENDING)
+  status        PaymentStatus @default(PENDING)
   transactionId String?
-  metadata      Json?          // Flexible JSON for payment gateway data
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  metadata      Json? // Flexible JSON for payment gateway data
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  booking       Booking        @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  invoice       Invoice?       @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  user          User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([bookingId])
   @@index([userId])
@@ -381,7 +382,7 @@ model Payment {
 model Setting {
   id          String          @id @default(cuid())
   key         String          @unique
-  value       Json            // Flexible: string, number, boolean, object
+  value       Json // Flexible: string, number, boolean, object
   description String?
   category    SettingCategory @default(GENERAL)
   updatedAt   DateTime        @updatedAt
@@ -393,12 +394,12 @@ model Setting {
 
 model AdminNotificationView {
   id        String   @id @default(cuid())
-  adminId   String   // ID de l'admin qui a vu la notification
-  bookingId String   // ID de la réservation/notification vue
+  adminId   String // ID de l'admin qui a vu la notification
+  bookingId String // ID de la réservation/notification vue
   viewedAt  DateTime @default(now())
 
-  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  admin   User    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@unique([adminId, bookingId])
   @@index([adminId])
@@ -409,7 +410,7 @@ model AdminNotificationView {
 
 model VerificationToken {
   id         String   @id @default(cuid())
-  identifier String   // Email ou userId
+  identifier String // Email ou userId
   token      String   @unique
   expires    DateTime
   createdAt  DateTime @default(now())
@@ -421,8 +422,8 @@ model VerificationToken {
 
 model RateLimitAttempt {
   id         String   @id @default(cuid())
-  identifier String   // Email ou IP
-  type       String   // "email" ou "ip"
+  identifier String // Email ou IP
+  type       String // "email" ou "ip"
   createdAt  DateTime @default(now())
 
   @@index([identifier, type, createdAt])
