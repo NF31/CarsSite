@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTransition, useState } from "react";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -14,6 +15,8 @@ import {
   Trash2,
   User,
   UserRoundPlus,
+  Shield,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +38,7 @@ import {
   clientDateTimeFormatter,
 } from "./client-helpers";
 import { BOOKING_STATUS_LABELS, BOOKING_STATUS_COLORS } from "@/components/admin/bookings/booking-helpers";
+import { getDriverLicenseUrlAction } from "@/actions/admin/bookings";
 
 interface ClientsGridViewProps {
   clients: ClientListItem[];
@@ -42,6 +46,43 @@ interface ClientsGridViewProps {
 }
 
 export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
+  const [isPending, startTransition] = useTransition();
+  const [licenseError, setLicenseError] = useState<string | null>(null);
+
+  const handleViewDriverLicense = (clientId: string) => {
+    startTransition(async () => {
+      setLicenseError(null);
+      const result = await getDriverLicenseUrlAction({
+        userId: clientId,
+      });
+
+      if (!result.success || !result.data) {
+        setLicenseError(result.error ?? "Impossible de récupérer le permis pour ce client.");
+        return;
+      }
+
+      // Télécharger le PDF avec le nom du fichier original
+      // Utiliser fetch + blob pour forcer le bon nom de fichier
+      try {
+        const response = await fetch(result.data.url);
+        if (!response.ok) throw new Error("Erreur lors du téléchargement");
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = result.data.fileName || "permis.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch {
+        // Fallback : ouvrir dans un nouvel onglet
+        window.open(result.data.url, "_blank", "noopener,noreferrer");
+      }
+    });
+  };
+
   if (clients.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -178,6 +219,22 @@ export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
                       <Mail className="mr-2 h-4 w-4" />
                       Envoyer un email (bientôt)
                     </DropdownMenuItem>
+                    {client.hasDriverLicense && (
+                      <DropdownMenuItem
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          handleViewDriverLicense(client.id);
+                        }}
+                        disabled={isPending}
+                      >
+                        {isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Shield className="mr-2 h-4 w-4" />
+                        )}
+                        Voir le permis
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     {canCreateReservation ? (
                       <DropdownMenuItem asChild>

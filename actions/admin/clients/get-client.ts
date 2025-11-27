@@ -49,6 +49,7 @@ export interface ClientDetail {
   hasDriverLicense: boolean;
   driverLicenseUrl: string | null;
   driverLicensePublicId: string | null;
+  driverLicenseFileName: string | null;
   driverLicenseUploadCount: number;
   driverLicenseLastUploadedAt: string | null;
   preferences: {
@@ -119,6 +120,7 @@ export async function getClientByIdAction(id: string): Promise<GetClientByIdResu
         lockedUntil: true,
         driverLicense: true,
         driverLicensePublicId: true,
+        driverLicenseFileName: true,
         driverLicenseUploadCount: true,
         driverLicenseLastUploadedAt: true,
         preferences: {
@@ -269,6 +271,7 @@ export async function getClientByIdAction(id: string): Promise<GetClientByIdResu
         hasDriverLicense: Boolean(client.driverLicense),
         driverLicenseUrl: client.driverLicense ?? null,
         driverLicensePublicId: client.driverLicensePublicId ?? null,
+        driverLicenseFileName: client.driverLicenseFileName ?? null,
         driverLicenseUploadCount: client.driverLicenseUploadCount,
         driverLicenseLastUploadedAt: client.driverLicenseLastUploadedAt
           ? client.driverLicenseLastUploadedAt.toISOString()

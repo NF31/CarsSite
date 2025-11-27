@@ -687,7 +687,7 @@ export async function POST(req: NextRequest) {
           // NE PAS continuer si le paiement n'est pas créé - c'est critique
           throw paymentCreationError;
         }
-      } 
+      }
 
       // Mettre à jour le statut des factures liées à cette réservation
       // Seulement si le paiement est complété (pas pour les autorisations)
