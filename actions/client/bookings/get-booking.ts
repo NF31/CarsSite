@@ -13,6 +13,7 @@ export interface ClientBookingDetail {
   totalPrice: number;
   depositPaid: number;
   remainingAmount: number;
+  securityDepositPaid: number | null;
   serviceIds: string[];
   notes: string | null;
   cancellationRequested: boolean;
@@ -88,6 +89,7 @@ export async function getClientBookingByIdAction(
         totalPrice: true,
         depositPaid: true,
         remainingAmount: true,
+        securityDepositPaid: true,
         serviceIds: true,
         notes: true,
         cancellationRequested: true,
@@ -169,6 +171,7 @@ export async function getClientBookingByIdAction(
       totalPrice: booking.totalPrice,
       depositPaid: booking.depositPaid,
       remainingAmount: booking.remainingAmount,
+      securityDepositPaid: booking.securityDepositPaid,
       serviceIds: booking.serviceIds,
       notes: booking.notes,
       cancellationRequested: booking.cancellationRequested,

@@ -431,6 +431,18 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                         {currencyFormatter.format(booking.depositPaid)}
                       </span>
                     </div>
+                    {booking.vehicle.deposit > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">
+                          {booking.securityDepositPaid && booking.securityDepositPaid > 0
+                            ? "Caution de garantie payée"
+                            : "Caution de garantie"}
+                        </span>
+                        <span className={`font-semibold ${booking.securityDepositPaid && booking.securityDepositPaid > 0 ? "text-green-600" : "text-amber-600"}`}>
+                          {currencyFormatter.format(booking.vehicle.deposit)}
+                        </span>
+                      </div>
+                    )}
                     {booking.remainingAmount > 0 && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">Solde à la remise</span>
@@ -439,20 +451,14 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                         </span>
                       </div>
                     )}
-                  </div>
-                  {booking.vehicle.deposit > 0 && (
-                    <div className="pt-3 border-t">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Caution de garantie</span>
-                        <span className="font-semibold text-amber-600">
-                          {currencyFormatter.format(booking.vehicle.deposit)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        ⓘ Cette caution sera remboursée après restitution sans dégâts.
+                    {booking.vehicle.deposit > 0 && (
+                      <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                        {booking.securityDepositPaid && booking.securityDepositPaid > 0
+                          ? "✅ La caution de garantie a été payée et sera remboursée après restitution sans dégâts."
+                          : "ⓘ La caution de garantie sera remboursée après restitution sans dégâts."}
                       </p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

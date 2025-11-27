@@ -162,11 +162,23 @@ export async function POST(req: NextRequest) {
         timestamp: new Date().toISOString(),
       });
 
+      // Extraire les heures depuis les dates stockées dans la réservation
+      const extractTime = (date: Date) => {
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      };
+
+      const startTime = extractTime(booking.startDate);
+      const endTime = extractTime(booking.endDate);
+
       // Calculer le montant de l'acompte et de la caution
       console.log(`[Stripe Webhook] 💰 Calcul du prix de la réservation`, {
         bookingId,
         vehicleId: booking.vehicle.id,
         serviceIds: booking.serviceIds,
+        startTime,
+        endTime,
         timestamp: new Date().toISOString(),
       });
 
@@ -174,8 +186,8 @@ export async function POST(req: NextRequest) {
         vehicleId: booking.vehicle.id,
         startDate: booking.startDate.toISOString(),
         endDate: booking.endDate.toISOString(),
-        startTime: "10:00", // Valeur par défaut
-        endTime: "10:00", // Valeur par défaut
+        startTime, // Utiliser les heures réelles depuis la réservation
+        endTime, // Utiliser les heures réelles depuis la réservation
         serviceIds: booking.serviceIds,
       });
 
@@ -319,6 +331,10 @@ export async function POST(req: NextRequest) {
       // Mettre à jour la réservation selon le type de paiement
       // Le remainingAmount sera recalculé selon le type de paiement ci-dessous
       let updateData: Prisma.BookingUpdateInput = {};
+      
+      // Variables pour stocker les valeurs arrondies à utiliser dans l'email
+      let emailDepositPaid: number = 0;
+      let emailRemainingAmount: number = 0;
 
       if (isModificationPayment) {
         // Pour un paiement supplémentaire de modification :
@@ -329,6 +345,9 @@ export async function POST(req: NextRequest) {
         // - Nettoyer modificationDepositDifference car le paiement est maintenant effectué
         const newDepositPaid = Math.round((currentDepositPaid + roundedAmountPaid) * 100) / 100;
         const newRemainingAmount = Math.round((booking.totalPrice - newDepositPaid) * 100) / 100;
+        
+        emailDepositPaid = newDepositPaid;
+        emailRemainingAmount = newRemainingAmount;
         
         updateData = {
           depositPaid: newDepositPaid, // Ancien acompte + différence payée
@@ -362,6 +381,9 @@ export async function POST(req: NextRequest) {
         // Pour l'empreinte bancaire : on ne met à jour que securityDepositPaid (bloqué, pas payé)
         // Le statut reste PENDING jusqu'à confirmation manuelle
         // Le remainingAmount reste inchangé car aucun acompte n'est payé
+        emailDepositPaid = booking.depositPaid || 0; // Aucun acompte payé pour l'empreinte
+        emailRemainingAmount = roundedRemainingAmount;
+        
         updateData = {
           ...updateData,
           securityDepositPaid: roundedSecurityDeposit,
@@ -385,6 +407,9 @@ export async function POST(req: NextRequest) {
         const actualDepositPaid = roundedAmountPaid;
         const actualRemainingAmount = Math.round((booking.totalPrice - actualDepositPaid) * 100) / 100;
         
+        emailDepositPaid = actualDepositPaid;
+        emailRemainingAmount = actualRemainingAmount;
+        
         updateData = {
           ...updateData,
           depositPaid: actualDepositPaid, // Utiliser le montant réellement payé
@@ -406,16 +431,19 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString(),
         });
       } else {
-        // Pour le paiement complet : on utilise le montant RÉELLEMENT PAYÉ pour l'acompte
-        // et on déduit la caution du montant total payé
-        const actualDepositPaid = roundedAmountPaid - roundedSecurityDeposit;
+        // Pour le paiement complet : utiliser l'acompte calculé (30% du totalPrice)
+        // plutôt que de le déduire du montant payé pour éviter les erreurs d'arrondi
+        const actualDepositPaid = roundedDownPayment; // Utiliser l'acompte calculé (30% du totalPrice)
         const actualRemainingAmount = Math.round((booking.totalPrice - actualDepositPaid) * 100) / 100;
+        
+        emailDepositPaid = actualDepositPaid;
+        emailRemainingAmount = actualRemainingAmount;
         
         updateData = {
           ...updateData,
-          depositPaid: actualDepositPaid, // Montant payé moins la caution
+          depositPaid: actualDepositPaid, // Acompte calculé (30% du totalPrice)
           securityDepositPaid: roundedSecurityDeposit,
-          remainingAmount: actualRemainingAmount, // Recalculer le solde avec le montant réel
+          remainingAmount: actualRemainingAmount, // Recalculer le solde avec l'acompte calculé
           status: BookingStatus.CONFIRMED, // Confirmation automatique après paiement réussi
         };
         console.log(`[Stripe Webhook] 📝 Mise à jour de la réservation (paiement complet)`, {
@@ -429,7 +457,7 @@ export async function POST(req: NextRequest) {
             calculatedDownPayment: `${roundedDownPayment.toFixed(2)}€`,
             securityDepositPaid: `${roundedSecurityDeposit.toFixed(2)}€`,
             remainingAmount: `${actualRemainingAmount.toFixed(2)}€`,
-            note: "Utilisation du montant réellement payé via Stripe pour garantir la cohérence",
+            note: "Utilisation de l'acompte calculé (30% du totalPrice) pour éviter les erreurs d'arrondi",
           },
           timestamp: new Date().toISOString(),
         });
@@ -1157,8 +1185,9 @@ export async function POST(req: NextRequest) {
                 booking: {
                   reference: updatedBooking.reference,
                   totalPrice: updatedBooking.totalPrice,
-                  depositPaid: updatedBooking.depositPaid || 0,
-                  remainingAmount: updatedBooking.remainingAmount || 0,
+                  depositPaid: emailDepositPaid > 0 ? emailDepositPaid : (updatedBooking.depositPaid || 0), // Utiliser les valeurs arrondies calculées
+                  remainingAmount: emailRemainingAmount > 0 ? emailRemainingAmount : (updatedBooking.remainingAmount || 0), // Utiliser les valeurs arrondies calculées
+                  securityDepositPaid: updatedBooking.securityDepositPaid || undefined, // Passer la caution si elle a été payée
                   startDate: updatedBooking.startDate,
                   endDate: updatedBooking.endDate,
                   status: updatedBooking.status,
