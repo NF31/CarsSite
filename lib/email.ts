@@ -227,6 +227,7 @@ interface BookingConfirmationEmailParams {
     totalPrice: number;
     depositPaid: number;
     remainingAmount: number;
+    securityDepositPaid?: number; // Caution de garantie payée (optionnel)
     startDate: Date;
     endDate: Date;
     status: BookingStatus;
@@ -330,6 +331,7 @@ export async function sendBookingConfirmationEmail({
       total: booking.totalPrice,
       deposit: booking.depositPaid,
       remaining: booking.remainingAmount,
+      securityDeposit: booking.securityDepositPaid, // Passer la caution si elle a été payée
     },
     status: {
       label: statusLabels[bookingStatus],
