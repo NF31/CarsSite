@@ -23,6 +23,7 @@ interface BookingConfirmationTemplateParams {
     total: number;
     deposit: number;
     remaining: number;
+    securityDeposit?: number; // Caution de garantie payée (optionnel)
   };
   status: {
     label: string;
@@ -46,6 +47,8 @@ export function getBookingConfirmationEmailTemplate({
   const totalFormatted = formatCurrency(pricing.total);
   const depositFormatted = formatCurrency(pricing.deposit);
   const remainingFormatted = formatCurrency(pricing.remaining);
+  const securityDepositFormatted = pricing.securityDeposit ? formatCurrency(pricing.securityDeposit) : null;
+  const hasSecurityDepositPaid = pricing.securityDeposit && pricing.securityDeposit > 0;
 
   return {
     html: `
@@ -134,6 +137,15 @@ export function getBookingConfirmationEmailTemplate({
                                   <p style="margin:6px 0 0; font-size:16px; color:#ffffff;">${depositFormatted}</p>
                                 </td>
                               </tr>
+                              ${hasSecurityDepositPaid ? `
+                              <tr>
+                                <td style="padding-bottom:12px;">
+                                  <p style="margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.65); font-weight:600;">Caution de garantie payée</p>
+                                  <p style="margin:6px 0 0; font-size:16px; color:#fbbf24;">${securityDepositFormatted}</p>
+                                  <p style="margin:4px 0 0; font-size:11px; color:rgba(255,255,255,0.7);">Cette caution sera remboursée après restitution sans dégâts</p>
+                                </td>
+                              </tr>
+                              ` : ''}
                               <tr>
                                 <td>
                                   <p style="margin:0; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.65); font-weight:600;">Reste à payer</p>
@@ -197,7 +209,7 @@ Prise en charge : ${locations.pickup}
 Retour : ${locations.return}
 Montant total : ${totalFormatted}
 Acompte versé : ${depositFormatted}
-Reste à payer : ${remainingFormatted}
+${hasSecurityDepositPaid ? `Caution de garantie payée : ${securityDepositFormatted}\n` : ''}Reste à payer : ${remainingFormatted}
 Statut : ${status.label}
 
 Consultez tous vos documents depuis votre espace client :
