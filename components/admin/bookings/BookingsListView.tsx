@@ -43,6 +43,7 @@ interface BookingListItem {
   totalPrice: number;
   depositPaid: number;
   remainingAmount: number;
+  securityDepositPaid: number | null;
   servicesCount: number;
   notes: string | null;
   user: {
@@ -203,6 +204,17 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
                   </span>
                 </span>
               </div>
+              {booking.securityDepositPaid && booking.securityDepositPaid > 0 && (
+                <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+                  <div className="flex items-center gap-1 text-xs">
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                    <span className="text-muted-foreground">Caution payée:</span>
+                    <span className="font-medium text-green-600">
+                      {bookingCurrencyFormatter.format(booking.securityDepositPaid)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end">
@@ -320,6 +332,11 @@ export function BookingsListView({ bookings, startIndex = 0 }: BookingsListViewP
                   <div className="text-xs text-muted-foreground">
                     Acompte {bookingCurrencyFormatter.format(booking.depositPaid)}
                   </div>
+                  {booking.securityDepositPaid && booking.securityDepositPaid > 0 && (
+                    <div className="text-xs font-medium text-green-600">
+                      Caution payée {bookingCurrencyFormatter.format(booking.securityDepositPaid)}
+                    </div>
+                  )}
                   <div
                     className={`text-xs font-medium ${
                       booking.remainingAmount > 0 ? "text-amber-600" : "text-emerald-600"
