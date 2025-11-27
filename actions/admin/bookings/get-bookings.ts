@@ -31,6 +31,7 @@ export interface BookingListItem {
   totalPrice: number;
   depositPaid: number;
   remainingAmount: number;
+  securityDepositPaid: number | null;
   servicesCount: number;
   notes: string | null;
   user: {
@@ -357,6 +358,7 @@ export async function getBookingsAction(
           totalPrice: booking.totalPrice,
           depositPaid: booking.depositPaid,
           remainingAmount: booking.remainingAmount,
+          securityDepositPaid: booking.securityDepositPaid,
           servicesCount: booking.serviceIds?.length || 0,
           notes: booking.notes ?? null,
           user: {
