@@ -7,6 +7,7 @@ export { uploadDriverLicenseAction } from "./upload-driver-license";
 export { getCalendarEventsAction, type CalendarRange } from "./get-calendar-events";
 export { getCalendarStatsAction } from "./get-calendar-stats";
 export { getCalendarInitialDataAction } from "./get-calendar-initial-data";
+export { getBookingEditDataAction } from "./get-booking-edit-data";
 export {
   mapBookingToCalendarEvent,
   type BookingCalendarEvent,
