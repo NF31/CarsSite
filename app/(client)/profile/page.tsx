@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import { useSession } from "next-auth/react";
-import { getProfileAction, updateProfileAction, deleteAccountAction, getMyDriverLicenseUrlAction, uploadMyDriverLicenseAction } from "@/actions/profile";
+import { getProfileAction, updateProfileAction, deleteAccountAction, getMyDriverLicenseUrlAction } from "@/actions/profile";
 import { changePasswordAction } from "@/actions/profile/password";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +32,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User, Mail, Phone, Camera, FileText, Lock, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff, Shield, Loader2, Upload } from "lucide-react";
+import { User, Mail, Phone, Camera, Lock, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff, Shield, Loader2, Upload } from "lucide-react";
+import { ClientDriverLicenseUpload } from "@/components/client/ClientDriverLicenseUpload";
 import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,6 +49,8 @@ type UserProfile = {
   driverLicense: string | null;
   driverLicensePublicId: string | null;
   driverLicenseFileName: string | null;
+  driverLicenseUploadCount: number | null;
+  driverLicenseLastUploadedAt: Date | null;
   emailVerified: Date | null;
   role: string;
   createdAt: Date;
@@ -74,7 +77,51 @@ export default function ProfilePage() {
   const [licenseError, setLicenseError] = useState<string | null>(null);
   const [isLicensePending, startLicenseTransition] = useTransition();
   const [isLicenseDialogOpen, setIsLicenseDialogOpen] = useState(false);
-  const [isUploadingLicense, setIsUploadingLicense] = useState(false);
+
+  const DRIVER_LICENSE_MAX_REPLACEMENTS = 3;
+  const DRIVER_LICENSE_COOLDOWN_DAYS = 21;
+
+  // Calculer les informations de remplacement du permis
+  const driverLicenseUploadInfo = useMemo(() => {
+    if (!user?.driverLicense) {
+      return {
+        normalizedCount: 0,
+        remaining: DRIVER_LICENSE_MAX_REPLACEMENTS,
+        nextAllowedAt: null,
+        lastWithinWindow: null,
+      };
+    }
+
+    const rawCount = user.driverLicenseUploadCount ?? 0;
+    const lastUploadedAt = user.driverLicenseLastUploadedAt;
+    const now = new Date();
+    const cooldownMs = DRIVER_LICENSE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+
+    let normalizedCount = rawCount;
+    let lastWithinWindow = lastUploadedAt;
+
+    if (lastUploadedAt && now.getTime() - lastUploadedAt.getTime() > cooldownMs) {
+      normalizedCount = 0;
+      lastWithinWindow = null;
+    }
+
+    const remaining = Math.max(DRIVER_LICENSE_MAX_REPLACEMENTS - normalizedCount, 0);
+    const nextAllowedAt =
+      remaining === 0 && lastWithinWindow
+        ? new Date(lastWithinWindow.getTime() + cooldownMs)
+        : null;
+
+    return {
+      normalizedCount,
+      remaining,
+      nextAllowedAt,
+      lastWithinWindow,
+    };
+  }, [user?.driverLicense, user?.driverLicenseUploadCount, user?.driverLicenseLastUploadedAt]);
+
+  const isDriverLicenseUploadBlocked = Boolean(
+    driverLicenseUploadInfo.remaining === 0 && driverLicenseUploadInfo.nextAllowedAt
+  );
 
   const profileForm = useForm<z.infer<typeof updateProfileSchema>>({
     resolver: zodResolver(updateProfileSchema),
@@ -146,7 +193,7 @@ export default function ProfilePage() {
       }
 
       if (result.user) {
-        setUser(result.user);
+        setUser(result.user as UserProfile);
       }
       setSuccess(result.message || "Profil mis à jour avec succès");
       await update(); // Mettre à jour la session
@@ -241,39 +288,6 @@ export default function ProfilePage() {
     });
   };
 
-  const handleUploadLicense = async (file: File) => {
-    setIsUploadingLicense(true);
-    setLicenseError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const result = await uploadMyDriverLicenseAction(formData);
-
-      if (!result.success || !result.data) {
-        setLicenseError(result.error ?? "Impossible de téléverser le permis.");
-        return;
-      }
-
-      // Recharger le profil pour mettre à jour les données
-      await fetchProfile();
-      setIsLicenseDialogOpen(false);
-      setSuccess("Permis de conduire ajouté avec succès");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setLicenseError(err instanceof Error ? err.message : "Erreur lors du téléversement du permis.");
-    } finally {
-      setIsUploadingLicense(false);
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleUploadLicense(file);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -430,19 +444,30 @@ export default function ProfilePage() {
                 <Label>Permis de conduire</Label>
                 <div className="flex gap-2">
                   {user.driverLicense ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleViewDriverLicense}
-                      disabled={!user.driverLicense || isLicensePending}
-                    >
-                      {isLicensePending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Shield className="mr-2 h-4 w-4" />
-                      )}
-                      Voir le permis
-                    </Button>
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleViewDriverLicense}
+                        disabled={!user.driverLicense || isLicensePending}
+                      >
+                        {isLicensePending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Shield className="mr-2 h-4 w-4" />
+                        )}
+                        Voir le permis
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsLicenseDialogOpen(true)}
+                        disabled={isDriverLicenseUploadBlocked}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Remplacer le permis
+                      </Button>
+                    </>
                   ) : (
                     <Button
                       type="button"
@@ -454,6 +479,16 @@ export default function ProfilePage() {
                     </Button>
                   )}
                 </div>
+                {user.driverLicense && driverLicenseUploadInfo.remaining < DRIVER_LICENSE_MAX_REPLACEMENTS && (
+                  <p className="text-xs text-muted-foreground">
+                    Remplacements restants : {driverLicenseUploadInfo.remaining} / {DRIVER_LICENSE_MAX_REPLACEMENTS}
+                  </p>
+                )}
+                {isDriverLicenseUploadBlocked && driverLicenseUploadInfo.nextAllowedAt && (
+                  <p className="text-xs text-amber-600">
+                    Limite atteinte. Prochain remplacement possible le {new Date(driverLicenseUploadInfo.nextAllowedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                )}
                 {licenseError && (
                   <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                     <AlertCircle className="h-4 w-4" />
@@ -736,50 +771,39 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Dialog pour uploader le permis */}
+        {/* Dialog pour uploader/remplacer le permis */}
         <Dialog open={isLicenseDialogOpen} onOpenChange={setIsLicenseDialogOpen}>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Ajouter votre permis de conduire</DialogTitle>
+              <DialogTitle>
+                {user?.driverLicense ? "Remplacer le permis de conduire" : "Ajouter votre permis de conduire"}
+              </DialogTitle>
               <DialogDescription>
                 Téléversez un PDF sécurisé de votre permis de conduire. Le document est stocké dans un dossier privé.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
-                <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="mt-4">
-                  <Label htmlFor="license-file" className="cursor-pointer">
-                    <span className="mt-2 block text-sm font-medium text-gray-900">
-                      Cliquez pour sélectionner un fichier PDF
-                    </span>
-                    <span className="mt-1 block text-xs text-gray-500">
-                      PDF uniquement, maximum 10 MB
-                    </span>
-                  </Label>
-                  <input
-                    id="license-file"
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={handleFileChange}
-                    disabled={isUploadingLicense}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-              {isUploadingLicense && (
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Téléversement en cours...</span>
-                </div>
-              )}
-              {licenseError && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{licenseError}</span>
-                </div>
-              )}
-            </div>
+            {user && (
+              <ClientDriverLicenseUpload
+                userName={user.name}
+                existingUrl={user.driverLicense}
+                uploadCount={driverLicenseUploadInfo.normalizedCount}
+                lastUploadedAt={
+                  driverLicenseUploadInfo.lastWithinWindow
+                    ? driverLicenseUploadInfo.lastWithinWindow.toISOString()
+                    : null
+                }
+                maxReplacements={DRIVER_LICENSE_MAX_REPLACEMENTS}
+                cooldownDays={DRIVER_LICENSE_COOLDOWN_DAYS}
+                onUploaded={async () => {
+                  // Recharger le profil pour mettre à jour les données
+                  await fetchProfile();
+                  setIsLicenseDialogOpen(false);
+                  setSuccess(user.driverLicense ? "Permis de conduire remplacé avec succès" : "Permis de conduire ajouté avec succès");
+                  setTimeout(() => setSuccess(null), 3000);
+                }}
+                onDismiss={() => setIsLicenseDialogOpen(false)}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>
