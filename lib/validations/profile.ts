@@ -35,7 +35,6 @@ export const updateProfileSchema = z.object({
     ])
     .optional(),
   image: z.string().url("URL invalide").optional().or(z.literal("")),
-  driverLicense: z.string().url("URL invalide").optional().or(z.literal("")),
 });
 
 export const changePasswordSchema = z.object({
