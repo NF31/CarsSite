@@ -23,12 +23,28 @@ export function extractCloudinaryAssetInfo(value: string | null | undefined): Cl
       if (privateMatch && privateMatch[1]) {
         raw = privateMatch[1];
       } else {
-        // URLs publiques standard
-      const match = parsed.pathname.match(/\/(?:image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
-      if (!match || !match[1]) {
-        return null;
-      }
-      raw = match[1];
+        // URLs publiques standard ou URLs de download API
+        // Format API: /v1_1/{cloud_name}/raw/download?public_id=...
+        if (parsed.pathname.includes("/raw/download")) {
+          const publicIdParam = parsed.searchParams.get("public_id");
+          if (publicIdParam) {
+            raw = decodeURIComponent(publicIdParam);
+          } else {
+            // Essayer de parser depuis le pathname
+            const match = parsed.pathname.match(/\/(?:image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
+            if (!match || !match[1]) {
+              return null;
+            }
+            raw = match[1];
+          }
+        } else {
+          // URLs publiques standard
+          const match = parsed.pathname.match(/\/(?:image|video|raw)\/upload\/(?:v\d+\/)?(.+)/);
+          if (!match || !match[1]) {
+            return null;
+          }
+          raw = match[1];
+        }
       }
     } catch {
       return null;
