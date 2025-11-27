@@ -7,6 +7,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { generateAccountDeletionToken } from "@/lib/account-deletion-token";
 import { sendAccountDeletionEmail } from "@/lib/email";
+import { getSignedDownloadUrl } from "@/lib/cloudinary";
 
 export async function getProfileAction() {
   try {
@@ -32,6 +33,8 @@ export async function getProfileAction() {
         phone: true,
         image: true,
         driverLicense: true,
+        driverLicensePublicId: true,
+        driverLicenseFileName: true,
         emailVerified: true,
         role: true,
         createdAt: true,
@@ -74,14 +77,20 @@ export async function updateProfileAction(data: z.infer<typeof updateProfileSche
 
     const validated = updateProfileSchema.parse(data);
 
+    // Ne mettre à jour que les champs fournis (ne pas écraser le driverLicense)
+    const updateData: {
+      name: string;
+      phone: string | null;
+      image: string | null;
+    } = {
+      name: validated.name,
+      phone: validated.phone || null,
+      image: validated.image || null,
+    };
+
     const user = await prisma.user.update({
       where: { id: session.user.id },
-      data: {
-        name: validated.name,
-        phone: validated.phone || null,
-        image: validated.image || null,
-        driverLicense: validated.driverLicense || null,
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,
@@ -89,6 +98,8 @@ export async function updateProfileAction(data: z.infer<typeof updateProfileSche
         phone: true,
         image: true,
         driverLicense: true,
+        driverLicensePublicId: true,
+        driverLicenseFileName: true,
         emailVerified: true,
         role: true,
         createdAt: true,
@@ -105,7 +116,7 @@ export async function updateProfileAction(data: z.infer<typeof updateProfileSche
       return {
         success: false,
         error: "Données invalides",
-        details: error.errors,
+        details: error.issues,
         status: 400,
       };
     }
@@ -200,6 +211,85 @@ export async function deleteAccountAction(data: z.infer<typeof deleteAccountSche
       success: false,
       error: "Une erreur est survenue",
       status: 500,
+    };
+  }
+}
+
+interface GetMyDriverLicenseUrlResult {
+  success: boolean;
+  data?: {
+    url: string;
+    publicId: string;
+    fileName: string | null;
+    expiresAt: number;
+  };
+  error?: string;
+}
+
+export async function getMyDriverLicenseUrlAction(
+  expiresInSeconds?: number
+): Promise<GetMyDriverLicenseUrlResult> {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        error: "Non autorisé",
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { 
+        driverLicense: true,
+        driverLicensePublicId: true,
+        driverLicenseFileName: true,
+      },
+    });
+
+    if (!user?.driverLicense) {
+      return {
+        success: false,
+        error: "Aucun permis n'est enregistré pour votre compte.",
+      };
+    }
+
+    if (!user.driverLicensePublicId) {
+      return {
+        success: false,
+        error: "Impossible de déterminer l'emplacement du permis.",
+      };
+    }
+    
+    const publicId = user.driverLicensePublicId;
+    const expiresIn = Math.max(60, expiresInSeconds ?? 5 * 60);
+    
+    const signedUrl = getSignedDownloadUrl(publicId, "pdf", expiresIn, false);
+    
+    if (!signedUrl) {
+      return {
+        success: false,
+        error: "Impossible de générer l'URL sécurisée.",
+      };
+    }
+    
+    const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+
+    return {
+      success: true,
+      data: {
+        url: signedUrl,
+        publicId: user.driverLicensePublicId,
+        fileName: user.driverLicenseFileName || null,
+        expiresAt,
+      },
+    };
+  } catch (error) {
+    console.error("[Get My Driver License URL] Erreur:", error);
+    return {
+      success: false,
+      error: "Une erreur est survenue lors de la génération de l'URL sécurisée.",
     };
   }
 }
