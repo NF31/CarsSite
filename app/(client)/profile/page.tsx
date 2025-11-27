@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useSession } from "next-auth/react";
-import { getProfileAction, updateProfileAction, deleteAccountAction } from "@/actions/profile";
+import { getProfileAction, updateProfileAction, deleteAccountAction, getMyDriverLicenseUrlAction, uploadMyDriverLicenseAction } from "@/actions/profile";
 import { changePasswordAction } from "@/actions/profile/password";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { User, Mail, Phone, Camera, FileText, Lock, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { User, Mail, Phone, Camera, FileText, Lock, Trash2, CheckCircle2, AlertCircle, Eye, EyeOff, Shield, Loader2, Upload } from "lucide-react";
 import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +46,8 @@ type UserProfile = {
   phone: string | null;
   image: string | null;
   driverLicense: string | null;
+  driverLicensePublicId: string | null;
+  driverLicenseFileName: string | null;
   emailVerified: Date | null;
   role: string;
   createdAt: Date;
@@ -62,6 +71,10 @@ export default function ProfilePage() {
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [licenseError, setLicenseError] = useState<string | null>(null);
+  const [isLicensePending, startLicenseTransition] = useTransition();
+  const [isLicenseDialogOpen, setIsLicenseDialogOpen] = useState(false);
+  const [isUploadingLicense, setIsUploadingLicense] = useState(false);
 
   const profileForm = useForm<z.infer<typeof updateProfileSchema>>({
     resolver: zodResolver(updateProfileSchema),
@@ -111,7 +124,6 @@ export default function ProfilePage() {
           name: result.user.name,
           phone: result.user.phone || "",
           image: result.user.image || "",
-          driverLicense: result.user.driverLicense || "",
         });
       }
     } catch {
@@ -192,6 +204,74 @@ export default function ProfilePage() {
       setDeleteError(err instanceof Error ? err.message : "Erreur lors de la demande de suppression");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleViewDriverLicense = () => {
+    if (!user?.driverLicense || isLicensePending) {
+      return;
+    }
+    startLicenseTransition(async () => {
+      setLicenseError(null);
+      const result = await getMyDriverLicenseUrlAction();
+
+      if (!result.success || !result.data) {
+        setLicenseError(result.error ?? "Impossible de récupérer le permis.");
+        return;
+      }
+
+      // Télécharger le PDF avec le nom du fichier original
+      try {
+        const response = await fetch(result.data.url);
+        if (!response.ok) throw new Error("Erreur lors du téléchargement");
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = result.data.fileName || "permis.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch {
+        // Fallback : ouvrir dans un nouvel onglet
+        window.open(result.data.url, "_blank", "noopener,noreferrer");
+      }
+    });
+  };
+
+  const handleUploadLicense = async (file: File) => {
+    setIsUploadingLicense(true);
+    setLicenseError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const result = await uploadMyDriverLicenseAction(formData);
+
+      if (!result.success || !result.data) {
+        setLicenseError(result.error ?? "Impossible de téléverser le permis.");
+        return;
+      }
+
+      // Recharger le profil pour mettre à jour les données
+      await fetchProfile();
+      setIsLicenseDialogOpen(false);
+      setSuccess("Permis de conduire ajouté avec succès");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setLicenseError(err instanceof Error ? err.message : "Erreur lors du téléversement du permis.");
+    } finally {
+      setIsUploadingLicense(false);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleUploadLicense(file);
     }
   };
 
@@ -347,20 +427,38 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="driverLicense">Permis de conduire (URL)</Label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="driverLicense"
-                    {...profileForm.register("driverLicense")}
-                    className="pl-9"
-                    placeholder="https://example.com/license.pdf"
-                  />
+                <Label>Permis de conduire</Label>
+                <div className="flex gap-2">
+                  {user.driverLicense ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleViewDriverLicense}
+                      disabled={!user.driverLicense || isLicensePending}
+                    >
+                      {isLicensePending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Shield className="mr-2 h-4 w-4" />
+                      )}
+                      Voir le permis
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsLicenseDialogOpen(true)}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Ajouter votre permis
+                    </Button>
+                  )}
                 </div>
-                {profileForm.formState.errors.driverLicense && (
-                  <p className="text-sm text-red-600">
-                    {profileForm.formState.errors.driverLicense.message}
-                  </p>
+                {licenseError && (
+                  <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{licenseError}</span>
+                  </div>
                 )}
               </div>
 
@@ -637,6 +735,53 @@ export default function ProfilePage() {
             </AlertDialog>
           </CardContent>
         </Card>
+
+        {/* Dialog pour uploader le permis */}
+        <Dialog open={isLicenseDialogOpen} onOpenChange={setIsLicenseDialogOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Ajouter votre permis de conduire</DialogTitle>
+              <DialogDescription>
+                Téléversez un PDF sécurisé de votre permis de conduire. Le document est stocké dans un dossier privé.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
+                <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="mt-4">
+                  <Label htmlFor="license-file" className="cursor-pointer">
+                    <span className="mt-2 block text-sm font-medium text-gray-900">
+                      Cliquez pour sélectionner un fichier PDF
+                    </span>
+                    <span className="mt-1 block text-xs text-gray-500">
+                      PDF uniquement, maximum 10 MB
+                    </span>
+                  </Label>
+                  <input
+                    id="license-file"
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={handleFileChange}
+                    disabled={isUploadingLicense}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+              {isUploadingLicense && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Téléversement en cours...</span>
+                </div>
+              )}
+              {licenseError && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{licenseError}</span>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
