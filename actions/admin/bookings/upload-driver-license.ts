@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { cloudinary } from "@/lib/cloudinary";
+import { cloudinary, uploadDriverLicensePDF } from "@/lib/cloudinary";
 import { writeFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -39,35 +39,20 @@ function formatDateFr(date: Date): string {
   return format(date, "d MMMM yyyy", { locale: fr });
 }
 
-function cleanSegment(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim();
-}
-
-function buildDriverLicenseFolder(userId: string, userName?: string | null): string {
-  const baseFolder = "vehicles/users";
-
-  if (userName && userName.trim().length > 0) {
-    const cleaned = cleanSegment(userName);
-    if (cleaned.length > 0) {
-      return `${baseFolder}/${cleaned}-${userId}/driver-license`;
-    }
-  }
-
-  return `${baseFolder}/${userId}/driver-license`;
-}
 
 export async function uploadDriverLicenseAction(
   formData: FormData
 ): Promise<UploadDriverLicenseResult> {
+  console.log("[Upload Driver License Action] ===== DÉBUT ACTION =====");
+  console.log("[Upload Driver License Action] Timestamp:", new Date().toISOString());
+  
   try {
     const session = await auth();
+    console.log("[Upload Driver License Action] Session:", {
+      userId: session?.user?.id,
+      role: session?.user?.role,
+      email: session?.user?.email,
+    });
 
     if (!session?.user) {
       return {
@@ -85,6 +70,13 @@ export async function uploadDriverLicenseAction(
 
     const userId = formData.get("userId");
     const file = formData.get("file");
+    
+    console.log("[Upload Driver License Action] Données reçues:", {
+      userId,
+      fileName: file instanceof File ? file.name : "N/A",
+      fileSize: file instanceof File ? file.size : "N/A",
+      fileType: file instanceof File ? file.type : "N/A",
+    });
 
     if (typeof userId !== "string" || userId.trim().length === 0) {
       return {
@@ -190,76 +182,96 @@ export async function uploadDriverLicenseAction(
     await writeFile(tempPath, buffer);
 
     try {
-      const folder = buildDriverLicenseFolder(userId, user.name);
       const publicId = `license-${Date.now()}`;
+      console.log("[Upload Driver License Action] Public ID généré:", publicId);
 
       let previousPublicId = user.driverLicensePublicId;
+      console.log("[Upload Driver License Action] Ancien public_id stocké:", previousPublicId);
+      
       if (!previousPublicId && user.driverLicense) {
+        console.log("[Upload Driver License Action] Extraction depuis URL driverLicense...");
         const info = extractCloudinaryAssetInfo(user.driverLicense);
+        console.log("[Upload Driver License Action] Info extraite:", info);
         if (info) {
           previousPublicId = `${info.publicId}.${info.format}`;
+          console.log("[Upload Driver License Action] Previous public_id reconstruit:", previousPublicId);
         }
       }
 
+      // Supprimer l'ancien permis si présent
       if (previousPublicId) {
+        console.log("[Upload Driver License Action] Tentative de suppression de l'ancien permis:", previousPublicId);
         try {
-          await cloudinary.uploader.destroy(previousPublicId, {
+          const destroyResult = await cloudinary.uploader.destroy(previousPublicId, {
             resource_type: "raw",
-            type: "authenticated",
+            type: "private", // Utiliser "private" au lieu de "authenticated"
           });
+          console.log("[Upload Driver License Action] ✅ Ancien permis supprimé:", destroyResult);
         } catch (destroyError) {
-          console.warn("Impossible de supprimer l'ancien permis Cloudinary:", destroyError);
+          const errorMsg = destroyError instanceof Error ? destroyError.message : String(destroyError);
+          console.warn("[Upload Driver License Action] ⚠️ Impossible de supprimer l'ancien permis Cloudinary:", {
+            error: errorMsg,
+            previousPublicId,
+          });
         }
+      } else {
+        console.log("[Upload Driver License Action] Pas d'ancien permis à supprimer");
       }
 
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload(
-          tempPath,
-          {
-            folder,
-            public_id: publicId,
-            resource_type: "raw",
-            type: "authenticated",
-            access_mode: "authenticated",
-            overwrite: true,
-            use_filename: false,
-            unique_filename: false,
-            tags: ["driver-license", "admin"],
-          },
-          (error, uploadResult) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(uploadResult);
-            }
-          }
-        );
+      // Utiliser la fonction sécurisée uploadDriverLicensePDF qui utilise type: "private"
+      console.log("[Upload Driver License Action] ===== APPEL UPLOAD CLOUDINARY =====");
+      console.log("[Upload Driver License Action] Paramètres:", {
+        bufferSize: buffer.length,
+        userId,
+        userName: user.name,
+        publicId,
       });
+      
+      const uploadResult = await uploadDriverLicensePDF(
+        buffer,
+        userId,
+        user.name,
+        publicId
+      );
+      
+      console.log("[Upload Driver License Action] ✅ Upload Cloudinary terminé");
 
       await unlink(tempPath);
 
-      type CloudinaryRawResult = {
-        secure_url: string;
-        public_id: string;
-        format?: string;
-      };
-
-      const uploadResult = result as CloudinaryRawResult;
       const format = uploadResult.format ?? "pdf";
-      const publicIdWithExtension = uploadResult.public_id?.includes(".")
-        ? uploadResult.public_id
-        : `${uploadResult.public_id}.${format}`;
+      // IMPORTANT : Le public_id retourné par uploadDriverLicensePDF inclut déjà l'extension
+      // Car pour les fichiers privés, Cloudinary stocke le public_id AVEC l'extension
+      // On stocke tel quel car c'est le vrai public_id utilisé par Cloudinary
+      const publicIdForStorage = uploadResult.public_id;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (prisma.user.update as any)({
+      console.log("[Upload Driver License] ===== DÉBUT DEBUG UPLOAD =====");
+      console.log("[Upload Driver License] User ID:", userId);
+      console.log("[Upload Driver License] Upload result public_id:", uploadResult.public_id);
+      console.log("[Upload Driver License] Upload result secure_url:", uploadResult.secure_url);
+      console.log("[Upload Driver License] Upload result format:", uploadResult.format);
+      console.log("[Upload Driver License] Public ID pour stockage:", publicIdForStorage);
+      console.log("[Upload Driver License] Type de publicIdForStorage:", typeof publicIdForStorage);
+      console.log("[Upload Driver License] Longueur de publicIdForStorage:", publicIdForStorage.length);
+      console.log("[Upload Driver License] publicIdForStorage contient '.pdf':", publicIdForStorage.includes(".pdf"));
+
+      // Enregistrer l'URL, le public_id et le nom du fichier dans la base de données
+      // L'URL contiendra /private/ et nécessitera une URL signée pour être accessible
+      // Le public_id stocké doit inclure le chemin complet du dossier
+      await prisma.user.update({
         where: { id: userId },
         data: {
-          driverLicense: uploadResult.secure_url,
-          driverLicensePublicId: publicIdWithExtension,
+          driverLicense: uploadResult.secure_url, // URL privée Cloudinary
+          driverLicensePublicId: publicIdForStorage, // public_id complet avec chemin du dossier
+          driverLicenseFileName: file.name, // Nom original du fichier PDF
           driverLicenseUploadCount: uploadCount + 1,
           driverLicenseLastUploadedAt: now,
         },
       });
+
+      console.log("[Upload Driver License] Données enregistrées en BDD:");
+      console.log("[Upload Driver License] - driverLicense:", uploadResult.secure_url);
+      console.log("[Upload Driver License] - driverLicensePublicId:", publicIdForStorage);
+      console.log("[Upload Driver License] ===== FIN DEBUG UPLOAD =====");
 
       const newCount = uploadCount + 1;
       const nextAllowedAt =
@@ -271,7 +283,7 @@ export async function uploadDriverLicenseAction(
         success: true,
         data: {
           url: uploadResult.secure_url,
-          publicId: publicIdWithExtension,
+          publicId: publicIdForStorage,
           format,
           uploadCount: newCount,
           lastUploadedAt: now.toISOString(),

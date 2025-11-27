@@ -43,13 +43,24 @@ import {
 import {
   AlertCircle,
   ArrowLeft,
+  BadgeCheck,
   CalendarRange,
   Loader2,
   Lock,
   Shield,
   User,
   Users,
+  UploadCloud,
 } from "lucide-react";
+import { getDriverLicenseUrlAction } from "@/actions/admin/bookings";
+import { DriverLicenseUpload } from "@/components/admin/bookings/DriverLicenseUpload";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
 
@@ -75,6 +86,10 @@ const statusOptions: { value: StatusOption; label: string }[] = [
   { value: "locked", label: CLIENT_STATUS_LABELS.LOCKED },
 ];
 
+const DRIVER_LICENSE_MAX_REPLACEMENTS = 3;
+const DRIVER_LICENSE_COOLDOWN_DAYS = 21;
+const DATE_FORMATTER = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
+
 const formatDateTimeLocal = (value?: string | null) => {
   if (!value) {
     return "";
@@ -92,7 +107,59 @@ export function ClientEditForm({ client }: ClientEditFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isLicensePending, startLicenseTransition] = useTransition();
+  const [licenseError, setLicenseError] = useState<string | null>(null);
+  const [isLicenseDialogOpen, setIsLicenseDialogOpen] = useState(false);
+  const [clientData, setClientData] = useState(client);
   const canCreateReservation = !client.deletedAt && client.status === "ACTIVE";
+
+  // Calculer les informations de remplacement du permis
+  const driverLicenseUploadInfo = useMemo(() => {
+    // Si pas de permis, on peut toujours ajouter (premier upload)
+    if (!clientData.hasDriverLicense) {
+      return {
+        normalizedCount: 0,
+        remaining: DRIVER_LICENSE_MAX_REPLACEMENTS,
+        nextAllowedAt: null,
+        lastWithinWindow: null,
+      };
+    }
+
+    const rawCount = clientData.driverLicenseUploadCount ?? 0;
+    const lastUploadedAt = clientData.driverLicenseLastUploadedAt
+      ? new Date(clientData.driverLicenseLastUploadedAt)
+      : null;
+    const now = new Date();
+    const cooldownMs = DRIVER_LICENSE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+
+    let normalizedCount = rawCount;
+    let lastWithinWindow = lastUploadedAt;
+
+    if (lastUploadedAt && now.getTime() - lastUploadedAt.getTime() > cooldownMs) {
+      normalizedCount = 0;
+      lastWithinWindow = null;
+    }
+
+    const remaining = Math.max(DRIVER_LICENSE_MAX_REPLACEMENTS - normalizedCount, 0);
+    const nextAllowedAt =
+      remaining === 0 && lastWithinWindow
+        ? new Date(lastWithinWindow.getTime() + cooldownMs)
+        : null;
+
+    return {
+      normalizedCount,
+      remaining,
+      nextAllowedAt,
+      lastWithinWindow,
+    };
+  }, [clientData.hasDriverLicense, clientData.driverLicenseUploadCount, clientData.driverLicenseLastUploadedAt]);
+
+  const isDriverLicenseUploadBlocked = Boolean(
+    clientData.hasDriverLicense && 
+    driverLicenseUploadInfo && 
+    driverLicenseUploadInfo.remaining === 0 && 
+    driverLicenseUploadInfo.nextAllowedAt
+  );
 
   const defaultStatus: StatusOption = useMemo(() => {
     if (client.deletedAt) {
@@ -238,6 +305,43 @@ export function ClientEditForm({ client }: ClientEditFormProps) {
     () => currencyFormatter.format(client.stats.averageAmountSpent),
     [client.stats.averageAmountSpent, currencyFormatter]
   );
+
+  const handleViewDriverLicense = () => {
+    if (!clientData.hasDriverLicense) {
+      return;
+    }
+    startLicenseTransition(async () => {
+      setLicenseError(null);
+      const result = await getDriverLicenseUrlAction({
+        userId: clientData.id,
+      });
+
+      if (!result.success || !result.data) {
+        setLicenseError(result.error ?? "Impossible de récupérer le permis pour ce client.");
+        return;
+      }
+
+      // Télécharger le PDF avec le nom du fichier original
+      // Utiliser fetch + blob pour forcer le bon nom de fichier
+      try {
+        const response = await fetch(result.data.url);
+        if (!response.ok) throw new Error("Erreur lors du téléchargement");
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = result.data.fileName || "permis.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch {
+        // Fallback : ouvrir dans un nouvel onglet
+        window.open(result.data.url, "_blank", "noopener,noreferrer");
+      }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -516,6 +620,94 @@ export function ClientEditForm({ client }: ClientEditFormProps) {
             </CardContent>
           </Card>
 
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Shield className="h-5 w-5 text-primary" />
+                Permis de conduire
+              </CardTitle>
+              <CardDescription>
+                Informations sur le permis de conduire du client.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    {clientData.hasDriverLicense ? <BadgeCheck className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Permis de conduire</p>
+                    <p className="text-sm text-muted-foreground">
+                      {clientData.hasDriverLicense
+                        ? clientData.driverLicenseLastUploadedAt
+                          ? `Dernier envoi le ${clientDateTimeFormatter.format(new Date(clientData.driverLicenseLastUploadedAt))}`
+                          : "Document disponible"
+                        : "Aucun permis enregistré"}
+                    </p>
+                    {clientData.hasDriverLicense && clientData.driverLicenseFileName && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Fichier : <span className="font-medium text-gray-900">{clientData.driverLicenseFileName}</span>
+                      </p>
+                    )}
+                    {clientData.hasDriverLicense && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Remplacements restants :{" "}
+                        <span className="font-medium text-gray-900">{driverLicenseUploadInfo.remaining}</span>{" "}
+                        / {DRIVER_LICENSE_MAX_REPLACEMENTS}
+                        {driverLicenseUploadInfo.nextAllowedAt && (
+                          <>
+                            {" "}
+                            • Prochain remplacement possible le{" "}
+                            <span className="font-medium text-gray-900">
+                              {DATE_FORMATTER.format(driverLicenseUploadInfo.nextAllowedAt)}
+                            </span>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {clientData.hasDriverLicense && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleViewDriverLicense}
+                      disabled={!clientData.hasDriverLicense || isLicensePending}
+                    >
+                      {isLicensePending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Shield className="mr-2 h-4 w-4" />
+                      )}
+                      Voir le permis
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsLicenseDialogOpen(true);
+                    }}
+                    disabled={isDriverLicenseUploadBlocked}
+                  >
+                    <UploadCloud className="mr-2 h-4 w-4" />
+                    {clientData.hasDriverLicense ? "Remplacer le permis" : "Ajouter le permis"}
+                  </Button>
+                </div>
+              </div>
+              {licenseError && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{licenseError}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Link href={`/admin/clients/${client.id}`} className="w-full sm:w-auto">
               <Button type="button" variant="outline" className="w-full sm:w-auto">
@@ -535,6 +727,45 @@ export function ClientEditForm({ client }: ClientEditFormProps) {
           </div>
         </form>
       </Form>
+
+      <Dialog open={isLicenseDialogOpen} onOpenChange={setIsLicenseDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {clientData.hasDriverLicense ? "Remplacer le permis de conduire" : "Ajouter un permis de conduire"}
+            </DialogTitle>
+            <DialogDescription>
+              Téléversez un PDF sécurisé du permis de conduire. Le document est stocké dans un dossier privé.
+            </DialogDescription>
+          </DialogHeader>
+          <DriverLicenseUpload
+            userId={clientData.id}
+            userName={clientData.name}
+            existingUrl={clientData.hasDriverLicense ? clientData.driverLicenseUrl : null}
+            uploadCount={driverLicenseUploadInfo?.normalizedCount ?? 0}
+            lastUploadedAt={
+              driverLicenseUploadInfo?.lastWithinWindow
+                ? driverLicenseUploadInfo.lastWithinWindow.toISOString()
+                : null
+            }
+            maxReplacements={DRIVER_LICENSE_MAX_REPLACEMENTS}
+            cooldownDays={DRIVER_LICENSE_COOLDOWN_DAYS}
+            onUploaded={({ url, publicId, uploadCount, lastUploadedAt }) => {
+              // Mettre à jour les données du client localement (pas besoin de recharger la page)
+              setClientData((prev) => ({
+                ...prev,
+                hasDriverLicense: true,
+                driverLicenseUrl: url,
+                driverLicensePublicId: publicId,
+                driverLicenseUploadCount: uploadCount,
+                driverLicenseLastUploadedAt: lastUploadedAt,
+              }));
+              setIsLicenseDialogOpen(false);
+            }}
+            onDismiss={() => setIsLicenseDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
