@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +23,6 @@ import {
   LogOut,
   LayoutDashboard,
   Shield,
-  Search,
   Check,
   X,
   Loader2,
@@ -42,6 +40,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AdminSidebarMobile } from "./AdminSidebar";
+import { DynamicSearchBar } from "./search/DynamicSearchBar";
 import type { Session } from "next-auth";
 import type { AdminNotificationData, BookingNotificationItem } from "@/lib/admin/notifications";
 import { moderateBookingStatusAction } from "@/actions/admin/bookings";
@@ -93,7 +92,6 @@ type NavbarNotificationItem = BookingNotificationItem & {
 
 export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
   const [pendingBookings, setPendingBookings] = useState<NavbarNotificationItem[]>(
     (bookingNotifications?.items as NavbarNotificationItem[]) ?? [],
   );
@@ -123,14 +121,6 @@ export function AdminNavbar({ session, bookingNotifications }: AdminNavbarProps)
       .slice(0, 2);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      // Rediriger vers une page de recherche ou passer le paramètre
-      router.push(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery("");
-    }
-  };
 
 // Les notifications déjà vues sont filtrées côté serveur dans getAdminNotificationData
 // Donc pendingBookings contient déjà uniquement les notifications non vues
@@ -315,18 +305,9 @@ const handleViewNotification = (bookingId: string) => {
         </div>
 
         {/* Barre de recherche */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-lg hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Rechercher véhicules, réservations, clients..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 w-full"
-            />
-          </div>
-        </form>
+        <div className="flex-1 max-w-lg hidden md:block">
+          <DynamicSearchBar />
+        </div>
 
         {/* Espace flexible pour mobile */}
         <div className="flex-1 md:hidden" />
@@ -334,31 +315,9 @@ const handleViewNotification = (bookingId: string) => {
         {/* Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Bouton recherche mobile */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden h-9 w-9">
-                <Search className="h-4 w-4" />
-                <span className="sr-only">Rechercher</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-2rem)]">
-              <DropdownMenuLabel>Recherche</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <form onSubmit={handleSearch} className="p-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Rechercher..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                    autoFocus
-                  />
-                </div>
-              </form>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="md:hidden">
+            <DynamicSearchBar className="w-80 max-w-[calc(100vw-2rem)]" />
+          </div>
 
           {/* Notifications */}
           <DropdownMenu>
