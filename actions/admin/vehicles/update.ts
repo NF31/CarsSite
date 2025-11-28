@@ -114,7 +114,8 @@ export async function updateVehicleAction(
     }
 
     // Vérifier que les équipements ne contiennent pas de caractères dangereux
-    const dangerousPattern = /[<>\"'%;()&+]/;
+    // Autorise les lettres, chiffres, espaces, tirets, apostrophes, & et points
+    const dangerousPattern = /[<>\"%;()+]|&(?!amp;|nbsp;)/;
     for (const feature of updateData.features) {
       if (dangerousPattern.test(feature)) {
         return {
