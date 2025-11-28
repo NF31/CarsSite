@@ -97,7 +97,17 @@ export const createVehicleSchema = z.object({
     .min(1, "La localisation est requise")
     .refine((val) => val.length > 0 && val.length <= 100, "ID de localisation invalide"),
   features: z
-    .array(z.string().trim().min(1).max(100))
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "L'équipement ne peut pas être vide")
+        .max(100, "L'équipement ne peut pas dépasser 100 caractères")
+        .regex(
+          /^[A-Za-zÀ-ÿ0-9\s\-'&.]+$/,
+          "L'équipement contient des caractères invalides"
+        )
+    )
     .max(50, "Maximum 50 équipements autorisés")
     .default([])
     .refine((val) => {
