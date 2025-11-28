@@ -79,5 +79,7 @@ function StatisticsChartsComponent({
   );
 }
 
-export const StatisticsCharts = memo(StatisticsChartsComponent);
+const StatisticsCharts = memo(StatisticsChartsComponent);
+
+export { StatisticsCharts };
 
