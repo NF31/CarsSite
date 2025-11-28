@@ -4,14 +4,15 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import type { UseFormReturn } from "react-hook-form";
-import type { CreateVehicleInput } from "@/lib/validations/vehicle";
+import type { CreateVehicleInput, UpdateVehicleInput } from "@/lib/validations/vehicle";
 
 interface FormActionsProps {
-  form: UseFormReturn<CreateVehicleInput>;
+  form: UseFormReturn<CreateVehicleInput | UpdateVehicleInput>;
   isSubmitting: boolean;
   imagesCount: number;
   isValid: boolean;
   isDirty: boolean;
+  isEditMode?: boolean;
 }
 
 export function FormActions({
@@ -20,9 +21,32 @@ export function FormActions({
   imagesCount,
   isValid,
   isDirty,
+  isEditMode = false,
 }: FormActionsProps) {
   const { formState: { errors } } = form;
   const formIsValid = isValid && imagesCount >= 5;
+  
+  const submitButtonText = isEditMode 
+    ? (isSubmitting ? "Modification en cours..." : "Modifier le véhicule")
+    : (isSubmitting ? "Création en cours..." : "Créer le véhicule");
+  
+  const submitButtonTitle = isSubmitting 
+    ? (isEditMode ? "Modification en cours..." : "Création en cours...")
+    : !isValid 
+    ? `Veuillez remplir tous les champs requis et corriger les erreurs (Erreurs: ${Object.keys(errors).length})` 
+    : imagesCount < 5 
+    ? `Au moins 5 images sont requises (${imagesCount}/5)` 
+    : isEditMode
+    ? "Tous les champs sont valides, vous pouvez modifier le véhicule"
+    : "Tous les champs sont valides, vous pouvez créer le véhicule";
+  
+  const successMessage = isEditMode
+    ? "Tous les champs sont valides ! Vous pouvez modifier le véhicule."
+    : "Tous les champs sont valides ! Vous pouvez créer le véhicule.";
+  
+  const imagesMessage = isEditMode
+    ? `Au moins 5 images sont requises pour modifier un véhicule. (${imagesCount}/5)`
+    : `Au moins 5 images sont requises pour créer un véhicule. (${imagesCount}/5)`;
 
   return (
     <>
@@ -33,22 +57,14 @@ export function FormActions({
         <Button 
           type="submit" 
           disabled={isSubmitting || !formIsValid}
-          title={
-            isSubmitting 
-              ? "Création en cours..." 
-              : !isValid 
-              ? `Veuillez remplir tous les champs requis et corriger les erreurs (Erreurs: ${Object.keys(errors).length})` 
-              : imagesCount < 5 
-              ? `Au moins 5 images sont requises (${imagesCount}/5)` 
-              : "Tous les champs sont valides, vous pouvez créer le véhicule"
-          }
+          title={submitButtonTitle}
           className={
             formIsValid && !isSubmitting 
               ? "bg-green-600 hover:bg-green-700 text-white shadow-lg" 
               : ""
           }
         >
-          {isSubmitting ? "Création en cours..." : "Créer le véhicule"}
+          {submitButtonText}
         </Button>
       </div>
 
@@ -80,13 +96,13 @@ export function FormActions({
       {imagesCount < 5 && isDirty && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
           <AlertCircle className="h-4 w-4" />
-          <span>Au moins 5 images sont requises pour créer un véhicule. ({imagesCount}/5)</span>
+          <span>{imagesMessage}</span>
         </div>
       )}
       {formIsValid && !isSubmitting && (
         <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4" />
-          <span>Tous les champs sont valides ! Vous pouvez créer le véhicule.</span>
+          <span>{successMessage}</span>
         </div>
       )}
     </>
