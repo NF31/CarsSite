@@ -1051,10 +1051,16 @@ export async function moderateBookingStatusAction(
         // Si oui, on ne restaure pas les dates car elles sont déjà modifiées
         // On remet juste cancellationRequested à false
         
-        console.log(`\n🟢 [ModerateBooking] Rejet de l'annulation - Conservation de la réservation`);
-        console.log(`   - Statut précédent: ${previousStatus}`);
-        console.log(`   - Modification en cours: ${isModificationRequest}`);
-        console.log(`   - Dates originales disponibles: ${booking.originalStartDate ? "OUI" : "NON"}`);
+        console.log(`\n🟢🟢🟢 [ModerateBooking] ==========================================`);
+        console.log(`🟢🟢🟢 [ModerateBooking] REJET DE L'ANNULATION - CONSERVATION DE LA RÉSERVATION`);
+        console.log(`🟢🟢🟢 [ModerateBooking] ==========================================`);
+        console.log(`🟢 [ModerateBooking] Référence: ${booking.reference}`);
+        console.log(`🟢 [ModerateBooking] Statut actuel en DB: ${booking.status}`);
+        console.log(`🟢 [ModerateBooking] Statut précédent (cancellationPreviousStatus): ${previousStatus}`);
+        console.log(`🟢 [ModerateBooking] Modification en cours: ${isModificationRequest}`);
+        console.log(`🟢 [ModerateBooking] modificationRequested: ${booking.modificationRequested}`);
+        console.log(`🟢 [ModerateBooking] modificationDepositDifference: ${booking.modificationDepositDifference ?? "null/undefined"}€`);
+        console.log(`🟢 [ModerateBooking] Dates originales disponibles: ${booking.originalStartDate ? "OUI" : "NON"}`);
         
         // Si une modification est en cours, on garde les dates actuelles
         // et on nettoie juste la demande d'annulation
@@ -1065,13 +1071,23 @@ export async function moderateBookingStatusAction(
           cancellationPreviousStatus: null,
         };
         
-        // Si PAS de modification en cours, on restaure le statut précédent
-        // Si une modification est en cours, on garde le statut actuel (qui est probablement PENDING pour la modification)
-        if (!isModificationRequest) {
-          updateData.status = previousStatus;
-          console.log(`   - Restauration du statut à: ${previousStatus}`);
-        } else {
-          console.log(`   - Modification en cours détectée - conservation du statut actuel: ${booking.status}`);
+        // IMPORTANT: Même s'il y a une modification en cours, quand on refuse une annulation,
+        // on doit restaurer le statut pour confirmer la réservation.
+        // Si le statut précédent était PENDING, mettre CONFIRMED car refuser l'annulation = confirmer la réservation
+        // Sinon, restaurer le statut précédent (CONFIRMED, IN_PROGRESS, etc.)
+        // NOTE: Si modificationDepositDifference > 0, le statut sera recalculé par la logique de synchronisation
+        // mais on veut quand même restaurer le statut de base pour indiquer que la réservation est confirmée
+        const restoredStatus = previousStatus === BookingStatus.PENDING 
+          ? BookingStatus.CONFIRMED 
+          : previousStatus;
+        updateData.status = restoredStatus;
+        console.log(`🟢 [ModerateBooking] ⚠️  DÉCISION DE STATUT:`);
+        console.log(`🟢 [ModerateBooking]    - Statut précédent (cancellationPreviousStatus): ${previousStatus}`);
+        console.log(`🟢 [ModerateBooking]    - Statut restauré: ${restoredStatus}${previousStatus === BookingStatus.PENDING ? " (PENDING → CONFIRMED car annulation refusée)" : ""}`);
+        console.log(`🟢 [ModerateBooking]    - Statut qui sera enregistré en DB: ${restoredStatus}`);
+        if (isModificationRequest) {
+          console.log(`🟢 [ModerateBooking]    - ⚠️  Modification en cours détectée (modificationDepositDifference: ${booking.modificationDepositDifference ?? "null"}€)`);
+          console.log(`🟢 [ModerateBooking]    - Le statut sera restauré à ${restoredStatus}, mais peut être recalculé si un paiement est en attente`);
         }
         
         // Ajouter le message de refus si fourni
@@ -1087,8 +1103,20 @@ export async function moderateBookingStatusAction(
             totalPrice: true,
             depositPaid: true,
             remainingAmount: true,
+            status: true,
           },
         });
+        
+        console.log(`🟢🟢🟢 [ModerateBooking] ==========================================`);
+        console.log(`🟢🟢🟢 [ModerateBooking] ✅ RÉSERVATION RESTAURÉE APRÈS REFUS D'ANNULATION`);
+        console.log(`🟢🟢🟢 [ModerateBooking] ==========================================`);
+        console.log(`🟢 [ModerateBooking] bookingId: ${bookingId}`);
+        console.log(`🟢 [ModerateBooking] Référence: ${booking.reference}`);
+        console.log(`🟢 [ModerateBooking] Statut en DB AVANT mise à jour: ${booking.status}`);
+        console.log(`🟢 [ModerateBooking] Statut précédent (cancellationPreviousStatus): ${previousStatus}`);
+        console.log(`🟢 [ModerateBooking] Statut demandé dans updateData: ${updateData.status ?? "NON DÉFINI"}`);
+        console.log(`🟢 [ModerateBooking] Statut en DB APRÈS mise à jour: ${restored.status}`);
+        console.log(`🟢 [ModerateBooking] ==========================================\n`);
 
         if (booking.user?.email && booking.user.name) {
           const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
