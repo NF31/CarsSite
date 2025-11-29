@@ -167,7 +167,9 @@ export async function createCheckoutSessionAction(
       customer_email: booking.user?.email || session.user.email || undefined,
       metadata: {
         bookingId: booking.id,
-        userId: session.user.id,
+        // Pour les paiements de modification, utiliser le userId du propriétaire de la réservation
+        // Sinon le webhook échouera car il vérifie que booking.userId === metadata.userId
+        userId: input.isModificationPayment ? booking.userId : session.user.id,
         bookingReference: booking.reference,
         paymentType: paymentType,
         isModificationPayment: input.isModificationPayment ? "true" : "false",
