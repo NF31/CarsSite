@@ -21,7 +21,10 @@ export async function queueVerificationEmail(
 ): Promise<{ success: boolean; queued: boolean }> {
   try {
     const verificationUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${token}`;
-    const template = getVerificationEmailTemplate(name, verificationUrl);
+    const template = getVerificationEmailTemplate({
+      name,
+      verificationUrl,
+    });
 
     await addEmailToQueue({
       type: "verification",
@@ -52,7 +55,10 @@ export async function queuePasswordResetEmail(
 ): Promise<{ success: boolean; queued: boolean }> {
   try {
     const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${token}`;
-    const template = getPasswordResetEmailTemplate(name, resetUrl);
+    const template = getPasswordResetEmailTemplate({
+      name,
+      resetUrl,
+    });
 
     await addEmailToQueue({
       type: "password-reset",
@@ -82,7 +88,10 @@ export async function queueAccountDeletionEmail(
 ): Promise<{ success: boolean; queued: boolean }> {
   try {
     const confirmationUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/confirm-account-deletion?token=${token}`;
-    const template = getAccountDeletionEmailTemplate(name, confirmationUrl);
+    const template = getAccountDeletionEmailTemplate({
+      name,
+      confirmationUrl,
+    });
 
     await addEmailToQueue({
       type: "account-deletion",
