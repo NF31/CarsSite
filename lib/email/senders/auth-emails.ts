@@ -15,7 +15,10 @@ export async function sendVerificationEmail(
   token: string
 ) {
   const verificationUrl = `${getBaseUrl()}/verify-email?token=${token}`;
-  const template = getVerificationEmailTemplate(name, verificationUrl);
+  const template = getVerificationEmailTemplate({
+    name,
+    verificationUrl,
+  });
 
   return await sendEmailWithQueue({
     mailOptions: {
@@ -35,7 +38,10 @@ export async function sendPasswordResetEmail(
   token: string
 ) {
   const resetUrl = `${getBaseUrl()}/reset-password?token=${token}`;
-  const template = getPasswordResetEmailTemplate(name, resetUrl);
+  const template = getPasswordResetEmailTemplate({
+    name,
+    resetUrl,
+  });
 
   return await sendEmailWithQueue({
     mailOptions: {
@@ -54,7 +60,10 @@ export async function sendAccountDeletionEmail(
   token: string
 ) {
   const confirmationUrl = `${getBaseUrl()}/confirm-account-deletion?token=${token}`;
-  const template = getAccountDeletionEmailTemplate(name, confirmationUrl);
+  const template = getAccountDeletionEmailTemplate({
+    name,
+    confirmationUrl,
+  });
 
   return await sendEmailWithQueue({
     mailOptions: {

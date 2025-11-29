@@ -1,13 +1,17 @@
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  return hour >= 18 ? "Bonsoir" : "Bonjour";
+import { getGreeting } from "@/lib/email/utils/greeting";
+
+interface AccountDeletionEmailTemplateParams {
+  name: string;
+  confirmationUrl: string;
+  greeting?: string;
 }
 
-export function getAccountDeletionEmailTemplate(
-  name: string,
-  confirmationUrl: string
-) {
-  const greeting = getGreeting();
+export function getAccountDeletionEmailTemplate({
+  name,
+  confirmationUrl,
+  greeting,
+}: AccountDeletionEmailTemplateParams) {
+  const finalGreeting = greeting ?? getGreeting();
   
   return {
     html: `
@@ -21,7 +25,7 @@ export function getAccountDeletionEmailTemplate(
             <h1 style="color: white; margin: 0;">🚗 CarRental</h1>
           </div>
           <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333; margin-top: 0;">${greeting} ${name},</h2>
+            <h2 style="color: #333; margin-top: 0;">${finalGreeting} ${name},</h2>
             <p>Vous avez demandé la suppression de votre compte CarRental.</p>
             <p style="color: #dc2626; font-weight: bold;">Cette action est <strong>irréversible</strong> et entraînera la suppression définitive de :</p>
             <ul style="margin: 20px 0; padding-left: 20px;">

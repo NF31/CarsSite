@@ -1,13 +1,17 @@
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  return hour >= 18 ? "Bonsoir" : "Bonjour";
+import { getGreeting } from "@/lib/email/utils/greeting";
+
+interface PasswordResetEmailTemplateParams {
+  name: string;
+  resetUrl: string;
+  greeting?: string;
 }
 
-export function getPasswordResetEmailTemplate(
-  name: string,
-  resetUrl: string
-) {
-  const greeting = getGreeting();
+export function getPasswordResetEmailTemplate({
+  name,
+  resetUrl,
+  greeting,
+}: PasswordResetEmailTemplateParams) {
+  const finalGreeting = greeting ?? getGreeting();
   
   return {
     html: `
@@ -21,7 +25,7 @@ export function getPasswordResetEmailTemplate(
             <h1 style="color: white; margin: 0;">CarRental</h1>
           </div>
           <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333; margin-top: 0;">${greeting} ${name},</h2>
+            <h2 style="color: #333; margin-top: 0;">${finalGreeting} ${name},</h2>
             <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
             <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
             <div style="text-align: center; margin: 30px 0;">

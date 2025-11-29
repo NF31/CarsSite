@@ -1,13 +1,17 @@
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  return hour >= 18 ? "Bonsoir" : "Bonjour";
+import { getGreeting } from "@/lib/email/utils/greeting";
+
+interface VerificationEmailTemplateParams {
+  name: string;
+  verificationUrl: string;
+  greeting?: string;
 }
 
-export function getVerificationEmailTemplate(
-  name: string,
-  verificationUrl: string
-) {
-  const greeting = getGreeting();
+export function getVerificationEmailTemplate({
+  name,
+  verificationUrl,
+  greeting,
+}: VerificationEmailTemplateParams) {
+  const finalGreeting = greeting ?? getGreeting();
   
   return {
     html: `
@@ -22,7 +26,7 @@ export function getVerificationEmailTemplate(
             <h1 style="color: white; margin: 0;">CarRental</h1>
           </div>
           <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-            <h2 style="color: #333; margin-top: 0;">${greeting} ${name},</h2>
+            <h2 style="color: #333; margin-top: 0;">${finalGreeting} ${name},</h2>
             <p>Merci de vous être inscrit sur CarRental !</p>
             <p>Pour activer votre compte, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :</p>
             <div style="text-align: center; margin: 30px 0;">
@@ -44,7 +48,7 @@ export function getVerificationEmailTemplate(
       </html>
     `,
     text: `
-      ${greeting} ${name},
+      ${finalGreeting} ${name},
       
       Merci de vous être inscrit sur CarRental !
       
