@@ -1,3 +1,5 @@
+import { getGreeting } from "@/lib/email/utils/greeting";
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
@@ -7,7 +9,7 @@ function formatCurrency(amount: number): string {
 }
 
 interface BookingUpdateTemplateParams {
-  greeting: string;
+  greeting?: string;
   name: string;
   reference: string;
   period: string;
@@ -73,6 +75,7 @@ export function getBookingUpdateEmailTemplate({
   modificationInfo,
   rejectionReason,
 }: BookingUpdateTemplateParams) {
+  const finalGreeting = greeting ?? getGreeting();
   const totalFormatted = formatCurrency(pricing.total);
   const depositFormatted = formatCurrency(pricing.deposit);
   const remainingFormatted = formatCurrency(pricing.remaining);
@@ -180,7 +183,7 @@ export function getBookingUpdateEmailTemplate({
                   </tr>
                   <tr>
                     <td style="padding:28px 24px 32px; color:#1f2937;">
-                      <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${greeting} ${name},</h2>
+                      <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${finalGreeting} ${name},</h2>
                       <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#4b5563;">${statusMessage}</p>
 
                       ${rejectionReason ? `
@@ -490,7 +493,7 @@ export function getBookingUpdateEmailTemplate({
       </html>
     `,
     text: `
-${greeting} ${name},
+${finalGreeting} ${name},
 
 ${statusMessage}
 

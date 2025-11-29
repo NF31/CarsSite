@@ -1,5 +1,7 @@
+import { getGreeting } from "@/lib/email/utils/greeting";
+
 interface InvoiceEmailTemplateParams {
-  greeting: string;
+  greeting?: string;
   name: string;
   invoiceNumber: string;
   bookingReference: string;
@@ -11,6 +13,7 @@ export function getInvoiceEmailTemplate({
   invoiceNumber,
   bookingReference,
 }: InvoiceEmailTemplateParams) {
+  const finalGreeting = greeting ?? getGreeting();
 
   return {
     html: `
@@ -36,7 +39,7 @@ export function getInvoiceEmailTemplate({
                   <tr>
                     <td style="padding:28px 24px 32px; color:#1f2937;">
                       <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">
-                        ${greeting} ${name},
+                        ${finalGreeting} ${name},
                       </h2>
                       <p style="margin:0 0 24px; font-size:16px; line-height:1.6; color:#4b5563;">
                         Vous trouverez ci-joint votre facture <strong>${invoiceNumber}</strong> pour la réservation <strong>${bookingReference}</strong>.
@@ -51,7 +54,7 @@ export function getInvoiceEmailTemplate({
       </html>
     `,
     text: `
-${greeting} ${name},
+${finalGreeting} ${name},
 
 Vous trouverez ci-joint votre facture ${invoiceNumber} pour la réservation ${bookingReference}.
 

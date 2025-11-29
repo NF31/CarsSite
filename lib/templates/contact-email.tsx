@@ -1,7 +1,4 @@
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  return hour >= 18 ? "Bonsoir" : "Bonjour";
-}
+import { getGreeting } from "@/lib/email/utils/greeting";
 
 interface ContactEmailData {
   name: string;
@@ -14,8 +11,8 @@ interface ContactEmailData {
 /**
  * Template email de confirmation pour l'utilisateur qui a envoyé une demande de contact
  */
-export function getContactConfirmationEmailTemplate(data: ContactEmailData) {
-  const greeting = getGreeting();
+export function getContactConfirmationEmailTemplate(data: ContactEmailData, greeting?: string) {
+  const finalGreeting = greeting ?? getGreeting();
   
   return {
     html: `
@@ -30,7 +27,7 @@ export function getContactConfirmationEmailTemplate(data: ContactEmailData) {
             <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">CarRental</h1>
           </div>
           <div style="background: #ffffff; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h2 style="color: #333; margin-top: 0; font-size: 24px;">${greeting} ${data.name},</h2>
+            <h2 style="color: #333; margin-top: 0; font-size: 24px;">${finalGreeting} ${data.name},</h2>
             <p style="color: #666; font-size: 16px; margin-bottom: 20px;">
               Merci de nous avoir contactés ! Nous avons bien reçu votre message concernant : <strong>${data.subject}</strong>
             </p>
@@ -71,7 +68,7 @@ export function getContactConfirmationEmailTemplate(data: ContactEmailData) {
       </html>
     `,
     text: `
-      ${greeting} ${data.name},
+      ${finalGreeting} ${data.name},
 
       Merci de nous avoir contactés ! Nous avons bien reçu votre message concernant : ${data.subject}
 
@@ -95,8 +92,8 @@ export function getContactConfirmationEmailTemplate(data: ContactEmailData) {
 /**
  * Template email de notification pour l'admin lorsqu'une nouvelle demande de contact arrive
  */
-export function getContactNotificationEmailTemplate(data: ContactEmailData) {
-  const greeting = getGreeting();
+export function getContactNotificationEmailTemplate(data: ContactEmailData, greeting?: string) {
+  const finalGreeting = greeting ?? getGreeting();
   
   return {
     html: `
@@ -112,7 +109,7 @@ export function getContactNotificationEmailTemplate(data: ContactEmailData) {
           </div>
           <div style="background: #ffffff; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <p style="color: #666; font-size: 16px; margin-bottom: 30px;">
-              ${greeting},<br>
+              ${finalGreeting},<br>
               Une nouvelle demande de contact a été reçue via le formulaire de contact de CarRental.
             </p>
             
@@ -160,7 +157,7 @@ export function getContactNotificationEmailTemplate(data: ContactEmailData) {
       </html>
     `,
     text: `
-      ${greeting},
+      ${finalGreeting},
 
       Une nouvelle demande de contact a été reçue via le formulaire de contact de CarRental.
 
