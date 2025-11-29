@@ -1,3 +1,5 @@
+import { getGreeting } from "@/lib/email/utils/greeting";
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
@@ -7,7 +9,7 @@ function formatCurrency(amount: number): string {
 }
 
 interface BookingConfirmationTemplateParams {
-  greeting: string;
+  greeting?: string;
   name: string;
   reference: string;
   period: string;
@@ -44,6 +46,7 @@ export function getBookingConfirmationEmailTemplate({
   status,
   dashboardUrl,
 }: BookingConfirmationTemplateParams) {
+  const finalGreeting = greeting ?? getGreeting();
   const totalFormatted = formatCurrency(pricing.total);
   const depositFormatted = formatCurrency(pricing.deposit);
   const remainingFormatted = formatCurrency(pricing.remaining);
@@ -73,7 +76,7 @@ export function getBookingConfirmationEmailTemplate({
                   </tr>
                   <tr>
                     <td style="padding:28px 24px 32px; color:#1f2937;">
-                      <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${greeting} ${name},</h2>
+                      <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${finalGreeting} ${name},</h2>
                       <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#4b5563;">
                         Merci d'avoir choisi <span style="font-weight:600; color:#1d4ed8;">CarRental</span>. Nous confirmons que votre réservation a bien été enregistrée. Voici les informations essentielles pour organiser votre départ.
                       </p>
@@ -199,7 +202,7 @@ export function getBookingConfirmationEmailTemplate({
       </html>
     `,
     text: `
-${greeting} ${name},
+${finalGreeting} ${name},
 
 Votre réservation ${reference} a bien été enregistrée.
 

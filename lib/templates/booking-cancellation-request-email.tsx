@@ -1,3 +1,5 @@
+import { getGreeting } from "@/lib/email/utils/greeting";
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
@@ -7,7 +9,7 @@ function formatCurrency(amount: number): string {
 }
 
 interface BookingCancellationRequestTemplateParams {
-  greeting: string;
+  greeting?: string;
   name: string;
   reference: string;
   period: string;
@@ -42,6 +44,7 @@ export function getBookingCancellationRequestEmailTemplate({
   dashboardUrl,
   reason,
 }: BookingCancellationRequestTemplateParams) {
+  const finalGreeting = greeting ?? getGreeting();
   const totalFormatted = formatCurrency(pricing.total);
   const depositFormatted = formatCurrency(pricing.deposit);
   const refundFormatted = formatCurrency(pricing.refund);
@@ -76,7 +79,7 @@ export function getBookingCancellationRequestEmailTemplate({
                   </tr>
                   <tr>
                     <td style="padding:28px 24px 32px; color:#1f2937;">
-                      <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${greeting} ${name},</h2>
+                      <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${finalGreeting} ${name},</h2>
                       <p style="margin:0 0 18px; font-size:15px; line-height:1.6; color:#4b5563;">
                         Nous avons bien enregistré votre demande d'annulation. Notre équipe va la vérifier dans les plus brefs délais et vous confirmera la décision par email.
                       </p>
@@ -196,7 +199,7 @@ export function getBookingCancellationRequestEmailTemplate({
       </html>
     `,
     text: `
-${greeting} ${name},
+${finalGreeting} ${name},
 
 Nous confirmons la réception de votre demande d'annulation pour la réservation ${reference}. Elle est désormais en cours d'étude.
 

@@ -1,3 +1,5 @@
+import { getGreeting } from "@/lib/email/utils/greeting";
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
@@ -7,7 +9,7 @@ function formatCurrency(amount: number): string {
 }
 
 interface BookingReminderTemplateParams {
-  greeting: string;
+  greeting?: string;
   name: string;
   reference: string;
   period: string;
@@ -39,6 +41,7 @@ export function getBookingReminderEmailTemplate({
   pricing,
   dashboardUrl,
 }: BookingReminderTemplateParams) {
+  const finalGreeting = greeting ?? getGreeting();
   const totalFormatted = formatCurrency(pricing.total);
   const depositFormatted = formatCurrency(pricing.deposit);
   const remainingFormatted = formatCurrency(pricing.remaining);
@@ -79,7 +82,7 @@ export function getBookingReminderEmailTemplate({
                   </tr>
                   <tr>
                     <td style="padding:28px 24px 32px; color:#1f2937;">
-                      <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${greeting} ${name},</h2>
+                      <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#0f172a;">${finalGreeting} ${name},</h2>
                       <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#4b5563;">
                         Votre réservation approche ! Elle commence dans <strong style="color:#f59e0b;">${timeUntilStart}</strong>.
                       </p>
@@ -207,7 +210,7 @@ export function getBookingReminderEmailTemplate({
       </html>
     `,
     text: `
-${greeting} ${name},
+${finalGreeting} ${name},
 
 Rappel de réservation ${reference}
 
