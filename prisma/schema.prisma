@@ -383,7 +383,7 @@ model Payment {
 model Setting {
   id          String          @id @default(cuid())
   key         String          @unique
-  value       Json // Flexible: string, number, boolean, object
+  value       Json            @map("setting_value") // Flexible: string, number, boolean, object
   description String?
   category    SettingCategory @default(GENERAL)
   updatedAt   DateTime        @updatedAt
