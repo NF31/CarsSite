@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { LoadScript } from "@react-google-maps/api";
+import { useJsApiLoader } from "@react-google-maps/api";
 import { GOOGLE_MAPS_LIBRARIES } from "./constants";
 import { useSearchForm } from "./hooks/use-search-form";
 import { useGoogleMapsAutocomplete } from "./hooks/use-google-maps-autocomplete";
@@ -64,6 +64,13 @@ export function HomeSearchWidget() {
   // Mémoriser le tableau de bibliothèques pour éviter les rechargements
   const libraries = useMemo(() => GOOGLE_MAPS_LIBRARIES, []);
 
+  // Utiliser useJsApiLoader au lieu de LoadScript pour éviter les chargements multiples
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: apiKey || "",
+    libraries,
+    preventGoogleFontsLoading: true,
+  });
+
   if (!apiKey) {
     return (
       <div className="w-full rounded-3xl border border-white/10 bg-white p-6 text-slate-900 shadow-xl shadow-slate-950/10 md:p-8">
@@ -75,10 +82,24 @@ export function HomeSearchWidget() {
     );
   }
 
-  return (
-    <LoadScript googleMapsApiKey={apiKey} libraries={libraries}>
-      <SearchWidgetContent />
-    </LoadScript>
-  );
+  if (loadError) {
+    return (
+      <div className="w-full rounded-3xl border border-white/10 bg-white p-6 text-slate-900 shadow-xl shadow-slate-950/10 md:p-8">
+        <p className="text-center text-destructive">
+          Erreur lors du chargement de Google Maps. Veuillez rafraîchir la page.
+        </p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="w-full rounded-3xl border border-white/10 bg-white p-6 text-slate-900 shadow-xl shadow-slate-950/10 md:p-8">
+        <p className="text-center text-muted-foreground">Chargement de Google Maps...</p>
+      </div>
+    );
+  }
+
+  return <SearchWidgetContent />;
 }
 
