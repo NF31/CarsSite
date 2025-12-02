@@ -2,39 +2,23 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-import {
-  BookingStatus,
-  MaintenanceStatus,
-  MaintenanceType,
-} from "@prisma/client";
-import type { Prisma } from "@prisma/client";
-import { headers } from "next/headers";
-import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit-redis";
-import { sendBookingUpdateEmail } from "@/lib/email";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
-import { canModifyBooking, calculateBookingStatus } from "@/lib/booking-status-sync";
-
-function parseDate(value: FormDataEntryValue | null) {
-  if (typeof value !== "string" || value.trim().length === 0) {
-    return null;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return date;
-}
-
-export interface UpdateBookingResult {
-  success: boolean;
-  error?: string;
-  requiresPayment?: boolean;
-  paymentUrl?: string;
-  refundAmount?: number;
-}
+import type { UpdateBookingResult } from "./update-booking/types";
+import { RATE_LIMIT_CONFIG } from "./update-booking/constants";
+import { checkBookingUpdateRateLimit } from "./update-booking/rate-limit";
+import { validateBookingForUpdate } from "./update-booking/validate-booking";
+import {
+  parseDate,
+  validateBookingDates,
+  formatTime,
+  calculatePriceDifferences,
+  checkBookingOverlap,
+  checkMaintenanceOverlap,
+  BOOKING_SELECT,
+} from "./update-booking/utils";
+import { buildBookingUpdateData } from "./update-booking/build-update-data";
+import { sendBookingUpdateEmailNotification } from "./update-booking/send-update-email";
+import { invalidateBookingCaches } from "./update-booking/invalidate-cache";
 
 export async function updateClientBookingAction(
   _prevState: UpdateBookingResult,
@@ -50,36 +34,20 @@ export async function updateClientBookingAction(
       };
     }
 
-    const rateLimitConfig = {
-      maxAttempts: 5,
-      windowMs: 10 * 60 * 1000,
-    };
+    // Vérifier le rate limiting
+    const rateLimitResult = await checkBookingUpdateRateLimit(
+      session.user.id,
+      RATE_LIMIT_CONFIG
+    );
 
-    const headersList = await headers();
-    const ipAddress =
-      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      headersList.get("x-real-ip") ??
-      "unknown";
-
-    const rateLimitKey = `booking-edit:${session.user.id}`;
-    const rateLimit = await checkRateLimit(rateLimitKey, "email", rateLimitConfig);
-
-    if (!rateLimit.allowed) {
-      const minutes = Math.max(
-        1,
-        Math.ceil((rateLimit.resetAt.getTime() - Date.now()) / 60000),
-      );
+    if (!rateLimitResult.allowed) {
       return {
         success: false,
-        error: `Trop de tentatives de modification. Réessayez dans ${minutes} minute${minutes > 1 ? "s" : ""}.`,
+        error: rateLimitResult.error,
       };
     }
 
-    await recordRateLimitAttempt(rateLimitKey, "email");
-    if (ipAddress !== "unknown") {
-      await recordRateLimitAttempt(`booking-edit-ip:${ipAddress}`, "ip");
-    }
-
+    // Parser les données du formulaire
     const bookingId = formData.get("bookingId");
     const startDateValue = parseDate(formData.get("startDate"));
     const endDateValue = parseDate(formData.get("endDate"));
@@ -91,111 +59,58 @@ export async function updateClientBookingAction(
       };
     }
 
-    if (!startDateValue || !endDateValue) {
-      return {
-        success: false,
-        error: "Veuillez sélectionner des dates de début et de fin valides.",
-      };
-    }
-
+    // Valider les dates
     const now = new Date();
-
-    if (startDateValue <= now) {
+    const dateValidation = validateBookingDates(startDateValue, endDateValue, now);
+    if (!dateValidation.valid) {
       return {
         success: false,
-        error: "La nouvelle date de départ doit être dans le futur.",
+        error: dateValidation.error,
       };
     }
 
-    if (endDateValue <= startDateValue) {
-      return {
-        success: false,
-        error: "La date de fin doit être postérieure à la date de début.",
-      };
-    }
-
+    // Récupérer la réservation existante
     const existingBooking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      select: {
-        id: true,
-        userId: true,
-        reference: true,
-        vehicleId: true,
-        startDate: true,
-        endDate: true,
-        status: true,
-        totalPrice: true,
-        depositPaid: true,
-        securityDepositPaid: true,
-        remainingAmount: true,
-        serviceIds: true,
-        cancellationRequested: true,
-        modificationRequested: true,
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-        vehicle: {
-          select: {
-            brand: true,
-            model: true,
-            licensePlate: true,
-            pricePerDay: true,
-          },
-        },
-        pickupLocation: {
-          select: {
-            name: true,
-          },
-        },
-        returnLocation: {
-          select: {
-            name: true,
-          },
-        },
-      },
+      select: BOOKING_SELECT,
     });
 
-    if (!existingBooking || existingBooking.userId !== session.user.id) {
+    if (!existingBooking) {
       return {
         success: false,
         error: "Réservation introuvable.",
       };
     }
 
-    if (existingBooking.startDate <= now) {
-      return {
-        success: false,
-        error: "Cette réservation a déjà commencé et ne peut plus être modifiée.",
-      };
-    }
-
-    if (
-      existingBooking.status === BookingStatus.CANCELLED ||
-      existingBooking.status === BookingStatus.COMPLETED
-    ) {
-      return {
-        success: false,
-        error: "Cette réservation ne peut plus être modifiée.",
-      };
-    }
-
-    const overlappingBooking = await prisma.booking.findFirst({
-      where: {
-        id: { not: existingBooking.id },
-        vehicleId: existingBooking.vehicleId,
-        status: {
-          in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
-        },
-        startDate: { lt: endDateValue },
-        endDate: { gt: startDateValue },
+    // Valider que la réservation peut être modifiée
+    const bookingValidation = validateBookingForUpdate(
+      {
+        userId: existingBooking.userId,
+        startDate: existingBooking.startDate,
+        status: existingBooking.status,
+        cancellationRequested: existingBooking.cancellationRequested,
+        modificationRequested: existingBooking.modificationRequested,
       },
-      select: { id: true },
-    });
+      session.user.id,
+      now
+    );
 
-    if (overlappingBooking) {
+    if (!bookingValidation.valid) {
+      return {
+        success: false,
+        error: bookingValidation.error,
+      };
+    }
+
+    // Vérifier les chevauchements
+    const hasBookingOverlap = await checkBookingOverlap(
+      existingBooking.vehicleId,
+      startDateValue!,
+      endDateValue!,
+      existingBooking.id
+    );
+
+    if (hasBookingOverlap) {
       return {
         success: false,
         error:
@@ -203,22 +118,13 @@ export async function updateClientBookingAction(
       };
     }
 
-    const overlappingMaintenance = await prisma.maintenance.findFirst({
-      where: {
-        vehicleId: existingBooking.vehicleId,
-        status: {
-          in: [MaintenanceStatus.SCHEDULED, MaintenanceStatus.IN_PROGRESS],
-        },
-        type: {
-          not: MaintenanceType.BLOCKED,
-        },
-        startDate: { lt: endDateValue },
-        endDate: { gt: startDateValue },
-      },
-      select: { id: true },
-    });
+    const hasMaintenanceOverlap = await checkMaintenanceOverlap(
+      existingBooking.vehicleId,
+      startDateValue!,
+      endDateValue!
+    );
 
-    if (overlappingMaintenance) {
+    if (hasMaintenanceOverlap) {
       return {
         success: false,
         error:
@@ -227,22 +133,16 @@ export async function updateClientBookingAction(
     }
 
     // Extraire les heures des dates modifiées
-    const startHours = startDateValue.getHours().toString().padStart(2, "0");
-    const startMinutes = startDateValue.getMinutes().toString().padStart(2, "0");
-    const endHours = endDateValue.getHours().toString().padStart(2, "0");
-    const endMinutes = endDateValue.getMinutes().toString().padStart(2, "0");
-    
-    const startTime = `${startHours}:${startMinutes}`;
-    const endTime = `${endHours}:${endMinutes}`;
+    const startTime = formatTime(startDateValue!);
+    const endTime = formatTime(endDateValue!);
 
-    // Recalculer le prix en utilisant la fonction de calcul standardisée
-    // qui prend en compte les heures, les services, etc.
+    // Recalculer le prix
     const priceResult = await calculateBookingPriceAction({
       vehicleId: existingBooking.vehicleId,
-      startDate: startDateValue.toISOString(),
-      endDate: endDateValue.toISOString(),
-      startTime: startTime,
-      endTime: endTime,
+      startDate: startDateValue!.toISOString(),
+      endDate: endDateValue!.toISOString(),
+      startTime,
+      endTime,
       serviceIds: existingBooking.serviceIds || [],
     });
 
@@ -253,76 +153,34 @@ export async function updateClientBookingAction(
       };
     }
 
-    // Nouveau prix total calculé (véhicule + services)
+    // Calculer les différences de prix
     const newTotalPrice = Math.round(priceResult.data.totalPrice * 100) / 100;
-    
-    // Calculer le nouvel acompte (30% du nouveau prix total)
-    const newDownPayment = Math.round(newTotalPrice * 0.3 * 100) / 100;
-    
-    // Récupérer les montants déjà payés
     const oldDepositPaid = existingBooking.depositPaid ?? 0;
-    const securityDepositPaid = existingBooking.securityDepositPaid ?? 0;
     const oldTotalPrice = existingBooking.totalPrice ?? 0;
     const oldRemainingAmount = existingBooking.remainingAmount ?? 0;
-    
-    // Calculer la différence d'acompte
-    const depositDifference = newDownPayment - oldDepositPaid;
-    const roundedDepositDifference = Math.round(depositDifference * 100) / 100;
-    
-    // Calculer le nouveau solde restant
-    const newRemainingAmount = Math.round((newTotalPrice - newDownPayment) * 100) / 100;
 
-    // IMPORTANT: Ne PAS faire les remboursements/paiements maintenant
-    // On stocke les informations pour que l'admin puisse valider/refuser
-    // Les actions Stripe seront déclenchées uniquement après validation admin
+    const priceDifferences = calculatePriceDifferences(
+      newTotalPrice,
+      oldDepositPaid
+    );
 
-    // Vérifier si la réservation peut être modifiée
-    const { canModify, reason } = canModifyBooking({
-      currentStatus: existingBooking.status,
-      cancellationRequested: existingBooking.cancellationRequested ?? false,
-      modificationRequested: existingBooking.modificationRequested ?? false,
-      startDate: existingBooking.startDate,
+    // Construire les données de mise à jour
+    const updateData = buildBookingUpdateData({
+      startDate: startDateValue!,
+      endDate: endDateValue!,
+      priceDifferences,
+      existingBooking: {
+        status: existingBooking.status,
+        cancellationRequested: existingBooking.cancellationRequested,
+        startDate: existingBooking.startDate,
+        endDate: existingBooking.endDate,
+        totalPrice: existingBooking.totalPrice,
+        depositPaid: existingBooking.depositPaid,
+        securityDepositPaid: existingBooking.securityDepositPaid,
+      },
     });
 
-    if (!canModify) {
-      return {
-        success: false,
-        error: reason || "Cette réservation ne peut pas être modifiée.",
-      };
-    }
-
-    // Calculer le nouveau statut en tenant compte du contexte
-    const newStatus = calculateBookingStatus({
-      currentStatus: existingBooking.status,
-      modificationRequested: true, // Nouvelle demande de modification
-      cancellationRequested: existingBooking.cancellationRequested ?? false,
-      modificationDepositDifference: roundedDepositDifference,
-      startDate: startDateValue,
-    });
-
-    // Mettre à jour la réservation avec les nouvelles dates
-    // IMPORTANT: Préserver securityDepositPaid si elle a déjà été payée
-    // IMPORTANT: Stocker les dates originales pour pouvoir les restaurer si refus
-    const updateData: Prisma.BookingUpdateInput = {
-      startDate: startDateValue,
-      endDate: endDateValue,
-      totalPrice: newTotalPrice,
-      depositPaid: newDownPayment,
-      remainingAmount: newRemainingAmount,
-      status: newStatus, // Utiliser le statut calculé par la synchronisation
-      // Marquer comme demande de modification
-      modificationRequested: true,
-      modificationRequestedAt: new Date(),
-      // Stocker les dates et prix originaux pour restauration si refus
-      originalStartDate: existingBooking.startDate,
-      originalEndDate: existingBooking.endDate,
-      originalTotalPrice: existingBooking.totalPrice,
-      originalDepositPaid: oldDepositPaid,
-      modificationDepositDifference: roundedDepositDifference,
-      // Préserver la caution déjà payée (ne pas la réinitialiser si elle est > 0)
-      ...(securityDepositPaid > 0 ? { securityDepositPaid } : {}),
-    };
-    
+    // Mettre à jour la réservation
     const updatedBooking = await prisma.booking.update({
       where: { id: existingBooking.id },
       data: updateData,
@@ -336,103 +194,47 @@ export async function updateClientBookingAction(
       },
     });
 
+    // Envoyer l'email de notification
     if (existingBooking.user?.email && existingBooking.user.name) {
-      const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
-      const bookingPeriod = `${format(
-        updatedBooking.startDate,
-        "dd MMMM yyyy 'à' HH:mm",
-        { locale: fr },
-      )} → ${format(updatedBooking.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
-
-      const modificationInfoToSend = {
-        originalTotalPrice: oldTotalPrice,
-        originalDepositPaid: oldDepositPaid,
-        originalRemainingAmount: oldRemainingAmount,
-        depositDifference: roundedDepositDifference,
-        // Ajouter refundAmount si remboursement nécessaire
-        refundAmount: roundedDepositDifference < 0 ? Math.abs(roundedDepositDifference) : undefined,
-        // Ajouter additionalPaymentAmount si paiement supplémentaire nécessaire
-        additionalPaymentAmount: roundedDepositDifference > 0 ? roundedDepositDifference : undefined,
-        securityDepositPaid: securityDepositPaid > 0 ? securityDepositPaid : undefined,
-        // IMPORTANT: Ne PAS ajouter paymentUrl ici car le paiement sera créé uniquement après validation admin
-        // paymentUrl sera ajouté dans actions/admin/bookings/moderate-booking.ts après validation
-      };
-
-      console.log(`\n📧 [Client Booking Update] Envoi de l'email de demande de modification...`);
-      console.log(`📧 [Client Booking Update] modificationInfo:`);
-      console.log(`   ${JSON.stringify(modificationInfoToSend, null, 2)}`);
-      console.log(`📧 [Client Booking Update] Détails:`);
-      console.log(`   - originalTotalPrice: ${oldTotalPrice}€`);
-      console.log(`   - originalDepositPaid: ${oldDepositPaid}€`);
-      console.log(`   - originalRemainingAmount: ${oldRemainingAmount}€`);
-      console.log(`   - depositDifference: ${roundedDepositDifference}€`);
-      console.log(`   - refundAmount: ${modificationInfoToSend.refundAmount ?? "N/A"}€`);
-      console.log(`   - additionalPaymentAmount: ${modificationInfoToSend.additionalPaymentAmount ?? "N/A"}€`);
-      console.log(`   - securityDepositPaid: ${modificationInfoToSend.securityDepositPaid ?? "N/A"}€`);
-
-      const emailResult = await sendBookingUpdateEmail({
-        to: existingBooking.user.email,
-        name: existingBooking.user.name,
-        greeting,
+      await sendBookingUpdateEmailNotification({
+        user: {
+          email: existingBooking.user.email,
+          name: existingBooking.user.name,
+        },
         booking: {
-          reference: existingBooking.reference ?? "Réservation",
+          reference: existingBooking.reference,
+          startDate: updatedBooking.startDate,
+          endDate: updatedBooking.endDate,
           totalPrice: updatedBooking.totalPrice ?? 0,
           depositPaid: updatedBooking.depositPaid ?? 0,
           remainingAmount: updatedBooking.remainingAmount ?? 0,
-          startDate: updatedBooking.startDate,
-          endDate: updatedBooking.endDate,
           status: updatedBooking.status,
-          period: bookingPeriod,
         },
         vehicle: {
-          label: existingBooking.vehicle
-            ? `${existingBooking.vehicle.brand} ${existingBooking.vehicle.model}`
-            : "Véhicule",
+          brand: existingBooking.vehicle?.brand ?? "",
+          model: existingBooking.vehicle?.model ?? "",
           licensePlate: existingBooking.vehicle?.licensePlate ?? "ND",
         },
         locations: {
           pickup: existingBooking.pickupLocation?.name ?? "Agence de départ",
           return: existingBooking.returnLocation?.name ?? "Agence de retour",
         },
-        modificationInfo: modificationInfoToSend,
+        priceDifferences,
+        oldTotalPrice,
+        oldDepositPaid,
+        oldRemainingAmount,
       });
-
-      if (emailResult.skipped) {
-        console.warn(
-          "[Client Booking] ⚠️  Email de mise à jour ignoré (credentials non configurés). Vérifiez GMAIL_USER et GMAIL_PASSWORD dans .env",
-        );
-      } else if (!emailResult.success) {
-        console.warn(
-          "[Client Booking] ❌ Échec de l'envoi de l'email de mise à jour",
-          emailResult.error ?? "unknown reason",
-        );
-      } else {
-        console.log(
-          "[Client Booking] ✅ Email de mise à jour envoyé",
-          emailResult.queued ? "(mis en queue)" : "(envoyé directement)",
-        );
-      }
     }
 
-    revalidatePath("/dashboard");
-    revalidatePath("/admin/bookings");
-    revalidatePath("/admin/dashboard");
-    revalidatePath("/admin/statistics");
-    revalidatePath("/admin/invoices");
-
-    // Invalider le cache des réservations
-    const { invalidateBookingCache } = await import("@/lib/cache-invalidation");
-    await invalidateBookingCache(bookingId).catch((error) => {
-      console.error("Error invalidating booking cache:", error);
-    });
+    // Invalider les caches
+    await invalidateBookingCaches(bookingId);
 
     return {
       success: true,
       error: undefined,
-      // Ne plus retourner paymentUrl car le paiement sera géré après validation admin
-      requiresPayment: false, // Le paiement sera géré après validation admin
+      requiresPayment: false,
       paymentUrl: undefined,
-      refundAmount: undefined, // Le remboursement sera géré après validation admin
+      refundAmount: undefined,
     };
   } catch (error) {
     console.error("[Client Booking] update error", error);
@@ -443,3 +245,5 @@ export async function updateClientBookingAction(
   }
 }
 
+// Ré-exporter les types pour compatibilité
+export type { UpdateBookingResult } from "./update-booking/types";
