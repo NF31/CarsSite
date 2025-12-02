@@ -1,3 +1,5 @@
+
+import { PaymentSuccessCard } from "./components/payment-success-card";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { stripe } from "@/lib/stripe";
@@ -9,8 +11,6 @@ import { loadBookingFromSession, loadBookingFromId, calculatePaymentAmounts, cal
 import { prepareBookingUpdateData, updateBooking, reloadBooking } from "./handlers/booking-updater";
 import { createFallbackPayment } from "./handlers/fallback-payment";
 import { executeFallbackWorkflow } from "./handlers/fallback-workflow";
-import { PaymentSuccessCard } from "./components/payment-success-card";
-
 export default async function PaymentSuccessPage({ searchParams }: PaymentSuccessPageProps) {
   const session = await auth();
 
