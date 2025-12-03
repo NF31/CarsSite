@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface BookingStep2ServicesProps {
@@ -74,6 +74,8 @@ export function BookingStep2Services({
 
   // Charger les services disponibles
   useEffect(() => {
+    if (!vehicle) return;
+
     const loadServices = async () => {
       setIsLoadingServices(true);
       setServicesError(null);
@@ -95,10 +97,12 @@ export function BookingStep2Services({
     };
 
     loadServices();
-  }, [vehicle.id]);
+  }, [vehicle]);
 
   // Calculer le prix quand les services changent
   useEffect(() => {
+    if (!vehicle) return;
+
     const calculatePrice = async () => {
       if (
         !bookingData.startDate ||
@@ -136,12 +140,12 @@ export function BookingStep2Services({
 
     calculatePrice();
   }, [
+    vehicle,
     bookingData.startDate,
     bookingData.endDate,
     bookingData.startTime,
     bookingData.endTime,
     bookingData.selectedServiceIds,
-    vehicle.id,
   ]);
 
   const handleServiceToggle = (serviceId: string) => {
@@ -286,7 +290,7 @@ export function BookingStep2Services({
                       <span>{priceCalculation.vehicleDeposit.toFixed(2)}€</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ⓘ Cette caution sera bloquée lors de la confirmation et remboursée après restitution sans dégâts. Elle n'est pas incluse dans le prix de la location.
+                      ⓘ Cette caution sera bloquée lors de la confirmation et remboursée après restitution sans dégâts. Elle n&apos;est pas incluse dans le prix de la location.
                     </p>
                   </div>
                 )}

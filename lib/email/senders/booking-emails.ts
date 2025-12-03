@@ -17,6 +17,7 @@ import {
 import { getBaseUrl, getFromAddress } from "../config";
 import { sendEmailWithQueue } from "../utils";
 import { BOOKING_STATUS_LABELS, BOOKING_STATUS_COLORS } from "../utils/booking-constants";
+import { getGreeting } from "../utils/greeting";
 import {
   getBookingUpdateStatusLabels,
   getBookingUpdateStatusMessages,
@@ -46,7 +47,7 @@ export async function sendBookingConfirmationEmail({
   const bookingStatus = booking.status ?? BookingStatus.PENDING;
 
   const template = getBookingConfirmationEmailTemplate({
-    greeting,
+    greeting: greeting || getGreeting(),
     name,
     reference: booking.reference,
     period: booking.period,
@@ -87,7 +88,7 @@ export async function sendBookingConfirmationEmail({
     queueFunction: () => queueBookingConfirmationEmail({
       to,
       name,
-      greeting,
+      greeting: greeting || getGreeting(),
       booking,
       vehicle,
       locations,
@@ -133,7 +134,7 @@ export async function sendBookingUpdateEmail({
   const hero = heroContent[bookingStatus];
 
   const template = getBookingUpdateEmailTemplate({
-    greeting,
+    greeting: greeting || getGreeting(),
     name,
     reference: booking.reference,
     period: booking.period,
@@ -181,7 +182,7 @@ export async function sendBookingUpdateEmail({
     queueFunction: () => queueBookingUpdateEmail({
       to,
       name,
-      greeting,
+      greeting: greeting || getGreeting(),
       booking,
       vehicle,
       locations,
@@ -204,7 +205,7 @@ export async function sendBookingReminderEmail({
   const dashboardUrl = `${baseUrl}/client/dashboard`;
 
   const template = getBookingReminderEmailTemplate({
-    greeting,
+    greeting: greeting || getGreeting(),
     name,
     reference: booking.reference,
     period: booking.period,
@@ -230,7 +231,7 @@ export async function sendBookingReminderEmail({
     queueFunction: () => queueBookingReminderEmail({
       to,
       name,
-      greeting,
+      greeting: greeting || getGreeting(),
       booking,
       vehicle,
       locations,
@@ -251,7 +252,7 @@ export async function sendBookingCancellationRejectedEmail({
   const dashboardUrl = `${baseUrl}/client/dashboard`;
 
   const template = getBookingCancellationRejectedEmailTemplate({
-    greeting,
+    greeting: greeting || getGreeting(),
     name,
     reference: booking.reference,
     period: booking.period,
@@ -278,7 +279,7 @@ export async function sendBookingCancellationRejectedEmail({
     queueFunction: () => queueBookingCancellationRejectedEmail({
       to,
       name,
-      greeting,
+      greeting: greeting || getGreeting(),
       booking,
       vehicle,
       locations,
@@ -301,7 +302,7 @@ export async function sendBookingCancellationRequestEmail({
   const dashboardUrl = `${baseUrl}/client/dashboard`;
 
   const template = getBookingCancellationRequestEmailTemplate({
-    greeting,
+    greeting: greeting || getGreeting(),
     name,
     reference: booking.reference,
     period: booking.period,
@@ -324,7 +325,7 @@ export async function sendBookingCancellationRequestEmail({
     queueFunction: () => queueBookingCancellationRequestEmail({
       to,
       name,
-      greeting,
+      greeting: greeting || getGreeting(),
       booking,
       vehicle,
       locations,
@@ -348,7 +349,7 @@ export async function sendBookingCancellationEmail({
   const dashboardUrl = `${baseUrl}/client/dashboard`;
 
   const template = getBookingCancellationEmailTemplate({
-    greeting,
+    greeting: greeting || getGreeting(),
     name,
     reference: booking.reference,
     period: booking.period,
@@ -378,7 +379,7 @@ export async function sendBookingCancellationEmail({
     queueFunction: () => queueBookingCancellationEmail({
       to,
       name,
-      greeting,
+      greeting: greeting || getGreeting(),
       booking,
       vehicle,
       locations,

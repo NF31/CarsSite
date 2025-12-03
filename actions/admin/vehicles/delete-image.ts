@@ -72,7 +72,7 @@ export async function deleteImageByPublicIdAction(
     }
 
     // Supprimer l'image de Cloudinary
-    const result = await new Promise<any>((resolve, reject) => {
+    const result = await new Promise<{ result: string }>((resolve, reject) => {
       cloudinary.uploader.destroy(
         publicId,
         { resource_type: "image" },
@@ -193,21 +193,6 @@ export async function deleteImagesAction(
 }
 
 /**
- * Extrait le chemin du dossier depuis un publicId
- */
-function extractFolderPath(publicId: string): string | null {
-  try {
-    const lastSlashIndex = publicId.lastIndexOf('/');
-    if (lastSlashIndex === -1) {
-      return null; // Pas de dossier
-    }
-    return publicId.substring(0, lastSlashIndex);
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Vérifie si un dossier est vide et le nettoie si nécessaire
  * Note: Cloudinary supprime automatiquement les dossiers vides,
  * mais cette fonction peut être utilisée pour forcer le nettoyage
@@ -224,30 +209,22 @@ export async function cleanupEmptyFolder(folderPath: string): Promise<{ success:
     }
 
     // Lister TOUTES les ressources dans le dossier pour vérifier s'il est vraiment vide
-    const result = await new Promise<any>((resolve, reject) => {
-      cloudinary.search
-        .expression(`folder:${folderPath}`)
-        .max_results(500) // Augmenter pour voir toutes les ressources
-        .execute((error, result) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        });
-    });
+    const result = await cloudinary.search
+      .expression(`folder:${folderPath}`)
+      .max_results(500) // Augmenter pour voir toutes les ressources
+      .execute();
 
     // Si le dossier est vide (pas de ressources) - supprimer le dossier
     if (!result.resources || result.resources.length === 0) {
       console.log(`📁 Dossier ${folderPath} est vide - suppression du dossier...`);
       try {
         // Supprimer le dossier vide avec l'API Cloudinary
-        const deleteFolderResult = await new Promise<any>((resolve, reject) => {
-          cloudinary.api.delete_folder(folderPath, (error, result) => {
+        await new Promise<void>((resolve, reject) => {
+          cloudinary.api.delete_folder(folderPath, (error: Error | null | undefined) => {
             if (error) {
               reject(error);
             } else {
-              resolve(result);
+              resolve();
             }
           });
         });
@@ -255,9 +232,10 @@ export async function cleanupEmptyFolder(folderPath: string): Promise<{ success:
         return {
           success: true,
         };
-      } catch (deleteFolderError: any) {
+      } catch (deleteFolderError: unknown) {
         // Si l'erreur est que le dossier n'existe pas, c'est OK
-        if (deleteFolderError.http_code === 404 || deleteFolderError.message?.includes("not found")) {
+        const error = deleteFolderError as { http_code?: number; message?: string };
+        if (error.http_code === 404 || error.message?.includes("not found")) {
           console.log(`📁 Dossier ${folderPath} n'existe plus (déjà supprimé)`);
           return {
             success: true,
@@ -266,7 +244,7 @@ export async function cleanupEmptyFolder(folderPath: string): Promise<{ success:
         console.error(`Erreur lors de la suppression du dossier ${folderPath}:`, deleteFolderError);
         return {
           success: false,
-          error: `Erreur lors de la suppression du dossier: ${deleteFolderError.message || "Erreur inconnue"}`,
+          error: `Erreur lors de la suppression du dossier: ${error.message || "Erreur inconnue"}`,
         };
       }
     }

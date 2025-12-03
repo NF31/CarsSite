@@ -1,7 +1,6 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const contactFormSchema = z.object({
@@ -45,7 +44,7 @@ export async function submitContactFormAction(
     const validationResult = contactFormSchema.safeParse(input);
 
     if (!validationResult.success) {
-      const firstError = validationResult.error.errors[0];
+      const firstError = validationResult.error.issues[0];
       return {
         success: false,
         error: firstError?.message || "Données invalides.",

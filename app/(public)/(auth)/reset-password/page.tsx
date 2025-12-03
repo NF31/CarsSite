@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useFieldStates, useResetPasswordSubmit } from "./hooks";
 import {
@@ -9,7 +10,7 @@ import {
   ResetPasswordForm,
 } from "./components";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const { form, isLoading, error, success, tokenValid, token, onSubmit } =
     useResetPasswordSubmit();
   
@@ -42,3 +43,21 @@ export default function ResetPasswordPage() {
   );
 }
 
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)] py-4 sm:py-8 md:py-12 px-4 sm:px-6">
+        <Card className="w-full max-w-md shadow-lg border-0">
+          <ResetPasswordHeader />
+          <CardContent className="px-4 sm:px-6 pb-6 sm:pb-8">
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}

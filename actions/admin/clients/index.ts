@@ -3,6 +3,7 @@ export {
   type GetClientsFilters,
   type ClientListItem,
   type ClientStats,
+  type ClientStatus,
 } from "./get-clients";
 
 export {

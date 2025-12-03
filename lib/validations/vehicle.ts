@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { VehicleCategory, TransmissionType, FuelType } from "@prisma/client";
 
 export const createVehicleSchema = z.object({
   brand: z
@@ -42,8 +41,7 @@ export const createVehicleSchema = z.object({
     .max(1000000, "Le kilométrage ne peut pas dépasser 1 000 000 km")
     .refine((val) => val >= 0 && val <= 1000000, "Kilométrage invalide"),
   category: z.enum(["ECONOMY", "COMPACT", "MID_SIZE", "FULL_SIZE", "SUV", "LUXURY", "VAN"], {
-    required_error: "La catégorie est requise",
-    invalid_type_error: "Catégorie invalide",
+    message: "Catégorie invalide",
   }),
   seats: z
     .number()
@@ -52,12 +50,10 @@ export const createVehicleSchema = z.object({
     .max(9, "Le véhicule ne peut pas avoir plus de 9 places")
     .refine((val) => val >= 2 && val <= 9, "Nombre de places invalide"),
   transmission: z.enum(["MANUAL", "AUTOMATIC"], {
-    required_error: "Le type de transmission est requis",
-    invalid_type_error: "Type de transmission invalide",
+    message: "Type de transmission invalide",
   }),
   fuelType: z.enum(["PETROL", "DIESEL", "ELECTRIC", "HYBRID"], {
-    required_error: "Le type de carburant est requis",
-    invalid_type_error: "Type de carburant invalide",
+    message: "Type de carburant invalide",
   }),
   color: z
     .string()

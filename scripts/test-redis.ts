@@ -16,8 +16,6 @@ import {
   setCache,
   deleteCache,
   getOrSetCache,
-  CACHE_PREFIXES,
-  CACHE_TTL,
 } from "../lib/cache";
 import {
   checkRateLimitRedis,
@@ -161,7 +159,7 @@ async function testRateLimiting() {
     }
 
     // Enregistrer la première tentative
-    await recordRateLimitAttemptRedis(testIdentifier, "email", testConfig);
+    await recordRateLimitAttemptRedis(testIdentifier, "email");
 
     // Test 2: Deuxième vérification (après 1 tentative enregistrée)
     console.log("  → Test deuxième vérification (après 1 tentative)...");
@@ -174,7 +172,7 @@ async function testRateLimiting() {
     }
 
     // Enregistrer la deuxième tentative
-    await recordRateLimitAttemptRedis(testIdentifier, "email", testConfig);
+    await recordRateLimitAttemptRedis(testIdentifier, "email");
 
     // Test 3: Troisième vérification (après 2 tentatives enregistrées)
     console.log("  → Test troisième vérification (après 2 tentatives)...");
@@ -187,7 +185,7 @@ async function testRateLimiting() {
     }
 
     // Enregistrer la troisième tentative
-    await recordRateLimitAttemptRedis(testIdentifier, "email", testConfig);
+    await recordRateLimitAttemptRedis(testIdentifier, "email");
 
     // Test 4: Quatrième tentative (devrait être bloquée)
     console.log("  → Test quatrième tentative (devrait être bloquée)...");
@@ -262,7 +260,7 @@ async function showRedisKeys() {
         const ttl = await client.ttl(key);
         if (value) {
           // Essayer de parser en JSON
-          let parsedValue: any;
+          let parsedValue: unknown;
           try {
             parsedValue = JSON.parse(value);
           } catch {
@@ -280,7 +278,7 @@ async function showRedisKeys() {
           const type = await client.type(key);
           console.log(`    ${key}: (type: ${type})`);
         }
-      } catch (error) {
+      } catch {
         console.log(`    ${key}: (erreur lors de la lecture)`);
       }
     }

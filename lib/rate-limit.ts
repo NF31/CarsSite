@@ -35,8 +35,15 @@ export async function checkRateLimit(
   const windowStart = new Date(Date.now() - config.windowMs);
 
   // Utiliser un accès dynamique pour éviter les erreurs TypeScript si le modèle n'est pas encore généré
-  // @ts-expect-error - rateLimitAttempt peut ne pas être disponible si Prisma Client n'est pas régénéré
-  const rateLimitModel = prisma.rateLimitAttempt;
+  const rateLimitModel = (prisma as unknown as { rateLimitAttempt?: {
+    count: (args?: { where?: { identifier?: string; type?: string; createdAt?: { gte?: Date } } }) => Promise<number>;
+    findFirst: (args?: {
+      where?: { identifier?: string; type?: string; createdAt?: { gte?: Date } };
+      orderBy?: { createdAt?: "asc" | "desc" };
+    }) => Promise<{ createdAt: Date } | null>;
+    create: (args: { data: { identifier: string; type: string } }) => Promise<unknown>;
+    deleteMany: (args?: { where?: { createdAt?: { lt?: Date } } }) => Promise<unknown>;
+  } }).rateLimitAttempt;
   
   if (!rateLimitModel) {
     console.error("Prisma client missing rateLimitAttempt model. Please restart the Next.js server after running: npx prisma generate");
@@ -97,8 +104,15 @@ export async function recordRateLimitAttempt(
   type: "email" | "ip"
 ): Promise<void> {
   // Utiliser un accès dynamique pour éviter les erreurs TypeScript si le modèle n'est pas encore généré
-  // @ts-expect-error - rateLimitAttempt peut ne pas être disponible si Prisma Client n'est pas régénéré
-  const rateLimitModel = prisma.rateLimitAttempt;
+  const rateLimitModel = (prisma as unknown as { rateLimitAttempt?: {
+    count: (args?: { where?: { identifier?: string; type?: string; createdAt?: { gte?: Date } } }) => Promise<number>;
+    findFirst: (args?: {
+      where?: { identifier?: string; type?: string; createdAt?: { gte?: Date } };
+      orderBy?: { createdAt?: "asc" | "desc" };
+    }) => Promise<{ createdAt: Date } | null>;
+    create: (args: { data: { identifier: string; type: string } }) => Promise<unknown>;
+    deleteMany: (args?: { where?: { createdAt?: { lt?: Date } } }) => Promise<unknown>;
+  } }).rateLimitAttempt;
   
   if (!rateLimitModel) {
     console.error("Prisma client missing rateLimitAttempt model. Please restart the Next.js server after running: npx prisma generate");

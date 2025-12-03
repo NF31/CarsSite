@@ -91,7 +91,7 @@ export function useBookingCreator({ bookingData, existingBookingId }: UseBooking
           duration: 5000,
         });
       }
-    } catch (error) {
+    } catch {
       const errorMessage = "Une erreur inattendue est survenue lors de la création de la réservation.";
       setCreateError(errorMessage);
       toast.error("Erreur lors de la création de la réservation", {

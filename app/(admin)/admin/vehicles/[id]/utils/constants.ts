@@ -3,7 +3,6 @@ import {
   Calendar,
   Wrench,
   XCircle,
-  AlertCircle,
 } from "lucide-react";
 import type { VehicleStatus, VehicleCategory, FuelType, TransmissionType } from "@prisma/client";
 
@@ -43,7 +42,6 @@ export const fuelTypeLabels: Record<FuelType, string> = {
   DIESEL: "Diesel",
   ELECTRIC: "Électrique",
   HYBRID: "Hybride",
-  LPG: "GPL",
 };
 
 export const transmissionLabels: Record<TransmissionType, string> = {

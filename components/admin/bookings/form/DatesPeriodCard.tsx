@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { BookingFormValues } from "../BookingForm";
+import type { BookingFormValues } from "@/hooks/useBookingForm";
 
 interface AvailabilityStatus {
   status: "idle" | "checking" | "available" | "booking_conflict" | "maintenance_conflict" | "error";

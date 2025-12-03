@@ -1,5 +1,5 @@
 import { useMemo, useState, useTransition, useEffect } from "react";
-import { format, formatDistanceStrict } from "date-fns";
+import { formatDistanceStrict } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getDriverLicenseUrlAction } from "@/actions/admin/bookings";
 import { deriveBookingStatus } from "@/lib/booking-status-sync";

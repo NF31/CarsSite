@@ -2,7 +2,8 @@ import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { UseFormReturn } from "react-hook-form";
 import { createBookingAction, updateBookingAction } from "@/actions/admin/bookings";
-import type { BookingFormValues, BookingFormInitialValues } from "./useBookingForm";
+import type { BookingFormValues } from "./useBookingForm";
+import type { BookingFormInitialValues } from "@/components/admin/bookings/BookingForm";
 
 const toDate = (value: string) => {
   const date = new Date(value);

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, type ReactElement } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -20,7 +20,7 @@ interface CalendarContentProps {
   onEventClick: (arg: EventClickArg) => void;
   onDatesSet: (arg: DatesSetArg) => void;
   onMoreLinkClick: (arg: MoreLinkArg) => string | undefined;
-  renderEventContent: (eventInfo: EventContentArg) => JSX.Element;
+  renderEventContent: (eventInfo: EventContentArg) => ReactElement;
 }
 
 export const CalendarContent = memo(function CalendarContent({

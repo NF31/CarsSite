@@ -2,6 +2,9 @@ import { getAdminSettingsAction } from "@/actions/admin/settings";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import AgencySettingsPageClient from "@/app/(admin)/admin/settings/agency/AgencySettingsPageClient";
+
+export const dynamic = 'force-dynamic';
+
 export default async function AgencySettingsPage() {
   const result = await getAdminSettingsAction();
 

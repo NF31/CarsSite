@@ -11,7 +11,7 @@ import { VehiclesFilters } from "@/components/admin/vehicles/VehiclesFilters";
 import { VehiclesGridView } from "@/components/admin/vehicles/VehiclesGridView";
 import { VehiclesListView } from "@/components/admin/vehicles/VehiclesListView";
 import { VehiclesPagination } from "@/components/admin/vehicles/VehiclesPagination";
-import type { VehicleCategory, VehicleStatus } from "@prisma/client";
+import type { VehicleCategory, VehicleStatus, TransmissionType, FuelType } from "@prisma/client";
 
 type ViewMode = "grid" | "list";
 
@@ -24,8 +24,8 @@ type Vehicle = {
   mileage: number;
   category: VehicleCategory;
   seats: number;
-  transmission: string;
-  fuelType: string;
+  transmission: TransmissionType;
+  fuelType: FuelType;
   color: string;
   pricePerDay: number;
   pricePerWeek: number | null;
