@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { LoadScript } from "@react-google-maps/api";
+import { useJsApiLoader } from "@react-google-maps/api";
 import { VehicleSummaryCard } from "./components/vehicle-summary-card";
 import { DatesLocationsCard } from "./components/dates-locations-card";
 import { PriceSummaryCard } from "./components/price-summary-card";
@@ -59,24 +59,32 @@ function BookingStep1SummaryContent({
 
 export function BookingStep1Summary(props: BookingStep1SummaryProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  // Mémoriser le tableau de bibliothèques pour éviter les rechargements
   const libraries = useMemo(() => GOOGLE_MAPS_LIBRARIES, []);
+
+  // Utiliser useJsApiLoader au lieu de LoadScript pour éviter les chargements multiples
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: apiKey || "",
+    libraries,
+    preventGoogleFontsLoading: true,
+  });
 
   if (!apiKey) {
     return <BookingStep1SummaryContent {...props} />;
   }
 
-  return (
-    <LoadScript
-      googleMapsApiKey={apiKey}
-      libraries={libraries}
-      onError={(error) => {
-        if (error?.message?.includes("RefererNotAllowedMapError")) {
-          console.error(GOOGLE_MAPS_ERROR_MESSAGE);
-        }
-      }}
-    >
-      <BookingStep1SummaryContent {...props} />
-    </LoadScript>
-  );
+  if (loadError) {
+    if (loadError.message?.includes("RefererNotAllowedMapError")) {
+      console.error(GOOGLE_MAPS_ERROR_MESSAGE);
+    }
+    return <BookingStep1SummaryContent {...props} />;
+  }
+
+  if (!isLoaded) {
+    return <BookingStep1SummaryContent {...props} />;
+  }
+
+  return <BookingStep1SummaryContent {...props} />;
 }
 
