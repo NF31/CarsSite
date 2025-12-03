@@ -3,50 +3,22 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import {
-  BookingStatus,
-  MaintenanceStatus,
-  MaintenanceType,
-  Prisma,
-  VehicleStatus,
-} from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import {
   updateBookingSchema,
   type UpdateBookingPayload,
 } from "@/lib/validations/booking";
-import { sendBookingUpdateEmail } from "@/lib/email";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import type { UpdateBookingResult } from "./update-booking/types";
+import { EXISTING_BOOKING_SELECT, UPDATED_BOOKING_SELECT } from "./update-booking/get-booking-select";
+import { validateBookingData } from "./update-booking/validate-booking-data";
+import { validateServices } from "./update-booking/validate-services";
+import { checkBookingOverlap, checkMaintenanceOverlap } from "./update-booking/check-overlaps";
+import { buildUpdateData } from "./update-booking/build-update-data";
+import { invalidateBookingCaches } from "./update-booking/invalidate-cache";
+import { sendUpdateEmail } from "./update-booking/send-update-email";
 
-type UpdateBookingResult =
-  | {
-      success: true;
-      data: {
-        id: string;
-        reference: string;
-      };
-    }
-  | {
-      success: false;
-      error: string;
-      fieldErrors?: Record<string, string[]>;
-    };
-
-// Fonction désactivée : ne pas gérer automatiquement le statut RESERVED/AVAILABLE
-// La disponibilité est gérée par les réservations existantes via le filtre de dates
-// Le statut du véhicule (AVAILABLE/MAINTENANCE/UNAVAILABLE) reste indépendant des réservations
-async function releaseVehicleIfAvailableCandidate(vehicleId: string, excludeBookingId: string) {
-  // Ne rien faire - la disponibilité est gérée par les dates de réservation
-  return;
-}
-
-// Fonction désactivée : ne pas changer automatiquement le statut du véhicule en RESERVED
-// La disponibilité est gérée par les réservations existantes via le filtre de dates
-// Le statut du véhicule (AVAILABLE/MAINTENANCE/UNAVAILABLE) reste indépendant des réservations
-async function reserveVehicleIfNeeded(vehicleId: string, bookingStatus: BookingStatus) {
-  // Ne rien faire - la disponibilité est gérée par les dates de réservation
-  return;
-}
+// Ré-exporter le type pour compatibilité
+export type { UpdateBookingResult } from "./update-booking/types";
 
 export async function updateBookingAction(
   input: UpdateBookingPayload
@@ -96,23 +68,10 @@ export async function updateBookingAction(
 
     const data = parsed.data;
 
+    // Récupérer la réservation existante
     const existingBooking = await prisma.booking.findUnique({
       where: { id: data.bookingId },
-      select: {
-        id: true,
-        reference: true,
-        userId: true,
-        vehicleId: true,
-        pickupLocationId: true,
-        returnLocationId: true,
-        startDate: true,
-        endDate: true,
-        status: true,
-        totalPrice: true,
-        depositPaid: true,
-        remainingAmount: true,
-        serviceIds: true,
-      },
+      select: EXISTING_BOOKING_SELECT,
     });
 
     if (!existingBooking) {
@@ -122,6 +81,7 @@ export async function updateBookingAction(
       };
     }
 
+    // Vérifier que la réservation n'est pas passée
     const now = new Date();
     if (existingBooking.startDate < now || existingBooking.endDate < now) {
       return {
@@ -130,87 +90,26 @@ export async function updateBookingAction(
       };
     }
 
-    const [user, vehicle, pickupLocation, returnLocation] = await Promise.all([
-      prisma.user.findFirst({
-        where: {
-          id: data.userId,
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          driverLicense: true,
-        },
-      }),
-      prisma.vehicle.findUnique({
-        where: { id: data.vehicleId },
-        select: {
-          id: true,
-          status: true,
-          deposit: true,
-          brand: true,
-          model: true,
-          licensePlate: true,
-        },
-      }),
-      prisma.location.findUnique({
-        where: { id: data.pickupLocationId },
-        select: { id: true, name: true },
-      }),
-      prisma.location.findUnique({
-        where: { id: data.returnLocationId },
-        select: { id: true, name: true },
-      }),
-    ]);
-
-    if (!user) {
-      return { success: false, error: "Client introuvable." };
+    // Valider les données (user, vehicle, locations)
+    const validationResult = await validateBookingData(data);
+    if (!validationResult.success) {
+      return validationResult;
     }
 
-    if (!user.driverLicense) {
-      return {
-        success: false,
-        error:
-          "Ce client n'a pas encore de permis de conduire enregistré. Ajoutez le document avant de modifier la réservation.",
-      };
+    const { user, vehicle, pickupLocation, returnLocation } = validationResult.data;
+
+    // Valider les services
+    const serviceValidation = await validateServices(
+      data.serviceIds ?? [],
+      existingBooking.serviceIds
+    );
+    if (!serviceValidation.success) {
+      return serviceValidation;
     }
 
-    if (!vehicle) {
-      return { success: false, error: "Véhicule introuvable." };
-    }
+    const serviceIds = serviceValidation.serviceIds;
 
-    if (!pickupLocation || !returnLocation) {
-      return { success: false, error: "Les agences sélectionnées sont invalides." };
-    }
-
-    const serviceIds = Array.from(new Set(data.serviceIds ?? []));
-
-    if (serviceIds.length > 0) {
-      const services = await prisma.service.findMany({
-        where: {
-          id: { in: serviceIds },
-        },
-        select: { id: true, active: true },
-      });
-
-      if (services.length !== serviceIds.length) {
-        return {
-          success: false,
-          error: "Certains services choisis n'existent pas ou ne sont plus disponibles.",
-        };
-      }
-
-      const newlySelectedInactive = services.find(
-        (service) => !service.active && !existingBooking.serviceIds.includes(service.id)
-      );
-      if (newlySelectedInactive) {
-        return {
-          success: false,
-          error: "Un service sélectionné est inactif.",
-        };
-      }
-    }
-
+    // Vérifier que l'acompte ne dépasse pas le total
     if (data.depositPaid > data.totalPrice) {
       return {
         success: false,
@@ -218,166 +117,58 @@ export async function updateBookingAction(
       };
     }
 
-    const overlappingBooking = await prisma.booking.findFirst({
-      where: {
-        id: {
-          not: existingBooking.id,
-        },
-        vehicleId: data.vehicleId,
-        status: {
-          in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],
-        },
-        startDate: {
-          lt: data.endDate,
-        },
-        endDate: {
-          gt: data.startDate,
-        },
-      },
-      select: {
-        reference: true,
-        startDate: true,
-        endDate: true,
-      },
-    });
-
-    if (overlappingBooking) {
-      return {
-        success: false,
-        error:
-          "Ce véhicule est déjà réservé sur les dates choisies. Vérifiez les réservations existantes avant de continuer.",
-      };
+    // Vérifier les chevauchements
+    const bookingOverlap = await checkBookingOverlap(
+      data.vehicleId,
+      data.startDate,
+      data.endDate,
+      existingBooking.id
+    );
+    if (!bookingOverlap.success) {
+      return bookingOverlap;
     }
 
-    const overlappingMaintenance = await prisma.maintenance.findFirst({
-      where: {
-        vehicleId: data.vehicleId,
-        status: {
-          in: [MaintenanceStatus.SCHEDULED, MaintenanceStatus.IN_PROGRESS],
-        },
-        type: {
-          not: MaintenanceType.BLOCKED,
-        },
-        startDate: {
-          lt: data.endDate,
-        },
-        endDate: {
-          gt: data.startDate,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (overlappingMaintenance) {
-      return {
-        success: false,
-        error:
-          "Une maintenance est planifiée pour ce véhicule sur les dates choisies. Merci de vérifier l'agenda de maintenance.",
-      };
+    const maintenanceOverlap = await checkMaintenanceOverlap(
+      data.vehicleId,
+      data.startDate,
+      data.endDate
+    );
+    if (!maintenanceOverlap.success) {
+      return maintenanceOverlap;
     }
-
-    const remainingAmount = Math.max(data.totalPrice - data.depositPaid, 0);
 
     try {
+      // Construire les données de mise à jour
+      const updateData = buildUpdateData({ data, serviceIds });
+
+      // Mettre à jour la réservation
       const updated = await prisma.booking.update({
         where: { id: existingBooking.id },
-        data: {
-          userId: data.userId,
-          vehicleId: data.vehicleId,
-          pickupLocationId: data.pickupLocationId,
-          returnLocationId: data.returnLocationId,
-          startDate: data.startDate,
-          endDate: data.endDate,
+        data: updateData,
+        select: UPDATED_BOOKING_SELECT,
+      });
+
+      // Invalider les caches
+      await invalidateBookingCaches(data.bookingId, data.vehicleId);
+
+      // Envoyer l'email de confirmation si demandé
+      if (data.sendConfirmation) {
+        const remainingAmount = updateData.remainingAmount as number;
+        await sendUpdateEmail({
+          userEmail: user.email,
+          userName: user.name,
+          bookingReference: updated.reference,
           totalPrice: data.totalPrice,
           depositPaid: data.depositPaid,
           remainingAmount,
+          startDate: data.startDate,
+          endDate: data.endDate,
           status: data.status,
-          serviceIds,
-          notes: data.notes ?? null,
-        },
-        select: {
-          id: true,
-          reference: true,
-          vehicleId: true,
-          status: true,
-          startDate: true,
-          endDate: true,
-          totalPrice: true,
-          depositPaid: true,
-          remainingAmount: true,
-        },
-      });
-
-      if (existingBooking.vehicleId !== data.vehicleId) {
-        await releaseVehicleIfAvailableCandidate(existingBooking.vehicleId, existingBooking.id);
-      } else if (
-        data.status !== BookingStatus.CONFIRMED &&
-        data.status !== BookingStatus.IN_PROGRESS
-      ) {
-        await releaseVehicleIfAvailableCandidate(existingBooking.vehicleId, existingBooking.id);
-      }
-
-      // Ne pas appeler reserveVehicleIfNeeded car le statut du véhicule n'est plus géré automatiquement
-      // await reserveVehicleIfNeeded(data.vehicleId, data.status);
-
-      // Invalider le cache des réservations et de disponibilité
-      const { invalidateBookingCache, invalidateVehicleAvailabilityCache } = await import("@/lib/cache-invalidation");
-      await Promise.all([
-        invalidateBookingCache(data.bookingId).catch((error) => {
-          console.error("Error invalidating booking cache:", error);
-        }),
-        invalidateVehicleAvailabilityCache(data.vehicleId).catch((error) => {
-          console.error("Error invalidating vehicle availability cache:", error);
-        }),
-      ]);
-
-      if (data.sendConfirmation) {
-        const bookingPeriod = `${format(data.startDate, "dd MMMM yyyy 'à' HH:mm", {
-          locale: fr,
-        })} → ${format(data.endDate, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`;
-        const greeting = new Date().getHours() >= 18 ? "Bonsoir" : "Bonjour";
-        const emailResult = await sendBookingUpdateEmail({
-          to: user.email,
-          name: user.name,
-          greeting,
-          booking: {
-            reference: updated.reference,
-            totalPrice: data.totalPrice,
-            depositPaid: data.depositPaid,
-            remainingAmount,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            status: data.status,
-            period: bookingPeriod,
-          },
-          vehicle: {
-            label: `${vehicle.brand} ${vehicle.model}`,
-            licensePlate: vehicle.licensePlate,
-          },
-          locations: {
-            pickup: pickupLocation.name,
-            return: returnLocation.name,
-          },
+          vehicleLabel: `${vehicle.brand} ${vehicle.model}`,
+          vehicleLicensePlate: vehicle.licensePlate,
+          pickupLocationName: pickupLocation.name,
+          returnLocationName: returnLocation.name,
         });
-        if (emailResult.skipped) {
-          console.warn(
-            `[Admin Bookings] ⚠️  Email de mise à jour ignoré pour la réservation ${updated.reference} (credentials non configurés). Vérifiez GMAIL_USER et GMAIL_PASSWORD dans .env`,
-          );
-        } else if (!emailResult.success) {
-          console.warn(
-            "[Admin Bookings] ❌ Échec de l'envoi de l'email de mise à jour pour la réservation",
-            updated.reference,
-            emailResult.error ?? "raison inconnue",
-          );
-        } else {
-          console.log("[Admin Bookings] ✅ Email de mise à jour envoyé", {
-            reference: updated.reference,
-            messageId: emailResult.messageId,
-            queued: emailResult.queued,
-          });
-        }
       }
 
       console.log("[Bookings] Réservation mise à jour avec succès", {
