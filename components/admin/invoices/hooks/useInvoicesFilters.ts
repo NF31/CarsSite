@@ -25,7 +25,7 @@ export function useInvoicesFilters({
         normalizedSearch.length === 0 ||
         invoice.invoiceNumber.toLowerCase().includes(normalizedSearch) ||
         invoice.user.name.toLowerCase().includes(normalizedSearch) ||
-        invoice.user.email.toLowerCase().includes(normalizedSearch) ||
+        (invoice.user.email?.toLowerCase().includes(normalizedSearch) ?? false) ||
         invoice.booking.reference.toLowerCase().includes(normalizedSearch);
 
       const matchesStatus = statusFilter === "ALL" || invoice.status === statusFilter;

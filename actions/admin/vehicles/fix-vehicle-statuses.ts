@@ -60,7 +60,14 @@ export async function fixVehicleStatusesAction(): Promise<FixVehicleStatusesResu
     console.log(`🔧 [FIX STATUS] ${vehiclesToCheck.length} véhicule(s) à vérifier`);
 
     const now = new Date();
-    const updatedVehicles: FixVehicleStatusesResult["data"]["vehicles"] = [];
+    const updatedVehicles: Array<{
+      id: string;
+      brand: string;
+      model: string;
+      licensePlate: string;
+      oldStatus: string;
+      newStatus: string;
+    }> = [];
     let updatedCount = 0;
 
     for (const vehicle of vehiclesToCheck) {

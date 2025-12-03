@@ -164,9 +164,10 @@ export async function moveImageAction(
           }
         );
       });
-    } catch (uploadError: any) {
+    } catch (uploadError: unknown) {
       // Si l'image n'existe plus (404), on garde l'ancienne URL
-      if (uploadError.http_code === 404) {
+      const error = uploadError as { http_code?: number; message?: string };
+      if (error.http_code === 404) {
         console.warn("Image introuvable dans Cloudinary, conservation de l'URL existante");
         return {
           success: true,

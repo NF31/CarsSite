@@ -76,7 +76,6 @@ export async function deleteVehicleAction(
     }
 
     // Supprimer toutes les images de Cloudinary
-    // @ts-expect-error - imagePublicIds existe dans le schéma
     const imagePublicIds: string[] = vehicle.imagePublicIds || [];
     if (imagePublicIds.length > 0) {
       console.log(`🗑️ Suppression de ${imagePublicIds.length} image(s) de Cloudinary pour le véhicule ${vehicleId}`);

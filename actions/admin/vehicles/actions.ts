@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import type { VehicleCategory, VehicleStatus } from "@prisma/client";
+import type { VehicleCategory, VehicleStatus, TransmissionType, FuelType, Prisma } from "@prisma/client";
 import {
   getOrSetCache,
   CACHE_PREFIXES,
@@ -32,8 +32,8 @@ export interface GetVehiclesResult {
       mileage: number;
       category: VehicleCategory;
       seats: number;
-      transmission: string;
-      fuelType: string;
+      transmission: TransmissionType;
+      fuelType: FuelType;
       color: string;
       pricePerDay: number;
       pricePerWeek: number | null;
@@ -104,7 +104,7 @@ export async function getVehiclesAction(
     } = filters;
 
     // Construire les conditions WHERE
-    const where: any = {};
+    const where: Prisma.VehicleWhereInput = {};
 
     if (status) {
       where.status = status;
@@ -149,7 +149,7 @@ export async function getVehiclesAction(
     }
 
     // Construire l'ordre de tri
-    const orderBy: any = {};
+    const orderBy: Record<string, "asc" | "desc"> = {};
     orderBy[sortBy] = sortOrder;
 
     // Calculer le skip

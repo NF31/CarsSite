@@ -18,7 +18,7 @@ import { BookingStatus } from "@prisma/client";
  * {
  *   "crons": [{
  *     "path": "/api/cron/send-booking-reminders",
- *     "schedule": "0 */6 * * *"
+ *     "schedule": "0 0,6,12,18 * * *"
  *   }]
  * }
  */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
 import { AlertCircle, CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { confirmDeleteAccountAction } from "@/actions/profile/delete/confirm";
 
-export default function ConfirmAccountDeletionPage() {
+function ConfirmAccountDeletionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -174,3 +174,20 @@ export default function ConfirmAccountDeletionPage() {
   );
 }
 
+export default function ConfirmAccountDeletionPage() {
+  return (
+    <Suspense fallback={
+      <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)] py-4 sm:py-8 md:py-12 px-4 sm:px-6">
+        <Card className="w-full max-w-md">
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <ConfirmAccountDeletionContent />
+    </Suspense>
+  );
+}

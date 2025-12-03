@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { quickClientSchema, type QuickClientInput } from "@/lib/validations/client";
 import type { BookingUserOption } from "@/actions/admin/bookings";
+import type { z } from "zod";
 
 interface QuickClientDialogProps {
   open: boolean;
@@ -35,7 +36,7 @@ export const QuickClientDialog = memo(function QuickClientDialog({
   onCreateClient,
   onClientCreated,
 }: QuickClientDialogProps) {
-  const form = useForm<QuickClientInput>({
+  const form = useForm<z.input<typeof quickClientSchema>, unknown, QuickClientInput>({
     resolver: zodResolver(quickClientSchema),
     defaultValues: {
       name: "",
@@ -45,9 +46,12 @@ export const QuickClientDialog = memo(function QuickClientDialog({
     },
   });
 
-  const sendInvitation = form.watch("sendInvitation");
+  const sendInvitation = useWatch({
+    control: form.control,
+    name: "sendInvitation",
+  });
 
-  const handleSubmit = form.handleSubmit(async (values) => {
+  const handleSubmit = form.handleSubmit(async (values: QuickClientInput) => {
     const result = await onCreateClient(values);
     if (result) {
       onClientCreated(result);

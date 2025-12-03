@@ -8,6 +8,8 @@ import {
 } from "@/actions/admin/vehicles/get-maintenance-vehicles";
 import { MaintenancePageClient } from "@/app/(admin)/admin/vehicles/maintenance/MaintenancePageClient";
 
+export const dynamic = 'force-dynamic';
+
 interface InitialDataProps {
   data: GetMaintenanceDashboardResult["data"] | null;
   error?: string;

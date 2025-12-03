@@ -1,5 +1,5 @@
-import { useMemo, useState, useTransition, useEffect, useCallback } from "react";
-import { useForm, useWatch, type UseFormReturn } from "react-hook-form";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BookingStatus, ServicePricingType } from "@prisma/client";
 import { z } from "zod";
@@ -7,8 +7,8 @@ import type {
   BookingServiceOption,
   BookingUserOption,
   BookingVehicleOption,
-  BookingFormInitialValues,
 } from "@/actions/admin/bookings";
+import type { BookingFormInitialValues } from "@/components/admin/bookings/BookingForm";
 
 const bookingFormSchema = z.object({
   userId: z.string().min(1, "Sélectionnez un client"),
@@ -26,10 +26,10 @@ const bookingFormSchema = z.object({
     .max(1000, "1 000 caractères maximum")
     .optional()
     .transform((value) => (value && value.trim().length > 0 ? value.trim() : undefined)),
-  sendConfirmation: z.boolean().default(true),
+  sendConfirmation: z.boolean(),
 });
 
-export type BookingFormValues = z.infer<typeof bookingFormSchema>;
+export type BookingFormValues = z.output<typeof bookingFormSchema>;
 
 // Export du schéma pour utilisation dans les composants
 export { bookingFormSchema };
@@ -96,7 +96,7 @@ export function useBookingForm({
     [isEditMode, booking]
   );
 
-  const form = useForm<BookingFormValues>({
+  const form = useForm<z.input<typeof bookingFormSchema>, unknown, BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     mode: "onChange",
     defaultValues,
@@ -199,7 +199,7 @@ export function useBookingForm({
         durationDays: 0,
         basePrice: 0,
         servicesAmount: 0,
-        total: Math.max(form.getValues("totalPrice"), 0),
+        total: Math.max(Number(form.getValues("totalPrice")) || 0, 0),
         recommendedDeposit: selectedVehicle?.deposit ?? 0,
       };
     }

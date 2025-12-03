@@ -26,7 +26,7 @@ export const createPublicBookingSchema = z.object({
   acceptedTerms: z.boolean().refine((value) => value === true, "Vous devez accepter les CGV"),
 });
 
-export type CreatePublicBookingInput = z.infer<typeof createPublicBookingSchema>;
+export type CreatePublicBookingInput = z.input<typeof createPublicBookingSchema>;
 
 export interface CreatePublicBookingResult {
   success: boolean;

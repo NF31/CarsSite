@@ -1,6 +1,5 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { getPublicVehicleByIdAction } from "../vehicles/get-by-id";
 import { getPublicServicesAction } from "./get-services";
 
@@ -92,7 +91,13 @@ export async function calculateBookingPriceAction(
     // Récupérer les services sélectionnés
     const serviceIds = input.serviceIds || [];
     let servicesPrice = 0;
-    const servicesBreakdown: CalculatePriceResult["data"]["breakdown"]["services"] = [];
+    const servicesBreakdown: Array<{
+      id: string;
+      name: string;
+      price: number;
+      pricingType: "PER_DAY" | "FIXED" | "PERCENTAGE";
+      total: number;
+    }> = [];
 
     if (serviceIds.length > 0) {
       const servicesResult = await getPublicServicesAction(input.vehicleId);

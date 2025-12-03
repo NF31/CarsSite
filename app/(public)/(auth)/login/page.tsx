@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useURLParams, useLoginSubmit } from "./hooks";
 import {
@@ -9,7 +10,7 @@ import {
   LoginLinks,
 } from "./components";
 
-export default function LoginPage() {
+function LoginContent() {
   const { showSuccess, urlError } = useURLParams();
   const { form, rememberMe, setRememberMe, isLoading, error, onSubmit } =
     useLoginSubmit();
@@ -38,4 +39,22 @@ export default function LoginPage() {
   );
 }
 
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)] py-4 sm:py-8 md:py-12 px-4 sm:px-6">
+        <Card className="w-full max-w-md shadow-lg border-0">
+          <LoginHeader />
+          <CardContent className="px-4 sm:px-6 pb-6 sm:pb-8">
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
+  );
+}
 

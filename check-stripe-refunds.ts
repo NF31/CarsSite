@@ -49,6 +49,11 @@ async function checkStripeRefunds() {
     console.log(`   - Date en DB: ${refund.createdAt.toISOString()}`);
     console.log("");
 
+    if (!refundId) {
+      console.log(`   ⚠️  Pas d'ID de remboursement Stripe`);
+      continue;
+    }
+
     try {
       // Récupérer le remboursement depuis Stripe
       const stripeRefund = await stripe.refunds.retrieve(refundId);
@@ -109,15 +114,16 @@ async function checkStripeRefunds() {
         }
       }
 
-    } catch (stripeError: any) {
-      if (stripeError.code === "resource_missing") {
+    } catch (stripeError: unknown) {
+      const error = stripeError as { code?: string; message?: string; type?: string };
+      if (error.code === "resource_missing") {
         console.log(`   ❌ REMBOURSEMENT NON TROUVÉ DANS STRIPE`);
         console.log(`      - Le remboursement ${refundId} n'existe pas dans Stripe`);
         console.log(`      - Il a peut-être été supprimé ou n'a jamais été créé`);
       } else {
         console.log(`   ❌ ERREUR lors de la récupération depuis Stripe:`);
-        console.log(`      - Code: ${stripeError.code || "N/A"}`);
-        console.log(`      - Message: ${stripeError.message || "N/A"}`);
+        console.log(`      - Code: ${error.code || "N/A"}`);
+        console.log(`      - Message: ${error.message || "N/A"}`);
       }
     }
 
@@ -180,8 +186,9 @@ async function checkStripeRefunds() {
       console.log("");
     }
 
-  } catch (error: any) {
-    console.log(`❌ Erreur lors de la récupération des remboursements Stripe:`, error.message);
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    console.log(`❌ Erreur lors de la récupération des remboursements Stripe:`, err.message || "Erreur inconnue");
   }
 
   await prisma.$disconnect();
