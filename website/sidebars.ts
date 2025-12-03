@@ -20,6 +20,7 @@ const sidebars: SidebarsConfig = {
         'getting-started/redis-integration',
         'getting-started/redis-cache-strategy',
         'getting-started/NEXTAUTH_STRUCTURE',
+        'getting-started/lancer-webhook-stripe',
       ],
     },
     
@@ -82,10 +83,15 @@ const sidebars: SidebarsConfig = {
       label: '🔄 Workflows',
       items: [
         'workflows/16-workflows-detailed',
+        'workflows/workflow-reservation-complet',
         'workflows/workflow-annulation-reservation',
         'workflows/workflow-modification-dates-complet',
         'workflows/workflow-modification-dates',
         'workflows/workflow-remboursement-complet',
+        'workflows/guide-verification-remboursement',
+        'workflows/workflows-webhook-stripe',
+        'workflows/ordre-execution-webhook',
+        'workflows/logs-workflow-complet',
         'workflows/explication-calcul-modification-dates',
         'workflows/verification-flux-et-cache',
       ],
