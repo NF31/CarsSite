@@ -259,14 +259,50 @@ export async function getMyDriverLicenseUrlAction(
       };
     }
 
-    if (!user.driverLicensePublicId) {
+    // Vérifier si c'est un fichier public ou privé
+    const isPublicFile = user.driverLicense?.includes("/raw/upload/") && !user.driverLicense?.includes("/private/");
+
+    // Pour les fichiers publics, utiliser directement l'URL originale stockée
+    if (isPublicFile && user.driverLicense) {
+      // Extraire le publicId pour le retour
+      const { extractCloudinaryAssetInfo } = await import("@/lib/cloudinary-utils");
+      const info = extractCloudinaryAssetInfo(user.driverLicense);
+      
+      // Utiliser directement l'URL originale qui devrait fonctionner
+      const publicUrl = user.driverLicense;
+      const publicIdWithExtension = info ? `${info.publicId}.${info.format}` : (user.driverLicensePublicId || "unknown");
+      
+      const expiresAt = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60); // 1 an pour les fichiers publics
+      
+      return {
+        success: true,
+        data: {
+          url: publicUrl,
+          publicId: publicIdWithExtension,
+          fileName: user.driverLicenseFileName || null,
+          expiresAt,
+        },
+      };
+    }
+
+    // Pour les fichiers privés, utiliser getSignedDownloadUrl
+    let publicId = user.driverLicensePublicId;
+    
+    if (!publicId && user.driverLicense) {
+      const { extractCloudinaryAssetInfo } = await import("@/lib/cloudinary-utils");
+      const info = extractCloudinaryAssetInfo(user.driverLicense);
+      if (info) {
+        // Pour les fichiers privés, le publicId doit inclure l'extension
+        publicId = `${info.publicId}.${info.format}`;
+      }
+    }
+
+    if (!publicId) {
       return {
         success: false,
         error: "Impossible de déterminer l'emplacement du permis.",
       };
     }
-    
-    const publicId = user.driverLicensePublicId;
     const expiresIn = Math.max(60, expiresInSeconds ?? 5 * 60);
     
     const signedUrl = getSignedDownloadUrl(publicId, "pdf", expiresIn, false);
@@ -284,7 +320,7 @@ export async function getMyDriverLicenseUrlAction(
       success: true,
       data: {
         url: signedUrl,
-        publicId: user.driverLicensePublicId,
+        publicId: publicId,
         fileName: user.driverLicenseFileName || null,
         expiresAt,
       },
