@@ -62,23 +62,54 @@ export async function getDriverLicenseUrlAction(
       };
     }
 
-    // Les URLs privées Cloudinary expirent, il faut générer une nouvelle URL signée
-    // On utilise le public_id stocké en BDD (avec extension) pour générer une URL signée fraîche
+    // Vérifier si c'est un fichier public ou privé
+    const isPublicFile = user.driverLicense?.includes("/raw/upload/") && !user.driverLicense?.includes("/private/");
+
+    // Pour les fichiers publics, utiliser directement l'URL originale stockée
+    if (isPublicFile && user.driverLicense) {
+      // Extraire le publicId pour le retour
+      const { extractCloudinaryAssetInfo } = await import("@/lib/cloudinary-utils");
+      const info = extractCloudinaryAssetInfo(user.driverLicense);
+      
+      // Utiliser directement l'URL originale qui devrait fonctionner
+      const publicUrl = user.driverLicense;
+      const publicIdWithExtension = info ? `${info.publicId}.${info.format}` : (user.driverLicensePublicId || "unknown");
+      
+      const expiresAt = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60); // 1 an pour les fichiers publics
+      
+      return {
+        success: true,
+        data: {
+          url: publicUrl,
+          publicId: publicIdWithExtension,
+          fileName: user.driverLicenseFileName || null,
+          expiresAt,
+        },
+      };
+    }
+
+    // Pour les fichiers privés, utiliser getSignedDownloadUrl
+    let publicId = user.driverLicensePublicId;
     
-    if (!user.driverLicensePublicId) {
+    if (!publicId && user.driverLicense) {
+      const { extractCloudinaryAssetInfo } = await import("@/lib/cloudinary-utils");
+      const info = extractCloudinaryAssetInfo(user.driverLicense);
+      if (info) {
+        // Pour les fichiers privés, le publicId doit inclure l'extension
+        publicId = `${info.publicId}.${info.format}`;
+      }
+    }
+
+    if (!publicId) {
       return {
         success: false,
         error: "Impossible de déterminer l'emplacement du permis.",
       };
     }
     
-    // Utiliser le public_id tel quel (avec extension) car getSignedDownloadUrl le gère
-    const publicId = user.driverLicensePublicId;
-    
     const expiresInSeconds = Math.max(60, input.expiresInSeconds ?? 5 * 60);
     
-    // Générer une nouvelle URL signée valide
-    // getSignedDownloadUrl va utiliser le public_id avec extension
+    // Générer une nouvelle URL signée valide pour les fichiers privés
     const signedUrl = getSignedDownloadUrl(publicId, "pdf", expiresInSeconds, input.attachment ?? false);
     
     if (!signedUrl) {
@@ -94,7 +125,7 @@ export async function getDriverLicenseUrlAction(
       success: true,
       data: {
         url: signedUrl,
-        publicId: user.driverLicensePublicId,
+        publicId: publicId,
         fileName: user.driverLicenseFileName || null,
         expiresAt,
       },
