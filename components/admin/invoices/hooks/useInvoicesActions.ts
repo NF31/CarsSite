@@ -23,7 +23,29 @@ export function useInvoicesActions() {
           return;
         }
 
-        window.open(result.url, "_blank", "noopener,noreferrer");
+        // Télécharger le PDF avec le nom du fichier original (comme pour le permis)
+        try {
+          const response = await fetch(result.url);
+          if (!response.ok) throw new Error("Erreur lors du téléchargement");
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          // Utiliser le numéro de facture comme nom de fichier
+          const fileName = invoice.invoiceNumber 
+            ? `facture-${invoice.invoiceNumber}.pdf`
+            : `facture-${invoice.id}.pdf`;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          setSuccessMessage(`Facture ${invoice.invoiceNumber} téléchargée avec succès.`);
+        } catch {
+          // Fallback : ouvrir dans un nouvel onglet
+          window.open(result.url, "_blank", "noopener,noreferrer");
+        }
       });
     },
     []
