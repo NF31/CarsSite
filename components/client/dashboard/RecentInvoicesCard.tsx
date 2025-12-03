@@ -44,25 +44,30 @@ export function RecentInvoicesCard({ invoices }: RecentInvoicesCardProps) {
           return;
         }
 
-        // Ouvrir le PDF dans un nouvel onglet
-        const newWindow = window.open(result.url, "_blank", "noopener,noreferrer");
-        
-        // Vérifier que la fenêtre s'est bien ouverte (pas bloquée par un bloqueur de popup)
-        if (!newWindow) {
-          toast.error("Impossible d'ouvrir la facture. Veuillez autoriser les fenêtres popup pour ce site.");
-          return;
-        }
+        // Télécharger le PDF avec le nom du fichier original (comme pour le permis)
+        try {
+          const response = await fetch(result.url);
+          if (!response.ok) throw new Error("Erreur lors du téléchargement");
 
-        // Attendre un court instant pour vérifier si la fenêtre se ferme immédiatement (erreur)
-        setTimeout(() => {
-          if (newWindow.closed) {
-            // La fenêtre s'est fermée, probablement une erreur
-            toast.error("Erreur lors du chargement de la facture. Veuillez réessayer.");
-          } else {
-            // Tout semble OK, afficher le message de succès
-            toast.success("Facture téléchargée avec succès");
-          }
-        }, 500);
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          // Utiliser le numéro de facture comme nom de fichier
+          const invoice = invoices.find((inv) => inv.id === invoiceId);
+          const fileName = invoice?.invoiceNumber 
+            ? `facture-${invoice.invoiceNumber}.pdf`
+            : `facture-${invoiceId}.pdf`;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          toast.success("Facture téléchargée avec succès");
+        } catch {
+          // Fallback : ouvrir dans un nouvel onglet
+          window.open(result.url, "_blank", "noopener,noreferrer");
+        }
       } catch (error) {
         console.error("Error downloading invoice:", error);
         toast.error("Une erreur est survenue lors du téléchargement");
