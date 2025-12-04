@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { DeleteVehicleDialog } from "@/components/admin/vehicles/DeleteVehicleDialog";
-import type { VehicleCategory, TransmissionType, FuelType } from "@prisma/client";
+import type { TransmissionType, FuelType } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";
 import { useVehicleImageGallery } from "./hooks";
 import {

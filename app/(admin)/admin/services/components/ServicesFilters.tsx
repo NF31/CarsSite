@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader } from "@/components/ui/card";
 import type { ServicePricingType } from "@/lib/types/service-pricing-type";
-import type { VehicleCategory } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 
 const categoryLabels: Record<VehicleCategory, string> = {
   ECONOMY: "Économique",
