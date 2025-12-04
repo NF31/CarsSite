@@ -2,7 +2,7 @@ import { CalendarDays, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { MaintenanceType } from "@prisma/client";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
 import type { MaintenanceRecord } from "@/actions/admin/vehicles/get-maintenance";
 import { STATUS_LABELS, STATUS_CLASSES, TYPE_LABELS, CURRENCY_FORMATTER } from "../constants";
 import { cn } from "@/lib/utils";
