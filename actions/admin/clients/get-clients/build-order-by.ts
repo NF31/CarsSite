@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { type Prisma } from "@prisma/client";
 import type { GetClientsFilters } from "./types";
 import { DEFAULT_SORT_BY, DEFAULT_SORT_ORDER } from "./constants";
 
