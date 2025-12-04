@@ -10,7 +10,7 @@ import {
   BOOKING_STATUS_COLORS,
   BOOKING_STATUS_LABELS,
 } from "@/components/admin/bookings/booking-helpers";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import type { BookingDetail } from "@/actions/admin/bookings";
 
 interface BookingHeaderProps {

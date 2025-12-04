@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { cn } from "@/lib/utils";
 import { deriveBookingStatus } from "@/lib/booking-status-sync";
 import type { DashboardData } from "@/actions/admin/dashboard";

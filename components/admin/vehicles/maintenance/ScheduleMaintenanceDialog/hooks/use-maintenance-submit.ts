@@ -2,7 +2,7 @@ import { useState, useTransition } from "react";
 import { createMaintenanceAction } from "@/actions/admin/vehicles/create-maintenance";
 import { updateMaintenanceAction } from "@/actions/admin/vehicles/update-maintenance";
 import type { MaintenanceRecord } from "@/actions/admin/vehicles/get-maintenance";
-import type { MaintenanceType } from "@prisma/client";
+import type { MaintenanceType } from "@/lib/types/maintenance-type";
 import type { DialogMode } from "../types";
 import { validateMaintenanceForm, type ValidationErrors } from "../utils";
 

@@ -1,5 +1,5 @@
 import type { MaintenanceRecord } from "@/actions/admin/vehicles/get-maintenance";
-import type { MaintenanceStatus } from "@prisma/client";
+import type { MaintenanceStatus } from "@/lib/types/maintenance-status";
 
 export interface MaintenanceTableProps {
   maintenances: MaintenanceRecord[];
