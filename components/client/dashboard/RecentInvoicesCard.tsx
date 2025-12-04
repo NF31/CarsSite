@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, Loader2 } from "lucide-react";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 import {
   INVOICE_STATUS_COLORS,
   INVOICE_STATUS_LABELS,

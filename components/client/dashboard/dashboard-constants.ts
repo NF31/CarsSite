@@ -1,4 +1,5 @@
-import { BookingStatus, InvoiceStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 
 export const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
