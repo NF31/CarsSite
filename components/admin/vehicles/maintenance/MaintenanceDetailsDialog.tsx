@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MaintenanceStatus } from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
 import type { MaintenanceRecord } from "@/actions/admin/vehicles/get-maintenance";
 
 const statusLabels: Record<MaintenanceStatus, string> = {
