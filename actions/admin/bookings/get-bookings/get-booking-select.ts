@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 /**
  * Sélection Prisma pour récupérer les réservations avec toutes les relations nécessaires
