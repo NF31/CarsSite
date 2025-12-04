@@ -1,5 +1,5 @@
 import { BookingStatus } from "@/lib/types/booking-status";
-import { type Prisma } from "@prisma/client";
+import type { Prisma } from '@/lib/prisma'
 
 /**
  * Types pour la modération des réservations

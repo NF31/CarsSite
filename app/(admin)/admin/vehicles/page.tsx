@@ -1,7 +1,7 @@
 import { VehiclesPageClient } from "./VehiclesPageClient";
 import { getLocationsAction } from "@/actions/admin/vehicles/get-locations";
 import { getBrandsAction } from "@/actions/admin/vehicles/get-brands";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { fixVehicleStatusesAction } from "@/actions/admin/vehicles/fix-vehicle-statuses";
 
 export default async function AdminVehiclesPage() {

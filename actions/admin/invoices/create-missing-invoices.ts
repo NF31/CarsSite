@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { createInvoiceForBooking } from "@/lib/invoice-creation";
 
 export interface CreateMissingInvoicesResult {

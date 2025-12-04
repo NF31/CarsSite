@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { redirect } from "next/navigation";
 import type { ServicePricingType } from "@/lib/types/service-pricing-type";
 import type { VehicleCategory } from "@/lib/types/vehicle-category";

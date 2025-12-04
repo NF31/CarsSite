@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { PaymentStatus } from "@/lib/types/payment-status";
 import type Stripe from "stripe";
 import type { PaymentAmounts, PaymentType } from "../types";

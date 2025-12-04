@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { sendBookingConfirmationEmail, sendBookingUpdateEmail } from "@/lib/email";
 import { generateBookingPDF } from "@/lib/booking-pdf";
 import { generateInvoicePDFAction } from "@/actions/admin/invoices/generate-pdf";

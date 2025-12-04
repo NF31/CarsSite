@@ -1,5 +1,5 @@
 import { stripe } from "@/lib/stripe";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import type {
   BookingWithPayments,
   PaymentData,

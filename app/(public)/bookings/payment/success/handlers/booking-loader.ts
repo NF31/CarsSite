@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import type { BookingData, PaymentAmounts, PaymentType } from "../types";
 import { extractTime } from "../utils/helpers";

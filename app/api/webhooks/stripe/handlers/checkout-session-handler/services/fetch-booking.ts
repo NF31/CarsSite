@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { BOOKING_SELECT_FIELDS } from "../constants";
 
 export async function fetchBooking(bookingId: string, userId: string) {

@@ -1,5 +1,5 @@
 import { stripe } from "@/lib/stripe";
-import { prisma } from "@/lib/prisma";
+import prisma, { type Prisma } from "@/lib/prisma";
 import Stripe from "stripe";
 
 /**
@@ -46,10 +46,36 @@ export function validateSessionMetadata(
   return { valid: true, bookingId, userId };
 }
 
+type BookingWithVehicle = Prisma.BookingGetPayload<{
+  select: {
+    id: true;
+    userId: true;
+    totalPrice: true;
+    depositPaid: true;
+    securityDepositPaid: true;
+    remainingAmount: true;
+    serviceIds: true;
+    startDate: true;
+    endDate: true;
+    status: true;
+    modificationDepositDifference: true;
+    originalStartDate: true;
+    originalEndDate: true;
+    originalTotalPrice: true;
+    originalDepositPaid: true;
+    vehicle: {
+      select: {
+        id: true;
+        deposit: true;
+      };
+    };
+  };
+}>;
+
 export async function validateBookingOwnership(
   bookingId: string,
   userId: string
-): Promise<{ valid: boolean; booking?: any; error?: string }> {
+): Promise<{ valid: boolean; booking?: BookingWithVehicle; error?: string }> {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     select: {

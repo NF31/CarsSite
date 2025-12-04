@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import type { UpdateBookingInput } from "@/lib/validations/booking";
 
 export interface BookingDataValidation {

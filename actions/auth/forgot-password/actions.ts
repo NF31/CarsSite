@@ -5,7 +5,7 @@ import {
   checkPasswordResetRateLimitRedis as checkPasswordResetRateLimit,
   recordPasswordResetAttemptRedis as recordPasswordResetAttempt,
 } from "@/lib/rate-limit-redis";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { z } from "zod";
 import { generatePasswordResetToken } from "@/lib/password-reset-token";
 import { sendPasswordResetEmail } from "@/lib/email";

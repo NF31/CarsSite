@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { startOfYear, endOfYear } from "date-fns";
 import { REFERENCE_GENERATION_ATTEMPTS } from "../constants";
 

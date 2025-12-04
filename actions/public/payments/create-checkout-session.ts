@@ -1,8 +1,9 @@
 "use server";
 
 import { stripe } from "@/lib/stripe";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { auth } from "@/auth";
+import type Stripe from "stripe";
 
 export interface CreateCheckoutSessionInput {
   bookingId: string;
@@ -139,7 +140,7 @@ export async function createCheckoutSessionAction(
     const expirationHours = input.isModificationPayment ? 3 : 24;
     const expiresAt = Math.floor(Date.now() / 1000) + (expirationHours * 60 * 60);
     
-    const checkoutSessionConfig: any = {
+    const checkoutSessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ["card"],
       line_items: [
         {
@@ -200,9 +201,9 @@ export async function createCheckoutSessionAction(
     console.log(`   - expires_at: ${new Date(expiresAt * 1000).toISOString()} (${expirationHours}h)`);
     console.log(`   - success_url: ${checkoutSessionConfig.success_url}`);
     console.log(`   - cancel_url: ${checkoutSessionConfig.cancel_url}`);
-    console.log(`   - metadata.bookingId: ${checkoutSessionConfig.metadata.bookingId}`);
-    console.log(`   - metadata.userId: ${checkoutSessionConfig.metadata.userId}`);
-    console.log(`   - metadata.paymentType: ${checkoutSessionConfig.metadata.paymentType}`);
+    console.log(`   - metadata.bookingId: ${checkoutSessionConfig.metadata?.bookingId ?? "N/A"}`);
+    console.log(`   - metadata.userId: ${checkoutSessionConfig.metadata?.userId ?? "N/A"}`);
+    console.log(`   - metadata.paymentType: ${checkoutSessionConfig.metadata?.paymentType ?? "N/A"}`);
     console.log(`   - isModificationPayment: ${input.isModificationPayment ? "OUI" : "NON"}`);
     console.log(`💳 [CreateCheckoutSession] Création de la session Stripe...`);
     

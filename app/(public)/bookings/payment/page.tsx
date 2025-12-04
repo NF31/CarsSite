@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import { PaymentPageClient } from "./PaymentPageClient";
 
