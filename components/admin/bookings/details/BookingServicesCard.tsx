@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { bookingCurrencyFormatter } from "@/components/admin/bookings/booking-helpers";
-import { ServicePricingType } from "@prisma/client";
+import { ServicePricingType } from "@/lib/types/service-pricing-type";
 import type { BookingDetail } from "@/actions/admin/bookings";
 
 const pricingTypeLabels: Record<ServicePricingType, string> = {

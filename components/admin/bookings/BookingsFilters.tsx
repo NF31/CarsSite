@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Search, X, CalendarRange } from "lucide-react";
-import type { BookingStatus } from "@prisma/client";
+import type { BookingStatus } from "@/lib/types/booking-status";
 
 interface BookingsFiltersProps {
   filters: {

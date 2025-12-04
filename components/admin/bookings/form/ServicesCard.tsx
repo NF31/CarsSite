@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ServicePricingType } from "@prisma/client";
+import { ServicePricingType } from "@/lib/types/service-pricing-type";
 import type { BookingFormValues } from "@/hooks/useBookingForm";
 import type { BookingServiceOption } from "@/actions/admin/bookings";
 

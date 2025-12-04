@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
 import { useState, useEffect } from "react";
-import type { VehicleCategory, VehicleStatus } from "@prisma/client";
+import type { VehicleCategory } from "@prisma/client";
+import type { VehicleStatus } from "@/lib/types/vehicle-status";
 
 interface VehiclesFiltersProps {
   filters: {

@@ -1,6 +1,6 @@
 import { formatDistanceStrict } from "date-fns";
 import { fr } from "date-fns/locale";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import type { ClientDetailBooking } from "@/actions/admin/clients";
 
 export function formatRelativeBooking(booking: ClientDetailBooking): string {

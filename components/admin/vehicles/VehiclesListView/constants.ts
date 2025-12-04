@@ -1,4 +1,5 @@
-import type { VehicleStatus, VehicleCategory } from "@prisma/client";
+import type { VehicleCategory } from "@prisma/client";
+import type { VehicleStatus } from "@/lib/types/vehicle-status";
 
 export const statusLabels: Record<VehicleStatus, string> = {
   AVAILABLE: "Disponible",
