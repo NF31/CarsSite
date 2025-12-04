@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ServicePricingType } from "@/lib/types/service-pricing-type";
-import type { VehicleCategory } from "@prisma/client";
+import { VehicleCategory } from "@prisma/client";
 
 const nameSchema = z
   .string()
