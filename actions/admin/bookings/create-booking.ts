@@ -10,7 +10,6 @@ import { BookingStatus } from "@/lib/types/booking-status";
 import { MaintenanceStatus } from "@/lib/types/maintenance-status";
 import { MaintenanceType } from "@/lib/types/maintenance-type";
 import { redirect } from "next/navigation";
-import { Prisma } from "@prisma/client";
 import { startOfYear, endOfYear } from "date-fns";
 import { sendBookingConfirmationEmail } from "@/lib/email";
 import { format } from "date-fns";
@@ -355,9 +354,15 @@ export async function createBookingAction(
       };
     } catch (error) {
       if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
         error.code === "P2002" &&
-        error.meta?.target === "bookings_reference_key"
+        "meta" in error &&
+        typeof error.meta === "object" &&
+        error.meta !== null &&
+        "target" in error.meta &&
+        error.meta.target === "bookings_reference_key"
       ) {
         return {
           success: false,

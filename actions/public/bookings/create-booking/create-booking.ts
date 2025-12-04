@@ -2,7 +2,6 @@
 
 import { prisma } from "@/lib/prisma";
 import { BookingStatus } from "@/lib/types/booking-status";
-import { Prisma } from "@prisma/client";
 import { calculateBookingPriceAction } from "../calculate-price";
 import { checkVehicleAvailabilityAction } from "../check-availability";
 import { invalidateBookingsCache, invalidateVehicleAvailabilityCache } from "@/lib/cache-invalidation";
@@ -332,9 +331,15 @@ export async function createPublicBookingAction(
       };
     } catch (error) {
       if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
         error.code === "P2002" &&
-        error.meta?.target === "bookings_reference_key"
+        "meta" in error &&
+        typeof error.meta === "object" &&
+        error.meta !== null &&
+        "target" in error.meta &&
+        error.meta.target === "bookings_reference_key"
       ) {
         return {
           success: false,
