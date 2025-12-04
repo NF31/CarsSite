@@ -128,6 +128,7 @@ const sidebars: SidebarsConfig = {
         'status/12-final-readiness-assessment',
         'status/19-complete-project-status',
         'status/20-documentation-update-summary',
+        'status/21-etat-projet-mvp',
       ],
     },
   ],

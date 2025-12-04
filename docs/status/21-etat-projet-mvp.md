@@ -314,3 +314,4 @@ Le projet est **à 85%** et les fonctionnalités critiques sont **toutes implém
 
 **Date de mise à jour :** Novembre 2025
 
+
