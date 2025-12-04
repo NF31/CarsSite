@@ -119,7 +119,7 @@ async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
 
   try {
     // Préparer les options d'email
-    const mailOptions: any = {
+    const mailOptions: nodemailer.SendMailOptions = {
       from: `"CarRental" <${credentials.user}>`,
       to,
       subject,

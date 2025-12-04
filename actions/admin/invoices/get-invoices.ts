@@ -23,6 +23,7 @@ export interface InvoiceListItem {
     id: string;
     reference: string;
     startDate: string;
+    endDate: string;
     vehicle: {
       brand: string;
       model: string;
@@ -92,6 +93,7 @@ export async function getInvoicesAction(): Promise<GetInvoicesResult> {
               id: true,
               reference: true,
               startDate: true,
+              endDate: true,
               vehicle: {
                 select: {
                   brand: true,
@@ -168,6 +170,7 @@ export async function getInvoicesAction(): Promise<GetInvoicesResult> {
         id: invoice.booking.id,
         reference: invoice.booking.reference,
         startDate: invoice.booking.startDate.toISOString(),
+        endDate: invoice.booking.endDate.toISOString(),
         vehicle: {
           brand: invoice.booking.vehicle.brand,
           model: invoice.booking.vehicle.model,

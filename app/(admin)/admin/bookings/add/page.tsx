@@ -26,7 +26,7 @@ export default async function AdminBookingAddPage({ searchParams }: AdminBooking
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          Impossible de charger les données nécessaires à la création d'une réservation. Veuillez
+          Impossible de charger les données nécessaires à la création d&apos;une réservation. Veuillez
           réessayer plus tard.
         </CardContent>
       </Card>
@@ -41,7 +41,6 @@ export default async function AdminBookingAddPage({ searchParams }: AdminBooking
       vehicles={vehicles}
       locations={locations}
       services={services}
-      initialUserId={preselectedClientId}
     />
   );
 }

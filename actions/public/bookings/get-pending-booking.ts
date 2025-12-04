@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus, Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 
 /**
@@ -85,7 +85,7 @@ export async function getPendingBookingAction(input: {
     const endDateMax = new Date(endDate);
     endDateMax.setMinutes(endDateMax.getMinutes() + 5);
 
-    const whereClause: any = {
+    const whereClause: Prisma.BookingWhereInput = {
       userId: userId, // Utilise userId trouvé (connecté ou non connecté)
       vehicleId: input.vehicleId,
       status: BookingStatus.PENDING,
@@ -192,7 +192,7 @@ export async function getPendingBookingAction(input: {
         serviceIds: existingBooking.serviceIds,
         pickupLocationId: existingBooking.pickupLocationId,
         returnLocationId: existingBooking.returnLocationId,
-        userId: session.user.id,
+        userId: userId,
         verification: {
           servicesMatch,
           pickupMatch,

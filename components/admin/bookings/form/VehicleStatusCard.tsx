@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BookingStatus, VehicleStatus } from "@prisma/client";
-import type { BookingFormValues } from "../BookingForm";
+import type { BookingFormValues } from "@/hooks/useBookingForm";
 import type { BookingVehicleOption } from "@/actions/admin/bookings";
 
 const statusLabels: Record<BookingStatus, string> = {

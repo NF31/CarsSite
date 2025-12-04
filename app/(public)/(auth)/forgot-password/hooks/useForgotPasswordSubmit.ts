@@ -26,14 +26,22 @@ export function useForgotPasswordSubmit() {
       const result = await forgotPasswordAction(data);
 
       if (!result.success) {
-        if (result.status === 429) {
+        const errorResult = result as {
+          success: false;
+          error?: string;
+          message?: string;
+          status?: number;
+          resetAt?: Date;
+        };
+        
+        if (errorResult.status === 429) {
           setError(
-            result.resetAt
-              ? `Trop de tentatives. Veuillez réessayer après ${new Date(result.resetAt).toLocaleTimeString("fr-FR")}`
-              : result.error || "Trop de tentatives. Veuillez réessayer plus tard."
+            errorResult.resetAt
+              ? `Trop de tentatives. Veuillez réessayer après ${new Date(errorResult.resetAt).toLocaleTimeString("fr-FR")}`
+              : errorResult.message || "Trop de tentatives. Veuillez réessayer plus tard."
           );
         } else {
-          setError(result.message || result.error || "Une erreur est survenue");
+          setError(errorResult.message || errorResult.error || "Une erreur est survenue");
         }
         return;
       }
@@ -42,7 +50,7 @@ export function useForgotPasswordSubmit() {
         setSuccess(true);
         form.reset();
       }
-    } catch (err) {
+    } catch {
       setError("Une erreur est survenue. Veuillez réessayer.");
     } finally {
       setIsLoading(false);

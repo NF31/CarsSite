@@ -93,9 +93,14 @@ function buildStatusFilter(
     };
   }
 
-  return {
-    status,
-  };
+  // Si status est un MaintenanceStatus valide (pas "ALL", "ACTIVE", "UPCOMING", "PAST")
+  if (status && Object.values(MaintenanceStatus).includes(status as MaintenanceStatus)) {
+    return {
+      status: status as MaintenanceStatus,
+    };
+  }
+
+  return null;
 }
 
 function buildDateFilters(

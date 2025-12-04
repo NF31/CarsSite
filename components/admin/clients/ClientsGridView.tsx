@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition, useState } from "react";
+import { useTransition } from "react";
 import {
   BadgeCheck,
   CheckCircle2,
-  Clock,
   Edit,
   IdCard,
   ListChecks,
@@ -47,17 +46,14 @@ interface ClientsGridViewProps {
 
 export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
   const [isPending, startTransition] = useTransition();
-  const [licenseError, setLicenseError] = useState<string | null>(null);
 
   const handleViewDriverLicense = (clientId: string) => {
     startTransition(async () => {
-      setLicenseError(null);
       const result = await getDriverLicenseUrlAction({
         userId: clientId,
       });
 
       if (!result.success || !result.data) {
-        setLicenseError(result.error ?? "Impossible de récupérer le permis pour ce client.");
         return;
       }
 
@@ -102,7 +98,6 @@ export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
         const statusColor = CLIENT_STATUS_COLORS[client.status];
         const StatusIcon = CLIENT_STATUS_ICONS[client.status];
         const lastBooking = client.lastBooking;
-        const hasLastBooking = Boolean(lastBooking);
 
         const canCreateReservation = client.status === "ACTIVE";
 
@@ -163,15 +158,15 @@ export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
                     {client.bookingsCount}
                   </span>
                 </div>
-                {hasLastBooking ? (
+                {lastBooking ? (
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2">
                       <div className="flex flex-col gap-1">
                         <span className="text-xs uppercase text-muted-foreground">Dernière location</span>
                         <span className="font-medium text-gray-900">
-                          {clientDateTimeFormatter.format(new Date(lastBooking!.startDate))}
+                          {clientDateTimeFormatter.format(new Date(lastBooking.startDate))}
                         </span>
-                        {lastBooking?.vehicle && (
+                        {lastBooking.vehicle && (
                           <span className="text-xs text-muted-foreground">
                             {lastBooking.vehicle.brand} {lastBooking.vehicle.model} •{" "}
                             {lastBooking.vehicle.licensePlate}
@@ -182,7 +177,7 @@ export function ClientsGridView({ clients, startIndex }: ClientsGridViewProps) {
                         {BOOKING_STATUS_LABELS[lastBooking.status]}
                       </Badge>
                     </div>
-                    {lastBooking?.endDate && (
+                    {lastBooking.endDate && (
                       <p className="text-xs text-muted-foreground">
                         Retour le {clientDateTimeFormatter.format(new Date(lastBooking.endDate))}
                       </p>

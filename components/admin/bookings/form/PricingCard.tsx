@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { BookingFormValues } from "../BookingForm";
+import type { BookingFormValues } from "@/hooks/useBookingForm";
 
 interface PricingInfo {
   durationDays: number;

@@ -53,9 +53,7 @@ export const registerSchema = z.object({
     ])
     .optional(),
   acceptRGPD: z
-    .boolean({
-      required_error: "Vous devez consentir au traitement de vos données",
-    })
+    .boolean()
     .refine((val) => val === true, {
       message: "Vous devez consentir au traitement de vos données personnelles",
     }),

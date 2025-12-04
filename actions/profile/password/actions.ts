@@ -80,7 +80,7 @@ export async function changePasswordAction(data: z.infer<typeof changePasswordSc
       return {
         success: false,
         error: "Données invalides",
-        details: error.errors,
+        details: error.issues,
         status: 400,
       };
     }

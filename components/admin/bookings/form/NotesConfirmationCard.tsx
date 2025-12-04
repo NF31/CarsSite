@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import type { BookingFormValues } from "../BookingForm";
+import type { BookingFormValues } from "@/hooks/useBookingForm";
 
 interface NotesConfirmationCardProps {
   isEditMode: boolean;

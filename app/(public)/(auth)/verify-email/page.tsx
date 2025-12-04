@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useURLParams, useVerifyEmail, useResendVerification } from "./hooks";
 import {
@@ -11,7 +11,7 @@ import {
   LoadingView,
 } from "./components";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const {
     token,
     email,
@@ -101,3 +101,18 @@ export default function VerifyEmailPage() {
   );
 }
 
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)] py-12">
+        <Card className="w-full max-w-md">
+          <CardContent className="space-y-4">
+            <LoadingView />
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
+  );
+}
