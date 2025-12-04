@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { BookingStatus, Prisma } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 
 /**

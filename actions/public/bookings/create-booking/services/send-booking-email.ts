@@ -2,7 +2,7 @@ import { sendBookingConfirmationEmail } from "@/lib/email";
 import type { SendEmailResult } from "@/lib/email/utils/send-email";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 
 interface SendBookingEmailParams {
   to: string;

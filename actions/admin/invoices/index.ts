@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { generateInvoicePDFAction } from "./generate-pdf";
 import { getInvoicesAction } from "./get-invoices";
 import { sendInvoiceEmail } from "@/lib/email";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 
 // Re-exports pour éviter les erreurs "use server"
 // Note: Dans Next.js 16, les re-exports fonctionnent si on importe d'abord la fonction

@@ -8,7 +8,8 @@ import { resolve } from "path";
 // Charger .env depuis la racine du projet
 dotenv.config({ path: resolve(process.cwd(), ".env") });
 
-import { PrismaClient, InvoiceStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { addDays } from "date-fns";

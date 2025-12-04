@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { calculateBookingStatus } from "@/lib/booking-status-sync";
 import type { PriceDifferences } from "./utils";
 

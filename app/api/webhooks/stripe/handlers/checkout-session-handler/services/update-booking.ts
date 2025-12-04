@@ -1,4 +1,4 @@
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { prisma } from "@/lib/prisma";
 import { UPDATED_BOOKING_SELECT_FIELDS } from "../constants";
 import type { BookingUpdateData } from "../types";

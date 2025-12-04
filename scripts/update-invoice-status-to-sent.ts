@@ -17,7 +17,8 @@ const __dirname = dirname(__filename);
 // Charger .env depuis la racine du projet
 dotenv.config({ path: resolve(__dirname, "../.env") });
 
-import { PrismaClient, InvoiceStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 

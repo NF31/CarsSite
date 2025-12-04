@@ -2,7 +2,8 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { BookingStatus, InvoiceStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 
 const DEFAULT_LIMIT = 5;
 
