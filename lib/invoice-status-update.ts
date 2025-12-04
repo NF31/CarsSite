@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { InvoiceStatus, PaymentStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
+import { PaymentStatus } from "@/lib/types/payment-status";
 
 /**
  * Met à jour le statut des factures liées à une réservation après un paiement
