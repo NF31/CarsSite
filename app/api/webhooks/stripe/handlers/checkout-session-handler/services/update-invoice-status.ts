@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { updateInvoiceStatusAfterPayment } from "@/lib/invoice-status-update";
 
 export async function updateInvoiceStatus(

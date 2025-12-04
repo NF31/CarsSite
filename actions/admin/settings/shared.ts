@@ -1,4 +1,4 @@
-import { type Prisma } from "@prisma/client";
+import type { Prisma } from '@/lib/prisma'
 import { SettingCategory } from "@/lib/types/setting-category";
 import type {
   AdminSettingsData,

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import type { UpdateVehicleResult } from "./types";
 
 const PARIS_LOCATION_ID = "PARIS";

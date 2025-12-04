@@ -1,9 +1,8 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import {
   getOrSetCache,
-  CACHE_PREFIXES,
   CACHE_TTL,
 } from "@/lib/cache";
 

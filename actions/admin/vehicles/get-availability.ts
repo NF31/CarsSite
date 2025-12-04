@@ -1,12 +1,10 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import {
   getOrSetCache,
-  CACHE_PREFIXES,
-  CACHE_TTL,
 } from "@/lib/cache";
 
 export interface VehicleAvailabilityItem {

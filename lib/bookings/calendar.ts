@@ -1,7 +1,7 @@
 "use strict";
 
 import { BookingStatus } from "@/lib/types/booking-status";
-import { type Prisma } from "@prisma/client";
+import type { Prisma } from '@/lib/prisma';
 import { differenceInCalendarDays, isAfter, isBefore } from "date-fns";
 
 export type BookingWithRelations = Prisma.BookingGetPayload<{

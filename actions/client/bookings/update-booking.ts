@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import type { UpdateBookingResult } from "./update-booking/types";
 import { RATE_LIMIT_CONFIG } from "./update-booking/constants";

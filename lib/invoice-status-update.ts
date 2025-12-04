@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { InvoiceStatus } from "@/lib/types/invoice-status";
 import { PaymentStatus } from "@/lib/types/payment-status";
 

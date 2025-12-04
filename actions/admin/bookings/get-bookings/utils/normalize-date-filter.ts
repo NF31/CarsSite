@@ -1,5 +1,4 @@
-import { type Prisma } from "@prisma/client";
-
+import type { Prisma } from "@/lib/prisma";
 /**
  * Normalise un filtre de date pour Prisma
  */

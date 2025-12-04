@@ -139,7 +139,7 @@ export async function validateLicensePlate(
     return null;
   }
 
-  const { prisma } = await import("@/lib/prisma");
+  const prisma = (await import("@/lib/prisma")).default;
   const vehicleWithSamePlate = await prisma.vehicle.findUnique({
     where: { licensePlate },
   });

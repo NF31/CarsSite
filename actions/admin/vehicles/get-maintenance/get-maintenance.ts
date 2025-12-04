@@ -1,9 +1,8 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { type Prisma } from "@prisma/client";
+import prisma, { type Prisma } from '@/lib/prisma'
 import { serializeMaintenanceRecord } from "@/lib/maintenance/serialization";
 import type {
   GetMaintenanceFilters,

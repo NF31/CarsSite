@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { MaintenanceType } from "@/lib/types/maintenance-type";
 import {
   ACTIVE_BOOKING_STATUSES,

@@ -1,4 +1,4 @@
-import { type Prisma } from "@prisma/client";
+import type { Prisma } from '@/lib/prisma';
 
 /**
  * Helper pour exclure les utilisateurs supprimés (soft delete)

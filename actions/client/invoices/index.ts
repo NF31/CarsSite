@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { downloadInvoiceAction } from "@/actions/admin/invoices";
 import { generateInvoicePDFAction } from "@/actions/admin/invoices/generate-pdf";
 

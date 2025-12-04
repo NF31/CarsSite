@@ -1,6 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import prisma, { type Prisma } from '@/lib/prisma'
 import { BookingStatus } from "@/lib/types/booking-status";
-import { type Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import type {
   BookingModerationPayload,

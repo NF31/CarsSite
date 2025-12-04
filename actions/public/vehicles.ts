@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import type { PublicVehicleSearchFilters, PublicVehiclesResult } from "./vehicles/types";
 import { buildWhereClause, buildOrderBy, mapToPublicVehicle } from "./vehicles/utils";
 import { VEHICLE_SELECT_FIELDS } from "./vehicles/constants";

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 
 export async function updateUserTermsAcceptance(userId: string): Promise<void> {
   const existingUser = await prisma.user.findUnique({

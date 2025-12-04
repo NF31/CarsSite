@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { VehicleCategory } from "@/lib/types/vehicle-category";
 import { getPublicVehicleByIdAction } from "../vehicles/get-by-id";
 
