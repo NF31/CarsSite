@@ -11,6 +11,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!vehicleResult.success || !vehicleResult.data) {
     return {
       title: "Véhicule introuvable - Administration",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
