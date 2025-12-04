@@ -6,7 +6,7 @@ import { quickClientSchema, type QuickClientInput } from "@/lib/validations/clie
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/types/user-role";
 import { extractCloudinaryAssetInfo } from "@/lib/cloudinary-utils";
 
 type CreateQuickClientResult =

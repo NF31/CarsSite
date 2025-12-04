@@ -4,7 +4,8 @@ import {
   Wrench,
   XCircle,
 } from "lucide-react";
-import type { FuelType, TransmissionType } from "@prisma/client";
+import type { FuelType } from "@/lib/types/fuel-type";
+import type { TransmissionType } from "@/lib/types/transmission-type";
 import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";
 

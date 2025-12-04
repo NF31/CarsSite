@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/types/user-role";
 import { stripe } from "@/lib/stripe";
 
 export interface RefundHistoryItem {

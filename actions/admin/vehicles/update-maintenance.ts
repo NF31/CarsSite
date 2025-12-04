@@ -3,12 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import {
-  MaintenanceStatus,
-  MaintenanceType,
-  VehicleStatus,
-  BookingStatus,
-} from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
+import { BookingStatus } from "@/lib/types/booking-status";
 import {
   updateMaintenanceSchema,
   type UpdateMaintenanceInput,
