@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { BookingStatus } from "@/lib/types/booking-status";
 import { InvoiceStatus } from "@/lib/types/invoice-status";
-import type { Prisma } from "@prisma/client";
+import { type Prisma } from "@prisma/client";
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 import type {
   BookingModerationPayload,
