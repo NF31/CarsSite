@@ -1,4 +1,4 @@
-import type { VehicleCategory } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 
 export interface PublicVehicleSearchFilters {
   category?: "cars" | "utility" | "subscription";

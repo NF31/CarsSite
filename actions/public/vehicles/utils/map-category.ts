@@ -1,4 +1,4 @@
-import type { VehicleCategory } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 
 /**
  * Mappe les catégories du widget vers les catégories Prisma

@@ -12,13 +12,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Car, Calendar, Gauge, Users, Fuel, Settings, MapPin, Euro, Shield, Image as ImageIcon, FileText } from "lucide-react";
 import Image from "next/image";
 import { deleteVehicleAction } from "@/actions/admin/vehicles/delete-vehicle";
-import type { VehicleCategory, TransmissionType, FuelType } from "@prisma/client";
+import type { TransmissionType, FuelType } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";
 
 interface Vehicle {
@@ -111,8 +111,8 @@ export function DeleteVehicleDialog({
         setError(result.error || "Erreur lors de la suppression");
         setIsDeleting(false);
       }
-    } catch (err) {
-      setError("Une erreur inattendue s'est produite");
+    } catch {
+      setError("Une erreur inattendue s&apos;est produite");
       setIsDeleting(false);
     }
   };
@@ -174,7 +174,7 @@ export function DeleteVehicleDialog({
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Plaque d'immatriculation :</span>
+                  <span className="text-muted-foreground">Plaque d&apos;immatriculation :</span>
                   <span className="font-medium font-mono">{vehicle.licensePlate}</span>
                 </div>
                 <div className="flex justify-between">

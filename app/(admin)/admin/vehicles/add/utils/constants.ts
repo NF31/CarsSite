@@ -1,4 +1,5 @@
-import type { VehicleCategory, TransmissionType, FuelType } from "@prisma/client";
+import type { TransmissionType, FuelType } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 
 export const categoryOptions: { value: VehicleCategory; label: string }[] = [
   { value: "ECONOMY", label: "Économique" },
