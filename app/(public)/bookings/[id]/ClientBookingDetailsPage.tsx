@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -25,24 +25,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ClientBookingDetail } from "@/actions/client/bookings/get-booking";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import {
   BOOKING_STATUS_COLORS,
   BOOKING_STATUS_LABELS,
 } from "@/components/client/dashboard/dashboard-constants";
 import { checkPaymentStatusAction } from "@/actions/public/payments/check-payment-status";
-import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 interface ClientBookingDetailsPageProps {
   booking: ClientBookingDetail;
 }
-
-const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", {
-  dateStyle: "full",
-  timeStyle: "short",
-});
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -51,10 +45,8 @@ const currencyFormatter = new Intl.NumberFormat("fr-FR", {
 
 export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBookingDetailsPageProps) {
   const router = useRouter();
-  const [booking, setBooking] = useState(initialBooking);
+  const booking = initialBooking;
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
-  const [servicePrices, setServicePrices] = useState<Record<string, number>>({});
-  const [isCalculatingPrices, setIsCalculatingPrices] = useState(true);
   
   const startDate = new Date(booking.startDate);
   const endDate = new Date(booking.endDate);
@@ -92,40 +84,6 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
   // Utiliser la durée exacte pour les calculs, mais la version formatée pour l'affichage
   const duration = exactDuration;
 
-  // Calculer les prix réels des services
-  useEffect(() => {
-    const calculateServicePrices = async () => {
-      if (booking.services.length === 0) {
-        setIsCalculatingPrices(false);
-        return;
-      }
-
-      try {
-        const priceResult = await calculateBookingPriceAction({
-          vehicleId: booking.vehicle.id,
-          startDate: booking.startDate,
-          endDate: booking.endDate,
-          startTime: "10:00", // Valeur par défaut
-          endTime: "10:00", // Valeur par défaut
-          serviceIds: booking.serviceIds,
-        });
-
-        if (priceResult.success && priceResult.data) {
-          const prices: Record<string, number> = {};
-          priceResult.data.breakdown.services.forEach((service) => {
-            prices[service.id] = service.total;
-          });
-          setServicePrices(prices);
-        }
-      } catch (error) {
-        console.error("Erreur lors du calcul des prix des services:", error);
-      } finally {
-        setIsCalculatingPrices(false);
-      }
-    };
-
-    calculateServicePrices();
-  }, [booking.vehicle.id, booking.startDate, booking.endDate, booking.serviceIds, booking.services.length]);
 
   const handleCheckPayment = async () => {
     setIsCheckingPayment(true);
@@ -139,7 +97,7 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
         router.refresh();
       } else {
         toast.info("Paiement non trouvé", {
-          description: "Le paiement n'a pas encore été enregistré. Si vous venez de payer, attendez quelques instants ou contactez le support.",
+          description: "Le paiement n&apos;a pas encore été enregistré. Si vous venez de payer, attendez quelques instants ou contactez le support.",
         });
       }
     } catch (error) {
@@ -238,7 +196,7 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                       Départ
                     </div>
                     <p className="text-base font-semibold">
-                      {format(startDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      {format(startDate, "EEEE d MMMM yyyy &apos;à&apos; HH:mm", { locale: fr })}
                     </p>
                     <div className="flex items-start gap-2 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -257,7 +215,7 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                       Retour
                     </div>
                     <p className="text-base font-semibold">
-                      {format(endDate, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      {format(endDate, "EEEE d MMMM yyyy &apos;à&apos; HH:mm", { locale: fr })}
                     </p>
                     <div className="flex items-start gap-2 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -355,7 +313,7 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <XCircle className="h-5 w-5 text-red-600" />
-                    Demande d'annulation en cours
+                    Demande d&apos;annulation en cours
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -366,7 +324,7 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                     </div>
                   )}
                   <p className="text-xs text-red-700">
-                    Votre demande d'annulation est en attente de traitement par l'administrateur.
+                    Votre demande d&apos;annulation est en attente de traitement par l&apos;administrateur.
                   </p>
                 </CardContent>
               </Card>
