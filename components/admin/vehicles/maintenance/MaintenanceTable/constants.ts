@@ -1,4 +1,5 @@
-import { MaintenanceStatus, MaintenanceType } from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
 
 export const STATUS_LABELS: Record<MaintenanceStatus, string> = {
   [MaintenanceStatus.SCHEDULED]: "Planifiée",

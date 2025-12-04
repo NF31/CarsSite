@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { MaintenanceType } from "@prisma/client";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
 import type { MaintenanceVehicleOption } from "@/actions/admin/vehicles/get-maintenance-vehicles";
 import type { MaintenanceRecord } from "@/actions/admin/vehicles/get-maintenance";
 import type { DialogMode } from "../types";

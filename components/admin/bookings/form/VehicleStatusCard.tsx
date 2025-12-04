@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookingStatus, VehicleStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
 import type { BookingFormValues } from "@/hooks/useBookingForm";
 import type { BookingVehicleOption } from "@/actions/admin/bookings";
 

@@ -1,4 +1,4 @@
-import { MaintenanceType } from "@prisma/client";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
 import type { MaintenanceTypeOption } from "./types";
 
 export const TYPE_OPTIONS: MaintenanceTypeOption[] = [
