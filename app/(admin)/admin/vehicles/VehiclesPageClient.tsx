@@ -11,7 +11,8 @@ import { VehiclesFilters } from "@/components/admin/vehicles/VehiclesFilters";
 import { VehiclesGridView } from "@/components/admin/vehicles/VehiclesGridView";
 import { VehiclesListView } from "@/components/admin/vehicles/VehiclesListView";
 import { VehiclesPagination } from "@/components/admin/vehicles/VehiclesPagination";
-import type { VehicleCategory, TransmissionType, FuelType } from "@prisma/client";
+import type { TransmissionType, FuelType } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";
 
 type ViewMode = "grid" | "list";

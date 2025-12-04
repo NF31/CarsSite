@@ -1,7 +1,7 @@
 import { useState, useEffect, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { getVehicleByIdAction } from "@/actions/admin/vehicles";
-import type { VehicleCategory } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";
 
 type Vehicle = {

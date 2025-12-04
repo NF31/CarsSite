@@ -4,7 +4,8 @@ import {
   Wrench,
   XCircle,
 } from "lucide-react";
-import type { VehicleCategory, FuelType, TransmissionType } from "@prisma/client";
+import type { FuelType, TransmissionType } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";
 
 export const statusLabels: Record<VehicleStatus, string> = {

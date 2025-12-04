@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { CreateServiceInput } from "@/lib/validations/service";
-import type { VehicleCategory } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 
 const categoryOptions: { value: VehicleCategory; label: string }[] = [
   { value: "ECONOMY", label: "Économique" },

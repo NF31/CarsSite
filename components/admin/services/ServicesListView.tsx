@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ServiceRecord } from "@/actions/admin/services";
 import type { ServicePricingType } from "@/lib/types/service-pricing-type";
-import type { VehicleCategory } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
