@@ -18,7 +18,8 @@ import { Separator } from "@/components/ui/separator";
 import { Trash2, Car, Calendar, Gauge, Users, Fuel, Settings, MapPin, Euro, Shield, Image as ImageIcon, FileText } from "lucide-react";
 import Image from "next/image";
 import { deleteVehicleAction } from "@/actions/admin/vehicles/delete-vehicle";
-import type { VehicleCategory, VehicleStatus, TransmissionType, FuelType } from "@prisma/client";
+import type { VehicleCategory, TransmissionType, FuelType } from "@prisma/client";
+import type { VehicleStatus } from "@/lib/types/vehicle-status";
 
 interface Vehicle {
   id: string;
