@@ -11,7 +11,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader } from "@/components/ui/card";
-import type { ServicePricingType, VehicleCategory } from "@prisma/client";
+import type { ServicePricingType } from "@/lib/types/service-pricing-type";
+import type { VehicleCategory } from "@prisma/client";
 
 const categoryLabels: Record<VehicleCategory, string> = {
   ECONOMY: "Économique",
