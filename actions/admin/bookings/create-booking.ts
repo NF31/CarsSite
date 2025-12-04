@@ -175,7 +175,7 @@ export async function createBookingAction(
         };
       }
 
-      const inactive = services.find((service) => !service.active);
+      const inactive = services.find((service: { id: string; active: boolean }) => !service.active);
       if (inactive) {
         return {
           success: false,
