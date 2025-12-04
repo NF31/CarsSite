@@ -1,4 +1,4 @@
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 
 /**
  * Fonction utilitaire pour synchroniser le statut d'une réservation

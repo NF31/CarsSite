@@ -5,7 +5,7 @@ import { getBookingReminderEmailTemplate } from "../templates/booking-reminder-e
 import { getBookingCancellationEmailTemplate } from "../templates/booking-cancellation-email";
 import { getBookingCancellationRejectedEmailTemplate } from "../templates/booking-cancellation-rejected-email";
 import { getBookingCancellationRequestEmailTemplate } from "../templates/booking-cancellation-request-email";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { getDashboardUrl, convertAttachmentsToBase64, withQueueErrorHandling } from "./utils/helpers";
 import {
   getBookingStatusLabels,
