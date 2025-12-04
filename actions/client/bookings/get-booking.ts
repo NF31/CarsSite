@@ -204,7 +204,7 @@ export async function getClientBookingByIdAction(
         city: booking.returnLocation.city,
         address: booking.returnLocation.address,
       },
-      services: services.map((service) => ({
+      services: services.map((service: { id: string; name: string; description: string | null; price: number; pricingType: string }) => ({
         id: service.id,
         name: service.name,
         description: service.description,

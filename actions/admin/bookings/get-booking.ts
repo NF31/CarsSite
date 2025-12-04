@@ -339,7 +339,7 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
         city: booking.returnLocation.city,
         address: booking.returnLocation.address ?? null,
       },
-      services: services.map((service) => ({
+      services: services.map((service: { id: string; name: string; price: number; pricingType: ServicePricingType; active: boolean }) => ({
         id: service.id,
         name: service.name,
         price: service.price,
@@ -361,5 +361,3 @@ export async function getBookingByIdAction(id: string): Promise<GetBookingResult
     };
   }
 }
-
-
