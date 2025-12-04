@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import type { ServiceRecord } from "@/actions/admin/services";
-import type { ServicePricingType, VehicleCategory } from "@prisma/client";
+import type { ServicePricingType } from "@/lib/types/service-pricing-type";
+import type { VehicleCategory } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

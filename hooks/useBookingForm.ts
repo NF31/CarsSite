@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BookingStatus } from "@/lib/types/booking-status";
-import { ServicePricingType } from "@prisma/client";
+import { ServicePricingType } from "@/lib/types/service-pricing-type";
 import { z } from "zod";
 import type {
   BookingServiceOption,
