@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
 import { getDashboardDataAction } from "@/actions/admin/dashboard";
 import {
   DashboardHeader,
@@ -7,8 +8,35 @@ import {
   DashboardMetricsCards,
   RecentBookingsTable,
 } from "@/components/admin/dashboard";
-import { DashboardRevenueChart } from "@/components/admin/dashboard/DashboardRevenueChart";
-import { DashboardFleetDistributionChart } from "@/components/admin/dashboard/DashboardFleetDistributionChart";
+
+// Lazy load les graphiques Recharts (bibliothèque lourde)
+const DashboardRevenueChart = dynamic(
+  () => import("@/components/admin/dashboard/DashboardRevenueChart").then((mod) => ({ default: mod.DashboardRevenueChart })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[300px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Chargement du graphique...</p>
+        </div>
+      </div>
+    ),
+  }
+);
+
+const DashboardFleetDistributionChart = dynamic(
+  () => import("@/components/admin/dashboard/DashboardFleetDistributionChart").then((mod) => ({ default: mod.DashboardFleetDistributionChart })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[300px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Chargement du graphique...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 
 export default async function AdminDashboardPage() {
   const session = await auth();

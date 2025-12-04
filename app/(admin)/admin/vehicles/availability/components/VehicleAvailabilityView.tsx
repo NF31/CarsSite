@@ -1,8 +1,23 @@
 import { memo } from "react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { AvailabilityCalendar } from "@/components/admin/vehicles/AvailabilityCalendar";
 import type { Vehicle } from "../hooks";
+
+// Lazy load AvailabilityCalendar (FullCalendar est lourd)
+const AvailabilityCalendar = dynamic(
+  () => import("@/components/admin/vehicles/AvailabilityCalendar").then((mod) => ({ default: mod.AvailabilityCalendar })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[500px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Chargement du calendrier...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 
 interface VehicleAvailabilityViewProps {
   vehicle: Vehicle;
