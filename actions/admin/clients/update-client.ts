@@ -3,7 +3,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { Prisma, UserRole } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { UserRole } from "@/lib/types/user-role";
 import { updateClientSchema, type UpdateClientInput } from "@/lib/validations/client";
 
 export interface UpdateClientResult {

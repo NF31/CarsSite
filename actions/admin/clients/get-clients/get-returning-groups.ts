@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/types/user-role";
 
 export async function getReturningGroups() {
   const result = await prisma.booking.groupBy({

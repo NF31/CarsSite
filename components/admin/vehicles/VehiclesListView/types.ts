@@ -1,4 +1,5 @@
-import type { TransmissionType, FuelType } from "@prisma/client";
+import type { TransmissionType } from "@/lib/types/transmission-type";
+import type { FuelType } from "@/lib/types/fuel-type";
 import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";
 

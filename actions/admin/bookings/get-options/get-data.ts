@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/types/user-role";
 import {
   USER_SELECT,
   VEHICLE_SELECT,
