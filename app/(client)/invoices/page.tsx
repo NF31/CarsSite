@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { ClientBreadcrumbs } from "@/components/client/Breadcrumbs";
 import { ClientInvoicesPageClient } from "@/components/client/invoices/ClientInvoicesPageClient";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 
 export const dynamic = "force-dynamic";
 
