@@ -1,4 +1,5 @@
-import { BookingStatus, InvoiceStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 import { deriveBookingStatus } from "@/lib/booking-status-sync";
 
 export type ProcessedBooking = {

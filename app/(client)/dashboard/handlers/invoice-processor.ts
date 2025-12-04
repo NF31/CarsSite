@@ -1,4 +1,4 @@
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 
 /**
  * Handler pour le traitement des factures

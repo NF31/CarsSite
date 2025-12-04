@@ -3,7 +3,7 @@ import { formatDistanceStrict } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getDriverLicenseUrlAction } from "@/actions/admin/bookings";
 import { deriveBookingStatus } from "@/lib/booking-status-sync";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import type { BookingDetail } from "@/actions/admin/bookings";
 import { formatDateTime } from "@/components/admin/bookings/details/utils";
 
