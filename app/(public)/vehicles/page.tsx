@@ -1,10 +1,26 @@
 import { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { getPublicVehiclesAction } from "@/actions/public/vehicles";
-import { VehiclesSearchBar } from "@/components/public/vehicles/VehiclesSearchBar";
 import { VehiclesPageClient } from "./VehiclesPageClient";
 import { VehiclesSort } from "@/components/public/vehicles/VehiclesSort";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+
+// Lazy load VehiclesSearchBar (Google Maps est lourd)
+// Note: Le composant lui-même gère déjà le chargement conditionnel de Google Maps
+const VehiclesSearchBar = dynamic(
+  () => import("@/components/public/vehicles/VehiclesSearchBar").then((mod) => ({ default: mod.VehiclesSearchBar })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[120px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-xs text-muted-foreground">Chargement de la recherche...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 
 interface VehiclesPageProps {
   searchParams: Promise<{
@@ -143,13 +159,6 @@ export default async function VehiclesPage({
   const vehicles = result.success && result.data ? result.data.vehicles : [];
   const total = result.success && result.data ? result.data.total : 0;
   const totalPages = result.success && result.data ? result.data.totalPages : 1;
-
-  // Labels des catégories
-  const categoryLabels: Record<string, string> = {
-    cars: "Voitures",
-    utility: "Utilitaires",
-    subscription: "Abonnement",
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
