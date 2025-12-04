@@ -1,4 +1,4 @@
-import type { BookingStatus } from "@prisma/client";
+import type { BookingStatus } from "@/lib/types/booking-status";
 
 export type ClientStatus = "ACTIVE" | "INACTIVE" | "LOCKED";
 

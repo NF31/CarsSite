@@ -1,4 +1,6 @@
-import { ServicePricingType, UserRole, VehicleStatus } from "@prisma/client";
+import { ServicePricingType } from "@/lib/types/service-pricing-type";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
+import { UserRole } from "@prisma/client";
 
 export interface BookingUserOption {
   id: string;

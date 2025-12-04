@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { MaintenanceType } from "@prisma/client";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
 import {
   ACTIVE_BOOKING_STATUSES,
   ACTIVE_MAINTENANCE_STATUSES,

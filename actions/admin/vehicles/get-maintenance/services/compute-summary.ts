@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { MaintenanceStatus, VehicleStatus } from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
 import type { Prisma } from "@prisma/client";
 import type { MaintenanceSummary } from "../types";
 import { NEXT_MAINTENANCE_SELECT_FIELDS } from "../constants";

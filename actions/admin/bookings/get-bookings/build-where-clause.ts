@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import type { GetBookingsFilters } from "./types";
 import { normalizeDateFilter } from "./utils/normalize-date-filter";
 

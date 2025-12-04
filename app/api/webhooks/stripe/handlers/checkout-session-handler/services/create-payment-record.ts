@@ -1,4 +1,4 @@
-import { PaymentStatus } from "@prisma/client";
+import { PaymentStatus } from "@/lib/types/payment-status";
 import { prisma } from "@/lib/prisma";
 
 interface CreatePaymentRecordParams {
