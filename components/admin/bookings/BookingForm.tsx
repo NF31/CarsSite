@@ -12,7 +12,7 @@ import type {
   BookingUserOption,
   BookingVehicleOption,
 } from "@/actions/admin/bookings";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 
 export interface BookingFormInitialValues {
   id: string;

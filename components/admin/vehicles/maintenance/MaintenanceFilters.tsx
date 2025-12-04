@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { MaintenanceStatusFilter } from "@/actions/admin/vehicles/get-maintenance";
-import type { MaintenanceType } from "@prisma/client";
+import type { MaintenanceType } from "@/lib/types/maintenance-type";
 import type { MaintenanceVehicleOption } from "@/actions/admin/vehicles/get-maintenance-vehicles";
 import {
   Select,

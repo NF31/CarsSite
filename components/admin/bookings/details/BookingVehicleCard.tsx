@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { bookingCurrencyFormatter } from "@/components/admin/bookings/booking-helpers";
-import { VehicleStatus } from "@prisma/client";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
 import type { BookingDetail } from "@/actions/admin/bookings";
 
 const vehicleStatusLabels: Record<VehicleStatus, string> = {

@@ -1,6 +1,7 @@
 import { Send, RotateCcw, CheckCircle2, Pencil, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MaintenanceStatus, MaintenanceType } from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
 import type { MaintenanceRecord } from "@/actions/admin/vehicles/get-maintenance";
 import { cn } from "@/lib/utils";
 import { getMaintenancePermissions } from "../utils";

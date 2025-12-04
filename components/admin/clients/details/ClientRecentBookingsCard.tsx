@@ -10,7 +10,7 @@ import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/components/admin
 import { clientDateTimeFormatter } from "@/components/admin/clients/client-helpers";
 import { formatRelativeBooking } from "./utils";
 import type { ClientDetailBooking } from "@/actions/admin/clients";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",

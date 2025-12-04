@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import type { BookingDetail } from "@/actions/admin/bookings";
 import { RefundHistorySection } from "@/components/admin/bookings/RefundHistorySection";
 import {

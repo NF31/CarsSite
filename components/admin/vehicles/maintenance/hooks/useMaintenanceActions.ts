@@ -1,6 +1,6 @@
 import { useState, useCallback, useTransition } from "react";
 import { updateMaintenanceAction } from "@/actions/admin/vehicles/update-maintenance";
-import { MaintenanceStatus } from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
 import type { MaintenanceRecord } from "@/actions/admin/vehicles/get-maintenance";
 import type { MaintenanceVehicleOption } from "@/actions/admin/vehicles/get-maintenance-vehicles";
 import { getMaintenanceVehicleOptionsAction } from "@/actions/admin/vehicles/get-maintenance-vehicles";

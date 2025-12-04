@@ -6,7 +6,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { MaintenanceType } from "@prisma/client";
+import type { MaintenanceType } from "@/lib/types/maintenance-type";
 import { TYPE_OPTIONS } from "../constants";
 
 interface TypeSelectProps {
