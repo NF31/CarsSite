@@ -11,7 +11,6 @@ export { getBookingEditDataAction } from "./get-booking-edit-data";
 export {
   mapBookingToCalendarEvent,
   type BookingCalendarEvent,
-  type BookingWithRelations,
 } from "@/lib/bookings/calendar";
 export {
   getBookingByIdAction,

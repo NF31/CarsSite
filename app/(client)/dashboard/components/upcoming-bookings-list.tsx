@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { EditBookingDialog } from "@/components/client/dashboard/EditBookingDialog";
 import { CancelBookingDialog } from "@/components/client/dashboard/CancelBookingDialog";
 import { BookingInvoiceDownload } from "@/components/client/dashboard/BookingInvoiceDownload";
