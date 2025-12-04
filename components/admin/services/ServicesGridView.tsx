@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Gift, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
 import type { ServiceRecord } from "@/actions/admin/services";
 import type { ServicePricingType } from "@/lib/types/service-pricing-type";
-import type { VehicleCategory } from "@prisma/client";
+import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
