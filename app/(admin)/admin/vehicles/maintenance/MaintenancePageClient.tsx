@@ -15,7 +15,7 @@ import {
 import { ScheduleMaintenanceDialog } from "@/components/admin/vehicles/maintenance/ScheduleMaintenanceDialog";
 import { VehiclesPagination } from "@/components/admin/vehicles/VehiclesPagination";
 import { Card } from "@/components/ui/card";
-import { MaintenanceStatus } from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
 import {
   MaintenanceHeader,
   FeedbackBanner,
