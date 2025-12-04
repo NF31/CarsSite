@@ -1,4 +1,5 @@
-import type { VehicleCategory, VehicleStatus, TransmissionType, FuelType } from "@prisma/client";
+import type { VehicleCategory, TransmissionType, FuelType } from "@prisma/client";
+import type { VehicleStatus } from "@/lib/types/vehicle-status";
 
 export interface Vehicle {
   id: string;

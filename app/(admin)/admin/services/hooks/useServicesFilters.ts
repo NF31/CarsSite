@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import type { ServiceRecord } from "@/actions/admin/services";
-import type { ServicePricingType, VehicleCategory } from "@prisma/client";
+import type { ServicePricingType } from "@/lib/types/service-pricing-type";
+import type { VehicleCategory } from "@prisma/client";
 
 type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE";
 type PricingFilter = "ALL" | ServicePricingType;

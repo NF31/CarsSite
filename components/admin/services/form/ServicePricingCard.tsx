@@ -28,7 +28,7 @@ import {
   getSelectValidation,
 } from "@/components/admin/services/utils/validation-helpers";
 import type { CreateServiceInput } from "@/lib/validations/service";
-import type { ServicePricingType } from "@prisma/client";
+import type { ServicePricingType } from "@/lib/types/service-pricing-type";
 
 const pricingOptions: { value: ServicePricingType; label: string; helper: string }[] = [
   { value: "PER_DAY", label: "Par jour", helper: "Facturé pour chaque jour de location" },
