@@ -10,7 +10,7 @@ import {
   incrementFailedLoginAttempts,
   resetFailedLoginAttempts,
 } from "@/lib/rate-limit";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import bcrypt from "bcryptjs";
 
 /**

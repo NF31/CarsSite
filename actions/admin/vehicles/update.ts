@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { updateVehicleSchema, type UpdateVehicleInput } from "@/lib/validations/vehicle";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";

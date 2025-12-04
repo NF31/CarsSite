@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { UserRole } from "@/lib/types/user-role";
 import {
   USER_SELECT,

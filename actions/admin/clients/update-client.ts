@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { redirect } from "next/navigation";
 import { UserRole } from "@/lib/types/user-role";
 import { updateClientSchema, type UpdateClientInput } from "@/lib/validations/client";

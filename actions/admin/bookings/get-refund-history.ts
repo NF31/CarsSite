@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { UserRole } from "@/lib/types/user-role";
 import { stripe } from "@/lib/stripe";
 

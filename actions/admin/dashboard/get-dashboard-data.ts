@@ -1,10 +1,9 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BookingStatus } from "@/lib/types/booking-status";
-import { deriveBookingStatus } from "@/lib/booking-status-sync";
 
 export interface DashboardData {
   bookingsToday: number;

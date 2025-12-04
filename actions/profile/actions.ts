@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { updateProfileSchema, deleteAccountSchema } from "@/lib/validations/profile";
 import { z } from "zod";
 import bcrypt from "bcryptjs";

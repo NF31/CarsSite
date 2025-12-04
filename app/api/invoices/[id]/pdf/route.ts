@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { cloudinary } from "@/lib/cloudinary";
 import { extractCloudinaryAssetInfo } from "@/lib/cloudinary-utils";
 import { generateInvoicePDFAction } from "@/actions/admin/invoices/generate-pdf";

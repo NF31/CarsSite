@@ -1,7 +1,7 @@
 "use server";
 
 import { stripe } from "@/lib/stripe";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { auth } from "@/auth";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 

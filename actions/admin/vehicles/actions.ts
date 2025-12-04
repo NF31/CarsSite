@@ -1,7 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { type Prisma } from "@prisma/client";
+import prisma, { type Prisma } from '@/lib/prisma'
 import type { TransmissionType } from "@/lib/types/transmission-type";
 import type { FuelType } from "@/lib/types/fuel-type";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";

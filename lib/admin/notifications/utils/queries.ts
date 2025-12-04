@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { BookingStatus } from "@/lib/types/booking-status";
 
 export async function getViewedNotifications(adminId?: string) {

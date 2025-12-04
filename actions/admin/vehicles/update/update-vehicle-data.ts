@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import type { UpdateVehicleInput } from "@/lib/validations/vehicle";
 import type { UpdateVehicleResult } from "./types";
 import { cleanupAddedImagesOnError } from "./handle-vehicle-images";

@@ -1,12 +1,8 @@
 import type { MaintenanceStatus } from "@/lib/types/maintenance-status";
 import type { MaintenanceType } from "@/lib/types/maintenance-type";
-import { type Prisma } from "@prisma/client";
-import type {
-  MaintenanceRecord,
-  MaintenanceVehicleInfo,
-} from "@/lib/maintenance/serialization";
+import type { MaintenanceRecord, MaintenanceVehicleInfo } from "@/lib/maintenance/serialization";
 
-export type { MaintenanceRecord, MaintenanceVehicleInfo } from "@/lib/maintenance/serialization";
+export type { MaintenanceRecord, MaintenanceVehicleInfo };
 
 export type MaintenanceStatusFilter =
   | MaintenanceStatus

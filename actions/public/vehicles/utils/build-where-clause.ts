@@ -1,4 +1,4 @@
-import { type Prisma } from "@prisma/client";
+import type { Prisma } from '@/lib/prisma';
 import type { PublicVehicleSearchFilters } from "../types";
 import { mapCategoryToVehicleCategories } from "./map-category";
 import { buildAvailabilityFilter } from "./build-availability-filter";

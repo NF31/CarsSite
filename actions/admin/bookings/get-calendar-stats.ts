@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { BookingStatus } from "@/lib/types/booking-status";
 import { startOfMonth, endOfMonth } from "date-fns";
 

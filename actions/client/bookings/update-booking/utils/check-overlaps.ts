@@ -1,7 +1,7 @@
 import { BookingStatus } from "@/lib/types/booking-status";
 import { MaintenanceStatus } from "@/lib/types/maintenance-status";
 import { MaintenanceType } from "@/lib/types/maintenance-type";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 
 /**
  * Vérifie s'il y a des réservations qui se chevauchent
