@@ -1,4 +1,4 @@
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   [BookingStatus.PENDING]: "En attente",

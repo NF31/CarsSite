@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { getBookingConfirmationEmailTemplate } from "@/lib/templates/booking-confirmation-email";
 import { getBookingUpdateEmailTemplate } from "@/lib/templates/booking-update-email";
 import { getBookingReminderEmailTemplate } from "@/lib/templates/booking-reminder-email";
