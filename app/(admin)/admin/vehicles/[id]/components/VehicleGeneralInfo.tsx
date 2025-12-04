@@ -17,7 +17,8 @@ import {
   fuelTypeLabels,
   transmissionLabels,
 } from "../utils";
-import type { VehicleStatus, VehicleCategory, FuelType, TransmissionType } from "@prisma/client";
+import type { VehicleCategory, FuelType, TransmissionType } from "@prisma/client";
+import type { VehicleStatus } from "@/lib/types/vehicle-status";
 import { AlertCircle } from "lucide-react";
 
 interface VehicleGeneralInfoProps {

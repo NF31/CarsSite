@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 
 const dateTimeString = z
   .string()

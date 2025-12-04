@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 import { addDays } from "date-fns";
 
 /**

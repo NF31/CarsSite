@@ -1,4 +1,5 @@
-import { BookingStatus, VehicleCategory } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import type { VehicleCategory } from "@prisma/client";
 
 export const statusLabels: Record<
   BookingStatus,
