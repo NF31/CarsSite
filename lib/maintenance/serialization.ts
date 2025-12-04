@@ -1,9 +1,7 @@
-import {
-  MaintenanceStatus,
-  MaintenanceType,
-  VehicleStatus,
-  type Prisma,
-} from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
+import { type Prisma } from "@prisma/client";
 
 export interface MaintenanceVehicleInfo {
   id: string;
