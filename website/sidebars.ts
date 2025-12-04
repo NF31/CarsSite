@@ -29,7 +29,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: '📋 Requirements',
       items: [
-        'requirements/01-user-stories-complete',
+        'requirements/user-stories-complete',
       ],
     },
     
@@ -38,7 +38,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: '📐 Specifications',
       items: [
-        'specs/02-technical-specifications',
+        'specs/technical-specifications',
       ],
     },
     
@@ -47,11 +47,11 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: '🏗️ Architecture',
       items: [
-        'architecture/13-global-architecture-overview',
-        'architecture/09-admin-directory-structure',
-        'architecture/06-data-models',
-        'architecture/07-data-dictionary',
-        'architecture/08-prisma-schema',
+        'architecture/global-architecture-overview',
+        'architecture/admin-directory-structure',
+        'architecture/data-models',
+        'architecture/data-dictionary',
+        'architecture/prisma-schema',
       ],
     },
     
@@ -62,8 +62,8 @@ const sidebars: SidebarsConfig = {
       items: [
         'design/design-system',
         'design/content-strategy',
-        'design/03-user-experience-design',
-        'design/18-competitive-analysis',
+        'design/user-experience-design',
+        'design/competitive-analysis',
       ],
     },
     
@@ -72,8 +72,8 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: '🎛️ Admin Interface',
       items: [
-        'admin-interface/04-admin-interface-detailed',
-        'admin-interface/05-admin-navbar-dashboard',
+        'admin-interface/admin-interface-detailed',
+        'admin-interface/admin-navbar-dashboard',
       ],
     },
     
@@ -82,7 +82,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: '🔄 Workflows',
       items: [
-        'workflows/16-workflows-detailed',
+        'workflows/workflows-detailed',
         'workflows/workflow-reservation-complet',
         'workflows/workflow-annulation-reservation',
         'workflows/workflow-modification-dates-complet',
@@ -102,9 +102,9 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: '📖 Reference',
       items: [
-        'reference/14-api-reference-complete',
-        'reference/15-implementation-examples',
-        'reference/17-insurance-services-detailed',
+        'reference/api-reference-complete',
+        'reference/implementation-examples',
+        'reference/insurance-services-detailed',
         'reference/account-deletion-process',
       ],
     },
@@ -123,12 +123,12 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: '✅ Project Status',
       items: [
-        'status/10-documentation-checklist',
-        'status/11-complete-documentation-review',
-        'status/12-final-readiness-assessment',
-        'status/19-complete-project-status',
-        'status/20-documentation-update-summary',
-        'status/21-etat-projet-mvp',
+        'status/documentation-checklist',
+        'status/complete-documentation-review',
+        'status/final-readiness-assessment',
+        'status/complete-project-status',
+        'status/documentation-update-summary',
+        'status/etat-projet-mvp',
       ],
     },
   ],
