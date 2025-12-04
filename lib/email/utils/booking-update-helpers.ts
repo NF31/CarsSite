@@ -1,4 +1,4 @@
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import type { BookingUpdateEmailParams } from "../types";
 
 export function getBookingUpdateStatusLabels(
