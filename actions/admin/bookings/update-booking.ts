@@ -3,7 +3,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { Prisma } from "@prisma/client";
 import {
   updateBookingSchema,
   type UpdateBookingPayload,
@@ -185,9 +184,15 @@ export async function updateBookingAction(
       };
     } catch (error) {
       if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
         error.code === "P2002" &&
-        error.meta?.target === "bookings_reference_key"
+        "meta" in error &&
+        typeof error.meta === "object" &&
+        error.meta !== null &&
+        "target" in error.meta &&
+        error.meta.target === "bookings_reference_key"
       ) {
         return {
           success: false,
