@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { CLIENT_STATUS_ICONS } from "@/components/admin/clients/client-helpers";
 import { computeBookingStatus } from "@/components/admin/clients/details/utils";
 import type { ClientDetail, ClientDetailBooking } from "@/actions/admin/clients";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 
 interface BookingWithStatus extends ClientDetailBooking {
   computedStatus: BookingStatus;

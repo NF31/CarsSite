@@ -1,4 +1,4 @@
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import type { BookingListItem } from "./types";
 import { formatPeriod } from "./utils/format-period";
 import { normalizeStatus, type BookingForStatusNormalization } from "./utils/normalize-status";

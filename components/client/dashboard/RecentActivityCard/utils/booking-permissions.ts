@@ -1,4 +1,4 @@
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import type { ClientRecentBooking } from "@/actions/client/bookings/get-recent";
 
 /**
