@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ImageUpload } from "@/components/admin/vehicles/add/ImageUpload";
-import type { UseFormWatch, FieldErrors } from "react-hook-form";
+import { useWatch, type Control, type FieldErrors } from "react-hook-form";
 import type { UpdateVehicleInput } from "@/lib/validations/vehicle";
 
 interface ImageData {
@@ -14,15 +14,18 @@ interface VehicleImagesSectionProps {
   images: ImageData[];
   onImagesChange: (images: ImageData[]) => void;
   errors: FieldErrors<UpdateVehicleInput>;
-  watch: UseFormWatch<UpdateVehicleInput>;
+  control: Control<UpdateVehicleInput>;
 }
 
 export const VehicleImagesSection = memo(function VehicleImagesSection({
   images,
   onImagesChange,
   errors,
-  watch,
+  control,
 }: VehicleImagesSectionProps) {
+  const brand = useWatch({ control, name: "brand" });
+  const model = useWatch({ control, name: "model" });
+
   return (
     <Card>
       <CardHeader>
@@ -38,8 +41,8 @@ export const VehicleImagesSection = memo(function VehicleImagesSection({
           error={errors.images?.message}
           minImages={5}
           maxImages={20}
-          brand={watch("brand")}
-          model={watch("model")}
+          brand={brand}
+          model={model}
         />
       </CardContent>
     </Card>

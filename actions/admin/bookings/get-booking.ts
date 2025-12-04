@@ -3,12 +3,10 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import {
-  BookingStatus,
-  ServicePricingType,
-  UserRole,
-  VehicleStatus,
-} from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { ServicePricingType } from "@/lib/types/service-pricing-type";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
+import { UserRole } from "@/lib/types/user-role";
 import { extractCloudinaryAssetInfo } from "@/lib/cloudinary-utils";
 
 export interface BookingDetailService {
