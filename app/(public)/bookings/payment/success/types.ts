@@ -1,4 +1,4 @@
-import type { BookingStatus } from "@prisma/client";
+import type { BookingStatus } from "@/lib/types/booking-status";
 
 /**
  * Types pour la page de succès de paiement

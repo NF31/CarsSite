@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { MaintenanceStatus, MaintenanceType, VehicleStatus } from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
 
 export async function autoUpdateMaintenanceStatuses(now: Date): Promise<void> {
   console.log("🕒 [Maintenance] Auto-update start:", now.toISOString());

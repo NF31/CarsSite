@@ -3,7 +3,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import type { ServicePricingType, VehicleCategory } from "@prisma/client";
+import type { ServicePricingType } from "@/lib/types/service-pricing-type";
+import type { VehicleCategory } from "@prisma/client";
 
 export interface SingleServiceRecord {
   id: string;

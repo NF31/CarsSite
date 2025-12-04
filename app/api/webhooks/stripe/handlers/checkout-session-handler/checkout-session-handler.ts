@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { BookingStatus, PaymentStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { PaymentStatus } from "@/lib/types/payment-status";
 import { calculateBookingPriceAction } from "@/actions/public/bookings/calculate-price";
 import { extractTime, getPaymentTypeFromMetadata } from "../../utils/helpers";
 import type { CheckoutSessionData } from "../../types";

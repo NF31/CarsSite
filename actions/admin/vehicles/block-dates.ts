@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { MaintenanceType } from "@prisma/client";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
 
 export interface BlockDatesResult {
   success: boolean;

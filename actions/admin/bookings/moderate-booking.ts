@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { moderateSchema, validateAuth, validateBooking } from "./moderate-booking/utils/validation";
 import { handleModificationRequest } from "./moderate-booking/handlers/modification-handler";
 import { handleCancellationRequest } from "./moderate-booking/handlers/cancellation-handler";

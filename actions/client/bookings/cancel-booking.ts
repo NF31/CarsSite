@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { headers } from "next/headers";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit-redis";
 import { sendBookingCancellationRequestEmail } from "@/lib/email";
