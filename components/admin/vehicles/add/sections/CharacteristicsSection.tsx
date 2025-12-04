@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { CreateVehicleInput } from "@/lib/validations/vehicle";
-import type { TransmissionType, FuelType } from "@prisma/client";
+import type { TransmissionType } from "@/lib/types/transmission-type";
+import type { FuelType } from "@/lib/types/fuel-type";
 import type { VehicleCategory } from "@/lib/types/vehicle-category";
 
 interface CharacteristicsSectionProps {

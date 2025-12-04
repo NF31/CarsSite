@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateVehicleSchema, type UpdateVehicleInput } from "@/lib/validations/vehicle";
-import type { TransmissionType, FuelType } from "@prisma/client";
+import type { TransmissionType } from "@/lib/types/transmission-type";
+import type { FuelType } from "@/lib/types/fuel-type";
 import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import { BasicInfoSection } from "@/components/admin/vehicles/add/sections/BasicInfoSection";
 import { CharacteristicsSection } from "@/components/admin/vehicles/add/sections/CharacteristicsSection";
@@ -109,8 +110,8 @@ export function VehicleEditForm({ vehicle, locations }: VehicleEditFormProps) {
     },
   });
 
-  const { watch, setValue, trigger, formState: { isValid, isDirty, errors } } = form;
-  const locationIdValue = watch("locationId");
+  const { setValue, trigger, formState: { isValid, isDirty, errors } } = form;
+  const locationIdValue = useWatch({ control: form.control, name: "locationId" });
 
   const { images, handleImagesChange, imagesCount } = useVehicleImages({
     initialImages,
@@ -151,8 +152,8 @@ export function VehicleEditForm({ vehicle, locations }: VehicleEditFormProps) {
         className="space-y-6"
       >
         {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
         <BasicInfoSection
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           form={form as any}
           getFieldValidation={getFieldValidation}
           getSelectValidation={getSelectValidation}
@@ -160,8 +161,8 @@ export function VehicleEditForm({ vehicle, locations }: VehicleEditFormProps) {
         />
 
         {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
         <CharacteristicsSection
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           form={form as any}
           getFieldValidation={getFieldValidation}
           getSelectValidation={getSelectValidation}
@@ -171,16 +172,22 @@ export function VehicleEditForm({ vehicle, locations }: VehicleEditFormProps) {
         />
 
         {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
-        <FeaturesSection form={form as any} availableFeatures={availableFeatures} />
+        <FeaturesSection 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          form={form as any} 
+          availableFeatures={availableFeatures} 
+        />
 
         {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
-        <PricingSection form={form as any} getFieldValidation={getFieldValidation} />
+        <PricingSection 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          form={form as any} 
+          getFieldValidation={getFieldValidation} 
+        />
 
         {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
         <LocationSection
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           form={form as any}
           getSelectValidation={getSelectValidation}
           locationOptions={locationOptions}
@@ -190,16 +197,20 @@ export function VehicleEditForm({ vehicle, locations }: VehicleEditFormProps) {
           images={images}
           onImagesChange={handleImagesChange}
           errors={errors}
-          watch={watch}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          control={form.control as any}
         />
 
         {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
-        <DescriptionSection form={form as any} getFieldValidation={getFieldValidation} />
+        <DescriptionSection 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          form={form as any} 
+          getFieldValidation={getFieldValidation} 
+        />
 
         {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
         <FormActions
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           form={form as any}
           isSubmitting={isSubmitting}
           imagesCount={imagesCount}

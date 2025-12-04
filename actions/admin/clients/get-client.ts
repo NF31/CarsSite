@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { BookingStatus } from "@/lib/types/booking-status";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/types/user-role";
 import type { Prisma } from "@prisma/client";
 
 import type { ClientStatus } from "./get-clients";

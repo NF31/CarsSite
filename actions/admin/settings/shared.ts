@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { SettingCategory } from "@prisma/client";
+import { SettingCategory } from "@/lib/types/setting-category";
 import type {
   AdminSettingsData,
   AdminEmailNotificationsSettings,

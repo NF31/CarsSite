@@ -15,7 +15,8 @@ import {
 import { MoreVertical, Eye, Edit, Trash2, XCircle, Image as ImageIcon, Car, Gauge, Users, Fuel, Calendar, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { TransmissionType, FuelType } from "@prisma/client";
+import type { TransmissionType } from "@/lib/types/transmission-type";
+import type { FuelType } from "@/lib/types/fuel-type";
 import type { VehicleCategory } from "@/lib/types/vehicle-category";
 import type { VehicleStatus } from "@/lib/types/vehicle-status";
 import { DeleteVehicleDialog } from "./DeleteVehicleDialog";

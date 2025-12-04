@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/lib/types/user-role";
 import type { ClientStats } from "./types";
 import { ONE_DAY_MS } from "./constants";
 

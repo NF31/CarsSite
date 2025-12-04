@@ -4,15 +4,11 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   createBookingSchema,
-  type CreateBookingInput,
   type CreateBookingPayload,
 } from "@/lib/validations/booking";
-import {
-  BookingStatus,
-  MaintenanceStatus,
-  MaintenanceType,
-  VehicleStatus,
-} from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { startOfYear, endOfYear } from "date-fns";
