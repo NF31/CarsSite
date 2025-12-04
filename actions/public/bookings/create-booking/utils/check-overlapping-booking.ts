@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 
 export async function checkOverlappingBooking(
   vehicleId: string,

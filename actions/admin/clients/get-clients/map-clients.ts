@@ -1,5 +1,5 @@
 import type { ClientListItem, ClientStatus } from "./types";
-import type { BookingStatus } from "@prisma/client";
+import type { BookingStatus } from "@/lib/types/booking-status";
 
 interface PrismaClient {
   id: string;

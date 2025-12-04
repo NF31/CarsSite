@@ -1,4 +1,4 @@
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { roundAmount } from "../../../utils/helpers";
 import type { BookingUpdateData, PaymentAmounts } from "../types";
 import type { PaymentType } from "../../../types";

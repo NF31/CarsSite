@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { InvoiceStatus, Prisma } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
+import { Prisma } from "@prisma/client";
 
 export interface InvoiceListItem {
   id: string;

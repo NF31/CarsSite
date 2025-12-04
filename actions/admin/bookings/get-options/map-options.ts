@@ -1,5 +1,7 @@
 import { extractCloudinaryAssetInfo } from "@/lib/cloudinary-utils";
-import { UserRole, VehicleStatus, ServicePricingType } from "@prisma/client";
+import { ServicePricingType } from "@/lib/types/service-pricing-type";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
+import { UserRole } from "@prisma/client";
 import type {
   BookingUserOption,
   BookingVehicleOption,

@@ -1,4 +1,4 @@
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import Stripe from "stripe";
 import type { PaymentType } from "../../types";
 

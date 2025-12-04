@@ -1,4 +1,5 @@
-import type { MaintenanceStatus, MaintenanceType } from "@prisma/client";
+import type { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import type { MaintenanceType } from "@/lib/types/maintenance-type";
 import type { Prisma } from "@prisma/client";
 import type {
   MaintenanceRecord,

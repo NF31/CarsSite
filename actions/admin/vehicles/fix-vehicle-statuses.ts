@@ -3,7 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { BookingStatus, VehicleStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
 
 export interface FixVehicleStatusesResult {
   success: boolean;

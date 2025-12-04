@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import type { VehicleCategory, VehicleStatus, TransmissionType, FuelType, Prisma } from "@prisma/client";
+import type { VehicleCategory, TransmissionType, FuelType, Prisma } from "@prisma/client";
+import type { VehicleStatus } from "@/lib/types/vehicle-status";
 import {
   getOrSetCache,
   CACHE_PREFIXES,

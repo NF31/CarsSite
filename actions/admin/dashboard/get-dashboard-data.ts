@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@/lib/types/booking-status";
 import { deriveBookingStatus } from "@/lib/booking-status-sync";
 
 export interface DashboardData {

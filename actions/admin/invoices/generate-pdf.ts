@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus } from "@/lib/types/invoice-status";
 import { generateInvoicePDF } from "@/lib/invoice-pdf";
 import { uploadPDF, getSignedDownloadUrl } from "@/lib/cloudinary";
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";

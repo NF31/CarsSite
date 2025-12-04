@@ -3,7 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { MaintenanceStatus, MaintenanceType, VehicleStatus } from "@prisma/client";
+import { MaintenanceStatus } from "@/lib/types/maintenance-status";
+import { MaintenanceType } from "@/lib/types/maintenance-type";
+import { VehicleStatus } from "@/lib/types/vehicle-status";
 
 export interface MaintenanceVehicleOption {
   id: string;
