@@ -1,8 +1,23 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { StatisticsCharts } from "@/components/admin/statistics/StatisticsCharts";
+import dynamic from "next/dynamic";
 import { getStatisticsData } from "@/actions/admin/statistics";
 import { StatisticsHeader, StatisticsCards, OperationalTracking } from "./components";
+
+// Lazy load StatisticsCharts (contient plusieurs graphiques Recharts lourds)
+const StatisticsCharts = dynamic(
+  () => import("@/components/admin/statistics/StatisticsCharts").then((mod) => ({ default: mod.StatisticsCharts })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Chargement des graphiques...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 
 export default async function AdminStatisticsPage() {
   const session = await auth();
