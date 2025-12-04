@@ -1,5 +1,5 @@
 import type { GetMaintenanceFilters } from "../types";
-import type { Prisma } from "@prisma/client";
+import { type Prisma } from "@prisma/client";
 
 export function buildOrderBy(
   filters: GetMaintenanceFilters,
