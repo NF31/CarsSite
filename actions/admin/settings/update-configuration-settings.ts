@@ -25,24 +25,18 @@ const configurationSettingsSchema = z.object({
       message: "La politique d'annulation doit contenir au moins 10 caractères.",
     }),
   taxRate: z.coerce
-    .number({
-      invalid_type_error: "Le taux de TVA doit être un nombre.",
-    })
+    .number({ message: "Le taux de TVA doit être un nombre." })
     .refine(finiteNumber, { message: "Le taux de TVA doit être un nombre valide." })
     .min(0, { message: "Le taux de TVA ne peut pas être négatif." })
     .max(100, { message: "Le taux de TVA ne peut pas dépasser 100%." }),
   deposit: z.coerce
-    .number({
-      invalid_type_error: "Le dépôt de garantie doit être un nombre.",
-    })
+    .number({ message: "Le dépôt de garantie doit être un nombre." })
     .refine(finiteNumber, {
       message: "Le dépôt de garantie doit être un nombre valide.",
     })
     .min(0, { message: "Le dépôt de garantie ne peut pas être négatif." }),
   serviceFee: z.coerce
-    .number({
-      invalid_type_error: "Les frais de service doivent être un nombre.",
-    })
+    .number({ message: "Les frais de service doivent être un nombre." })
     .refine(finiteNumber, { message: "Les frais de service doivent être un nombre valide." })
     .min(0, { message: "Les frais de service ne peuvent pas être négatifs." }),
 });

@@ -36,9 +36,15 @@ export function useRegisterSubmit() {
 
       // Rediriger vers la page de vérification d'email
       // Si l'email n'a pas été envoyé mais qu'on a un token dev, l'utiliser
-      if (!result.emailSent && (result as any).devToken) {
-        router.push(`/verify-email?token=${(result as any).devToken}&email=${encodeURIComponent(data.email)}&dev=true`);
-      } else if (result.emailSent) {
+      const successResult = result as {
+        success: true;
+        emailSent?: boolean;
+        devToken?: string;
+      };
+      
+      if (!successResult.emailSent && successResult.devToken) {
+        router.push(`/verify-email?token=${successResult.devToken}&email=${encodeURIComponent(data.email)}&dev=true`);
+      } else if (successResult.emailSent) {
         router.push(`/verify-email?email=${encodeURIComponent(data.email)}&sent=true`);
       } else {
         router.push(`/verify-email?email=${encodeURIComponent(data.email)}&error=true`);

@@ -244,7 +244,7 @@ export function BookingClientPage({
           </p>
         </CardHeader>
         <CardContent>
-          {currentStep === 1 && (
+          {currentStep === 1 && vehicle && (
             <BookingStep1Summary
               vehicle={vehicle}
               bookingData={bookingData}
@@ -254,7 +254,7 @@ export function BookingClientPage({
               canGoNext={canGoNext()}
             />
           )}
-          {currentStep === 2 && (
+          {currentStep === 2 && vehicle && (
             <BookingStep2Services
               vehicle={vehicle}
               bookingData={bookingData}
@@ -264,7 +264,7 @@ export function BookingClientPage({
               canGoNext={canGoNext()}
             />
           )}
-          {currentStep === 3 && (
+          {currentStep === 3 && vehicle && (
             <BookingStep3Information
               vehicle={vehicle}
               bookingData={bookingData}
@@ -275,7 +275,7 @@ export function BookingClientPage({
               isTermsAlreadyAccepted={isTermsAlreadyAccepted}
             />
           )}
-          {currentStep === 4 && (
+          {currentStep === 4 && vehicle && (
             <BookingStep4Payment
               vehicle={vehicle}
               bookingData={bookingData}

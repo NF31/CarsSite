@@ -49,6 +49,8 @@ export function useMaintenanceActions({ onStatusChangeSuccess }: UseMaintenanceA
             id: maintenance.id,
             status,
             type: maintenance.type,
+            description: maintenance.description ?? undefined,
+            notes: maintenance.notes ?? undefined,
           });
 
           if (result.success && result.data) {

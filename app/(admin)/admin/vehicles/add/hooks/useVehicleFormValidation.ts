@@ -9,7 +9,6 @@ interface UseVehicleFormValidationProps {
 export function useVehicleFormValidation({ form }: UseVehicleFormValidationProps) {
   const getFieldValidationHelper = useCallback(
     (fieldName: keyof CreateVehicleInput) => {
-      // @ts-expect-error - Type incompatibility with react-hook-form generic types
       return getFieldValidation(form, fieldName);
     },
     [form],
@@ -17,7 +16,6 @@ export function useVehicleFormValidation({ form }: UseVehicleFormValidationProps
 
   const getSelectValidationHelper = useCallback(
     (fieldName: keyof CreateVehicleInput) => {
-      // @ts-expect-error - Type incompatibility with react-hook-form generic types
       return getSelectValidation(form, fieldName);
     },
     [form],

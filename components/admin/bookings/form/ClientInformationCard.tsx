@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { BookingFormValues } from "../BookingForm";
+import type { BookingFormValues } from "@/hooks/useBookingForm";
 import type { BookingUserOption } from "@/actions/admin/bookings";
 
 interface DriverLicenseUploadInfo {

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ServicePricingType } from "@prisma/client";
-import type { BookingFormValues } from "../BookingForm";
+import type { BookingFormValues } from "@/hooks/useBookingForm";
 import type { BookingServiceOption } from "@/actions/admin/bookings";
 
 interface ServicesCardProps {

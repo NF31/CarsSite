@@ -257,8 +257,11 @@ export const getSignedDownloadUrl = (
     options.attachment = true;
   }
 
-  // Utiliser null pour le format car il est déjà dans le public_id
-  const signedUrl = cloudinary.utils.private_download_url(publicIdForUrl, null, options);
+  // Extraire le format depuis le public_id ou utiliser le format par défaut
+  const formatForUrl = publicIdForUrl.includes(".") 
+    ? publicIdForUrl.split(".").pop() || format 
+    : format;
+  const signedUrl = cloudinary.utils.private_download_url(publicIdForUrl, formatForUrl, options);
   
   console.log("[getSignedDownloadUrl] URL signée générée:", signedUrl);
   

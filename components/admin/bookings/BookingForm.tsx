@@ -94,7 +94,7 @@ export function BookingForm({
   });
 
   const submit = useBookingFormSubmit({
-    form: bookingForm.form,
+    form: bookingForm.form as unknown as import("react-hook-form").UseFormReturn<import("@/hooks/useBookingForm").BookingFormValues>,
     isEditMode: bookingForm.isEditMode,
     booking,
     availability: availability.availability,
@@ -175,10 +175,8 @@ export function BookingForm({
         </Card>
       )}
 
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */}
-      <FormProvider {...(bookingForm.form as any)}>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <form onSubmit={bookingForm.form.handleSubmit(submit.handleSubmit as any)} className="space-y-6">
+      <FormProvider {...bookingForm.form}>
+        <form onSubmit={bookingForm.form.handleSubmit(submit.handleSubmit as unknown as Parameters<typeof bookingForm.form.handleSubmit>[0])} className="space-y-6">
           <ClientInformationCard
             userOptions={bookingForm.userOptions}
             selectedUser={bookingForm.selectedUser}

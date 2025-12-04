@@ -11,19 +11,18 @@ export const quickClientSchema = z.object({
     .email("Adresse email invalide")
     .transform((value) => value.trim().toLowerCase()),
   phone: z
-    .string()
-    .optional()
+    .union([z.string(), z.undefined()])
     .transform((value) => {
-      if (!value) {
+      if (!value || typeof value !== "string") {
         return undefined;
       }
       const trimmed = value.trim();
       return trimmed.length > 0 ? trimmed : undefined;
     }),
-  sendInvitation: z.boolean().optional().default(false),
+  sendInvitation: z.boolean(),
 });
 
-export type QuickClientInput = z.infer<typeof quickClientSchema>;
+export type QuickClientInput = z.output<typeof quickClientSchema>;
 
 const normalizePhone = (value?: string | null) => {
   if (!value) {

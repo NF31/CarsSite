@@ -33,7 +33,7 @@ export async function getPlacesAutocomplete({
   const url = new URL("https://maps.googleapis.com/maps/api/place/autocomplete/json");
 
   url.searchParams.set("input", input);
-  url.searchParams.set("key", NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
+  url.searchParams.set("key", NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!);
   url.searchParams.set("language", language);
   url.searchParams.set("components", components);
   url.searchParams.set("radius", "25000");

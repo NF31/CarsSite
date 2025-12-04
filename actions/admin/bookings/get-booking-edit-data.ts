@@ -4,15 +4,21 @@ import { notFound, redirect } from "next/navigation";
 import { getBookingByIdAction, getBookingOptionsAction } from "@/actions/admin/bookings";
 import { formatDateTimeLocal } from "@/lib/utils/date-formatters";
 import type { BookingFormInitialValues } from "@/components/admin/bookings/BookingForm";
+import type { 
+  BookingUserOption,
+  BookingVehicleOption,
+  BookingLocationOption,
+  BookingServiceOption,
+} from "./get-options/types";
 
 interface GetBookingEditDataResult {
   success: true;
   data: {
     booking: BookingFormInitialValues;
-    users: Awaited<ReturnType<typeof getBookingOptionsAction>>["data"]["users"];
-    vehicles: Awaited<ReturnType<typeof getBookingOptionsAction>>["data"]["vehicles"];
-    locations: Awaited<ReturnType<typeof getBookingOptionsAction>>["data"]["locations"];
-    services: Awaited<ReturnType<typeof getBookingOptionsAction>>["data"]["services"];
+    users: BookingUserOption[];
+    vehicles: BookingVehicleOption[];
+    locations: BookingLocationOption[];
+    services: BookingServiceOption[];
   };
 }
 
