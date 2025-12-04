@@ -3,7 +3,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { Prisma } from "@prisma/client";
 import { UserRole } from "@/lib/types/user-role";
 import { updateClientSchema, type UpdateClientInput } from "@/lib/validations/client";
 
@@ -151,18 +150,26 @@ export async function updateClientAction(
       },
     };
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002" && Array.isArray(error.meta?.target)) {
-        if (error.meta?.target.includes("email")) {
-          return {
-            success: false,
-            error: "Cette adresse email est déjà utilisée par un autre compte.",
-            fieldErrors: {
-              email: ["Cette adresse email est déjà utilisée par un autre compte."],
-            },
-            status: 409,
-          };
-        }
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002" &&
+      "meta" in error &&
+      typeof error.meta === "object" &&
+      error.meta !== null &&
+      "target" in error.meta &&
+      Array.isArray(error.meta.target)
+    ) {
+      if (error.meta?.target.includes("email")) {
+        return {
+          success: false,
+          error: "Cette adresse email est déjà utilisée par un autre compte.",
+          fieldErrors: {
+            email: ["Cette adresse email est déjà utilisée par un autre compte."],
+          },
+          status: 409,
+        };
       }
     }
 
