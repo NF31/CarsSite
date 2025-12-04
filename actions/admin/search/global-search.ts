@@ -1,8 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { type Prisma } from "@prisma/client";
-
+import prisma, { type Prisma } from '@/lib/prisma'
 export interface SearchResult {
   vehicles: Array<{
     id: string;

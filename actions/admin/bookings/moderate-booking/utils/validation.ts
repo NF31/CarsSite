@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { z } from "zod";
 import type { BookingModerationPayload } from "../types";
 

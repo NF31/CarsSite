@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma, { type Prisma } from '@/lib/prisma'
 import { BookingStatus } from "@/lib/types/booking-status";
 import { MaintenanceStatus } from "@/lib/types/maintenance-status";
 import { MaintenanceType } from "@/lib/types/maintenance-type";
@@ -103,7 +103,7 @@ export async function checkVehicleAvailabilityAction(
     }
 
     // Vérifier les conflits de réservation (en excluant la réservation spécifiée si fournie)
-    const bookingConflictWhere: any = {
+    const bookingConflictWhere: Prisma.BookingWhereInput = {
       vehicleId,
       status: {
         in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS],

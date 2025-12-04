@@ -1,5 +1,5 @@
 import { PaymentStatus } from "@/lib/types/payment-status";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
 interface CreatePaymentRecordParams {
   bookingId: string;

@@ -1,6 +1,4 @@
-import { prisma } from "@/lib/prisma";
-import { type Prisma } from "@prisma/client";
-
+import prisma, { type Prisma } from '@/lib/prisma'
 interface GetClientsDataParams {
   where: Prisma.UserWhereInput;
   orderBy: Prisma.UserOrderByWithRelationInput;

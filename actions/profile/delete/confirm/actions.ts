@@ -1,7 +1,7 @@
 "use server";
 
 import { signOut } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { verifyAccountDeletionToken, deleteAccountDeletionToken } from "@/lib/account-deletion-token";
 import crypto from "crypto";
 

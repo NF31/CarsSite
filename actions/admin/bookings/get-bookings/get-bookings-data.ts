@@ -1,5 +1,4 @@
-import { prisma } from "@/lib/prisma";
-import { type Prisma } from "@prisma/client";
+import prisma, { type Prisma } from "@/lib/prisma";
 import { BOOKING_INCLUDE } from "./get-booking-select";
 import type { BookingWithRelations } from "./map-bookings";
 

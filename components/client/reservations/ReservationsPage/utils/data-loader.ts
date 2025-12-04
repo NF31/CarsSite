@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
 export async function loadReservationsData(userId: string) {
   const [bookings, cancellationPolicySetting] = await Promise.all([

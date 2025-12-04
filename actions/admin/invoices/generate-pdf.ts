@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { InvoiceStatus } from "@/lib/types/invoice-status";
 import { generateInvoicePDF } from "@/lib/invoice-pdf";
 import { uploadPDF, getSignedDownloadUrl } from "@/lib/cloudinary";

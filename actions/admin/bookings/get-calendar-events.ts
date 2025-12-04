@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { mapBookingToCalendarEvent } from "@/lib/bookings/calendar";
 
 export interface CalendarRange {

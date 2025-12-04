@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { quickClientSchema, type QuickClientInput } from "@/lib/validations/client";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";

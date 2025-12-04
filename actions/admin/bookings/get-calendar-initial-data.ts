@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { addMonths, endOfMonth, startOfMonth, subMonths } from "date-fns";
 import { mapBookingToCalendarEvent, type CalendarRange } from "@/actions/admin/bookings";
 

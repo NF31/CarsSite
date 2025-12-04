@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { createDefaultAdminSettings } from "@/actions/admin/settings/shared";
 import {
   getOrSetCache,

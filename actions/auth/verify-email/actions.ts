@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { verifyToken, deleteVerificationToken } from "@/lib/verification-token";
 
 export async function verifyEmailAction(token: string) {

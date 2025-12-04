@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
 /**
  * Crée un hash SHA-256 de l'email pour la traçabilité légale

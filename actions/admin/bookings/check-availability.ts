@@ -1,7 +1,7 @@
  "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { redirect } from "next/navigation";
 import { BookingStatus } from "@/lib/types/booking-status";
 import { MaintenanceStatus } from "@/lib/types/maintenance-status";

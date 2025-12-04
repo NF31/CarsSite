@@ -1,4 +1,4 @@
-import { type Prisma } from "@prisma/client";
+import type { Prisma } from '@/lib/prisma';
 import type { UpdateBookingInput } from "@/lib/validations/booking";
 import { calculateRemainingAmount } from "./calculate-remaining-amount";
 

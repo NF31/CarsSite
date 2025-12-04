@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { generateInvoicePDFAction } from "./generate-pdf";
 import { getInvoicesAction } from "./get-invoices";
 import { sendInvoiceEmail } from "@/lib/email";

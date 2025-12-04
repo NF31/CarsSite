@@ -1,4 +1,4 @@
-import { type Prisma } from "@prisma/client";
+import type { Prisma } from '@/lib/prisma'
 import { UserRole } from "@/lib/types/user-role";
 import type { GetClientsFilters, ClientReservationsFilter } from "./types";
 import { RETURNING_CLIENTS_MIN_BOOKINGS, VIP_CLIENTS_MIN_BOOKINGS } from "./constants";

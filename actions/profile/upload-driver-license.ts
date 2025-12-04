@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import prisma from '@/lib/prisma'
 import { cloudinary, uploadDriverLicensePDF } from "@/lib/cloudinary";
 import { writeFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
