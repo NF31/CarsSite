@@ -42,11 +42,11 @@ export function UpcomingBookingsList({
         >
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+              <h2 className="text-sm sm:text-base font-semibold text-gray-900">
                 {booking.vehicle
                   ? `${booking.vehicle.brand} ${booking.vehicle.model}`
                   : booking.reference}
-              </h3>
+              </h2>
               <Badge className={`${BOOKING_STATUS_COLORS[booking.derivedStatus]} text-[10px]`}>
                 {BOOKING_STATUS_LABELS[booking.derivedStatus]}
               </Badge>
