@@ -157,9 +157,9 @@ export function ClientBookingDetailsPage({ booking: initialBooking }: ClientBook
                   </div>
                   <div className="flex-1 space-y-3">
                     <div>
-                      <h3 className="text-2xl font-bold">
+                      <h2 className="text-2xl font-bold">
                         {booking.vehicle.brand} {booking.vehicle.model}
-                      </h3>
+                      </h2>
                       <p className="text-muted-foreground">
                         {booking.vehicle.year} • {booking.vehicle.seats} places • {booking.vehicle.transmission} • {booking.vehicle.fuelType}
                       </p>

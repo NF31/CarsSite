@@ -88,9 +88,9 @@ export function Footer() {
             transition={{ duration: 0.4, delay: 0.1 }}
             className="mt-6 sm:mt-0"
           >
-            <h3 className="font-semibold text-sm sm:text-base mb-4 sm:mb-5 text-foreground uppercase tracking-wider">
+            <h2 className="font-semibold text-sm sm:text-base mb-4 sm:mb-5 text-foreground uppercase tracking-wider">
               Navigation
-            </h3>
+            </h2>
             <ul className="space-y-3 sm:space-y-3.5">
               {navigationLinks.map((link) => (
                 <li key={link.href}>
@@ -114,9 +114,9 @@ export function Footer() {
             transition={{ duration: 0.4, delay: 0.2 }}
             className="mt-6 sm:mt-0"
           >
-            <h3 className="font-semibold text-sm sm:text-base mb-4 sm:mb-5 text-foreground uppercase tracking-wider">
+            <h2 className="font-semibold text-sm sm:text-base mb-4 sm:mb-5 text-foreground uppercase tracking-wider">
               Légal
-            </h3>
+            </h2>
             <ul className="space-y-3 sm:space-y-3.5">
               {legalLinks.map((link) => (
                 <li key={link.href}>
@@ -140,9 +140,9 @@ export function Footer() {
             transition={{ duration: 0.4, delay: 0.3 }}
             className="mt-6 sm:mt-0"
           >
-            <h3 className="font-semibold text-sm sm:text-base mb-4 sm:mb-5 text-foreground uppercase tracking-wider">
+            <h2 className="font-semibold text-sm sm:text-base mb-4 sm:mb-5 text-foreground uppercase tracking-wider">
               Contact
-            </h3>
+            </h2>
             <ul className="space-y-3.5 sm:space-y-4">
               <li>
                 <a
