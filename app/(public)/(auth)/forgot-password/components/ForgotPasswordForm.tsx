@@ -57,6 +57,7 @@ export const ForgotPasswordForm = memo(function ForgotPasswordForm({
           type="submit"
           className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 sm:py-4 md:py-6 text-sm sm:text-base transition-all duration-200"
           disabled={isLoading}
+          aria-label={isLoading ? "Envoi du lien de réinitialisation en cours" : "Envoyer le lien de réinitialisation"}
         >
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">

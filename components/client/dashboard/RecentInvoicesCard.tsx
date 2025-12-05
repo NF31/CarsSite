@@ -115,6 +115,7 @@ export function RecentInvoicesCard({ invoices }: RecentInvoicesCardProps) {
                 onClick={() => handleDownload(invoice.id)}
                 disabled={isDownloading}
                 className="inline-flex items-center gap-2"
+                aria-label={isDownloading ? "Génération de la facture en cours" : "Télécharger la facture"}
               >
                 {isDownloading ? (
                   <>

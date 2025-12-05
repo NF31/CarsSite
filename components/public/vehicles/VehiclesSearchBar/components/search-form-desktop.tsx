@@ -111,10 +111,11 @@ export function SearchFormDesktop({
             size="sm"
             onClick={onToggleDifferentReturn}
             className="text-xs h-9 text-primary w-full"
+            aria-label={formData.showDifferentReturn ? "Utiliser le même lieu pour le retour" : "Utiliser un lieu différent pour le retour"}
           >
             {formData.showDifferentReturn ? "Même lieu" : "Lieu différent"}
           </Button>
-          <Button type="submit" onClick={onSubmit} className="h-10 w-full" size="sm">
+          <Button type="submit" onClick={onSubmit} className="h-10 w-full" size="sm" aria-label="Rechercher des véhicules disponibles">
             Rechercher
           </Button>
         </div>
