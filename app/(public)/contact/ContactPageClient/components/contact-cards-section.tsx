@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 import type { ContactCard } from "../types";
 
 interface ContactCardsSectionProps {

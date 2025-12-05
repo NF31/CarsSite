@@ -1,12 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { HomeVehicleCard } from "@/components/public/home/HomeVehicleCard";
-import { VehicleDetailsInline } from "@/components/public/vehicles/VehicleDetailsInline";
+import dynamic from "next/dynamic";
 import { VehiclesFilters } from "@/components/public/vehicles/VehiclesFilters";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { AnimatePresence, m as motion } from "framer-motion";
+// Lazy load AnimatePresence (framer-motion)
+const AnimatePresence = dynamic(
+  () => import("framer-motion").then((mod) => ({ default: mod.AnimatePresence })),
+  { ssr: false }
+);
+
+// Lazy load MotionDiv wrapper
+const MotionDiv = dynamic(
+  () => import("@/components/ui/motion-div").then((mod) => ({ default: mod.MotionDivWrapper })),
+  { ssr: false }
+);
+
+// Lazy load HomeVehicleCard (contient framer-motion)
+// Note: ssr: true pour permettre l'optimisation LCP (image prioritaire dans le HTML initial)
+const HomeVehicleCard = dynamic(
+  () => import("@/components/public/home/HomeVehicleCard").then((mod) => ({ default: mod.HomeVehicleCard })),
+  { ssr: true }
+);
+
+// Lazy load VehicleDetailsInline (contient animations et carousel)
+const VehicleDetailsInline = dynamic(
+  () => import("@/components/public/vehicles/VehicleDetailsInline").then((mod) => ({ default: mod.VehicleDetailsInline })),
+  { ssr: false }
+);
 
 interface Vehicle {
   id: string;
@@ -98,8 +120,9 @@ export function VehiclesPageClient({
 
         {/* Grille de véhicules et détails */}
         <div>
+          {/* Réserver l'espace pour la grille - éviter le CLS lors du chargement */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-            {vehicles.map((vehicle) => (
+            {vehicles.map((vehicle, index) => (
               <div
                 key={vehicle.id}
                 onClick={() => handleVehicleClick(vehicle.id)}
@@ -108,6 +131,7 @@ export function VehiclesPageClient({
                     ? "ring-2 ring-primary rounded-lg"
                     : "hover:scale-[1.02]"
                 }`}
+                style={{ minHeight: "400px" }} // Réserver l'espace minimum pour éviter le CLS
               >
                 <HomeVehicleCard
                   vehicle={vehicle}
@@ -116,6 +140,7 @@ export function VehiclesPageClient({
                   startTime={startTime}
                   endTime={endTime}
                   isSelected={selectedVehicleId === vehicle.id}
+                  priority={index === 0} // Optimiser le LCP : première image prioritaire
                 />
               </div>
             ))}
@@ -124,7 +149,7 @@ export function VehiclesPageClient({
           {/* Détails inline du véhicule sélectionné */}
           <AnimatePresence mode="wait">
             {selectedVehicleId && (
-              <motion.div
+              <MotionDiv
                 key={selectedVehicleId}
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -142,7 +167,7 @@ export function VehiclesPageClient({
                   returnLocation={returnLocation}
                   onClose={() => setSelectedVehicleId(null)}
                 />
-              </motion.div>
+              </MotionDiv>
             )}
           </AnimatePresence>
 

@@ -4,10 +4,25 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { GetPublicVehicleByIdResult } from "@/actions/public/vehicles/get-by-id";
 import { getUserDataForBookingAction } from "@/actions/public/bookings/get-user-data";
-import { BookingStep1Summary } from "@/components/public/bookings/BookingStep1Summary";
+import dynamic from "next/dynamic";
 import { BookingStep2Services } from "@/components/public/bookings/BookingStep2Services";
 import { BookingStep3Information } from "@/components/public/bookings/BookingStep3Information";
 import { BookingStep4Payment } from "@/components/public/bookings/BookingStep4Payment";
+
+// Lazy load BookingStep1Summary (contient Google Maps)
+const BookingStep1Summary = dynamic(
+  () => import("@/components/public/bookings/BookingStep1Summary").then((mod) => ({ default: mod.BookingStep1Summary })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ChevronRight } from "lucide-react";

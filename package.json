@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:analyze": "cross-env ANALYZE=true next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -63,6 +64,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.0.7",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/google.maps": "^3.58.1",
@@ -71,6 +73,7 @@
     "@types/pg": "^8.15.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "^16.0.7",
     "prisma": "^7.1.0",

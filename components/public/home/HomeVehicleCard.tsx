@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Star, Users, Gauge } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 interface HomeVehicleCardProps {
   vehicle: {
@@ -35,6 +35,7 @@ interface HomeVehicleCardProps {
   startTime?: string;
   endTime?: string;
   isSelected?: boolean;
+  priority?: boolean; // Pour optimiser le LCP - première image doit être prioritaire
 }
 
 const categoryLabels: Record<string, string> = {
@@ -56,7 +57,7 @@ const fuelTypeLabels: Record<string, string> = {
   HYBRID: "Hybride",
 };
 
-export function HomeVehicleCard({ vehicle, startDate, endDate, startTime, endTime, isSelected = false }: HomeVehicleCardProps) {
+export function HomeVehicleCard({ vehicle, startDate, endDate, startTime, endTime, isSelected = false, priority = false }: HomeVehicleCardProps) {
   const mainImage = vehicle.images[0] || "/placeholder-car.jpg";
   
   // Calculer le montant total si les dates sont fournies
@@ -94,22 +95,20 @@ export function HomeVehicleCard({ vehicle, startDate, endDate, startTime, endTim
     totalAmount = numberOfDays * vehicle.pricePerDay;
   }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-    >
+  // Pour le LCP, on évite l'animation sur le premier élément pour permettre le SSR
+  const cardContent = (
       <Card className="group h-full flex flex-col overflow-hidden border-2 hover:border-primary transition-all duration-300 hover:shadow-xl">
         <CardHeader className="p-0 relative">
-          <div className="relative w-full h-40 sm:h-48 overflow-hidden">
+          {/* Réserver l'espace pour éviter le CLS - aspect-ratio fixe */}
+          <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted">
             <Image
               src={mainImage}
               alt={`${vehicle.brand} ${vehicle.model}`}
               fill
               className="object-cover group-hover:scale-110 transition-transform duration-500"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              priority={priority}
+              fetchPriority={priority ? "high" : "auto"}
             />
             <div className="absolute top-2 left-2">
               <Badge variant="secondary" className="bg-background/90">
@@ -191,6 +190,22 @@ export function HomeVehicleCard({ vehicle, startDate, endDate, startTime, endTim
           </Button>
         </CardFooter>
       </Card>
+  );
+
+  // Si priority est true, on rend sans animation pour optimiser le LCP
+  if (priority) {
+    return <div>{cardContent}</div>;
+  }
+
+  // Sinon, on utilise l'animation framer-motion
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+    >
+      {cardContent}
     </motion.div>
   );
 }

@@ -9,7 +9,7 @@ import {
   Headphones,
   FileX,
 } from "lucide-react";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 const advantages = [
   {

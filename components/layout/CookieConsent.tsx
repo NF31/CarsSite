@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { X, Cookie } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "@/components/ui/motion";
+import { AnimatePresence } from "framer-motion";
 import { getCookieConsent, setCookieConsentClient } from "@/lib/cookies";
 import { setCookieConsentAction } from "@/actions/public/cookies/set-cookie-consent";
 

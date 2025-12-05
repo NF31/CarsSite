@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+  openAnalyzer: true, // Ouvre automatiquement le navigateur
+});
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -17,6 +23,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb", // Limite de 10 MB pour l'upload de permis de conduire (PDF)
     },
   },
+  // Optimisations de performance
+  compiler: {
+    // Supprimer les console.log en production
+    removeConsole: process.env.NODE_ENV === "production" ? {
+      exclude: ["error", "warn"],
+    } : false,
+  },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

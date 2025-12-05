@@ -22,7 +22,7 @@ import {
   Star,
 } from "lucide-react";
 import Link from "next/link";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 export function AboutPageClient() {
   const features = [
