@@ -129,6 +129,7 @@ export function VehiclesFilters({ mobile = false }: VehiclesFiltersProps) {
             size="sm"
             onClick={clearFilters}
             className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
+            aria-label="Réinitialiser tous les filtres"
           >
             <X className="h-3 w-3 mr-1" />
             Réinitialiser
@@ -143,30 +144,34 @@ export function VehiclesFilters({ mobile = false }: VehiclesFiltersProps) {
           Transmission
         </Label>
         <div className="flex gap-2">
-          <button
+          <Button
+            type="button"
+            variant={transmission === "MANUAL" ? "default" : "outline"}
             onClick={() => setTransmission(transmission === "MANUAL" ? null : "MANUAL")}
             className={cn(
-              "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-              "border-2",
+              "flex-1",
               transmission === "MANUAL"
-                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                ? ""
                 : "bg-white text-gray-700 border-gray-200 hover:border-primary/50 hover:bg-gray-50"
             )}
+            aria-label={transmission === "MANUAL" ? "Désélectionner transmission manuelle" : "Sélectionner transmission manuelle"}
           >
             Manuelle
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant={transmission === "AUTOMATIC" ? "default" : "outline"}
             onClick={() => setTransmission(transmission === "AUTOMATIC" ? null : "AUTOMATIC")}
             className={cn(
-              "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-              "border-2",
+              "flex-1",
               transmission === "AUTOMATIC"
-                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                ? ""
                 : "bg-white text-gray-700 border-gray-200 hover:border-primary/50 hover:bg-gray-50"
             )}
+            aria-label={transmission === "AUTOMATIC" ? "Désélectionner transmission automatique" : "Sélectionner transmission automatique"}
           >
             Automatique
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -178,19 +183,20 @@ export function VehiclesFilters({ mobile = false }: VehiclesFiltersProps) {
         </Label>
         <div className="grid grid-cols-3 gap-2">
           {[2, 4, 5, 7, 8, 9].map((seats) => (
-            <button
+            <Button
               key={seats}
+              type="button"
+              variant={minSeats === String(seats) ? "default" : "outline"}
               onClick={() => setMinSeats(minSeats === String(seats) ? null : String(seats))}
               className={cn(
-                "px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                "border-2",
                 minSeats === String(seats)
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  ? ""
                   : "bg-white text-gray-700 border-gray-200 hover:border-primary/50 hover:bg-gray-50"
               )}
+              aria-label={minSeats === String(seats) ? `Désélectionner ${seats} places` : `Sélectionner ${seats} places minimum`}
             >
               {seats}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -202,54 +208,58 @@ export function VehiclesFilters({ mobile = false }: VehiclesFiltersProps) {
           Type de carburant
         </Label>
         <div className="grid grid-cols-2 gap-2">
-          <button
+          <Button
+            type="button"
+            variant={fuelType === "PETROL" ? "default" : "outline"}
             onClick={() => setFuelType(fuelType === "PETROL" ? null : "PETROL")}
             className={cn(
-              "px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-              "border-2",
               fuelType === "PETROL"
-                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                ? ""
                 : "bg-white text-gray-700 border-gray-200 hover:border-primary/50 hover:bg-gray-50"
             )}
+            aria-label={fuelType === "PETROL" ? "Désélectionner essence" : "Sélectionner essence"}
           >
             Essence
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant={fuelType === "DIESEL" ? "default" : "outline"}
             onClick={() => setFuelType(fuelType === "DIESEL" ? null : "DIESEL")}
             className={cn(
-              "px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-              "border-2",
               fuelType === "DIESEL"
-                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                ? ""
                 : "bg-white text-gray-700 border-gray-200 hover:border-primary/50 hover:bg-gray-50"
             )}
+            aria-label={fuelType === "DIESEL" ? "Désélectionner diesel" : "Sélectionner diesel"}
           >
             Diesel
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant={fuelType === "ELECTRIC" ? "default" : "outline"}
             onClick={() => setFuelType(fuelType === "ELECTRIC" ? null : "ELECTRIC")}
             className={cn(
-              "px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-              "border-2",
               fuelType === "ELECTRIC"
-                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                ? ""
                 : "bg-white text-gray-700 border-gray-200 hover:border-primary/50 hover:bg-gray-50"
             )}
+            aria-label={fuelType === "ELECTRIC" ? "Désélectionner électrique" : "Sélectionner électrique"}
           >
             Électrique
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant={fuelType === "HYBRID" ? "default" : "outline"}
             onClick={() => setFuelType(fuelType === "HYBRID" ? null : "HYBRID")}
             className={cn(
-              "px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-              "border-2",
               fuelType === "HYBRID"
-                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                ? ""
                 : "bg-white text-gray-700 border-gray-200 hover:border-primary/50 hover:bg-gray-50"
             )}
+            aria-label={fuelType === "HYBRID" ? "Désélectionner hybride" : "Sélectionner hybride"}
           >
             Hybride
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -261,19 +271,20 @@ export function VehiclesFilters({ mobile = false }: VehiclesFiltersProps) {
         </Label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[50, 100, 150, 200].map((price) => (
-            <button
+            <Button
               key={price}
+              type="button"
+              variant={maxPrice === String(price) ? "default" : "outline"}
               onClick={() => setMaxPrice(maxPrice === String(price) ? null : String(price))}
               className={cn(
-                "px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                "border-2",
                 maxPrice === String(price)
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  ? ""
                   : "bg-white text-gray-700 border-gray-200 hover:border-primary/50 hover:bg-gray-50"
               )}
+              aria-label={maxPrice === String(price) ? `Désélectionner prix maximum ${price}€` : `Sélectionner prix maximum ${price}€ par jour`}
             >
               {price}€
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -288,6 +299,7 @@ export function VehiclesFilters({ mobile = false }: VehiclesFiltersProps) {
           <Button
             variant="outline"
             className="w-full justify-start gap-2 lg:hidden"
+            aria-label={`Ouvrir les filtres${hasActiveFilters ? ` (${[transmission, minSeats, maxPrice, fuelType].filter(Boolean).length} actif${[transmission, minSeats, maxPrice, fuelType].filter(Boolean).length > 1 ? 's' : ''})` : ''}`}
           >
             <Filter className="h-4 w-4" />
             Filtres

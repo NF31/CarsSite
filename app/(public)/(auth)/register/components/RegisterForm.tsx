@@ -72,6 +72,7 @@ export const RegisterForm = memo(function RegisterForm({
             !isFormValid && "opacity-50 cursor-not-allowed"
           )}
           disabled={isLoading || !isFormValid}
+          aria-label={isLoading ? "Création du compte en cours" : "Créer mon compte"}
         >
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">

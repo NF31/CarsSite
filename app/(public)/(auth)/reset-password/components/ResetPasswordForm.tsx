@@ -56,6 +56,7 @@ export const ResetPasswordForm = memo(function ResetPasswordForm({
               (!form.formState.isValid || !token) && "opacity-50 cursor-not-allowed"
             )}
             disabled={isLoading || !form.formState.isValid || !token}
+            aria-label={isLoading ? "Réinitialisation du mot de passe en cours" : "Réinitialiser le mot de passe"}
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">

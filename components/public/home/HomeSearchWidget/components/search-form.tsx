@@ -94,18 +94,22 @@ export function SearchForm({
               />
             ) : null}
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() =>
                 onFormDataChange({ showDifferentReturn: !formData.showDifferentReturn })
               }
-              className="flex items-center gap-2 text-sm font-medium text-primary"
+              className="flex items-center gap-2 text-sm font-medium text-primary h-auto p-0"
+              aria-label={formData.showDifferentReturn
+                ? "Annuler le lieu de retour différent"
+                : "Ajouter un lieu de retour différent"}
             >
               <Plus className="h-3.5 w-3.5" />
               {formData.showDifferentReturn
                 ? "Annuler le lieu de retour différent"
                 : "Lieu de retour différent"}
-            </button>
+            </Button>
 
             <Link
               href="/contact"

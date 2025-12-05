@@ -81,17 +81,20 @@ export function PasswordChangeCard({
                 {...form.register("currentPassword")}
                 className="pl-9 pr-9"
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-auto w-auto p-0.5"
+                aria-label={showCurrentPassword ? "Masquer le mot de passe actuel" : "Afficher le mot de passe actuel"}
               >
                 {showCurrentPassword ? (
                   <EyeOff className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <Eye className="h-4 w-4 text-muted-foreground" />
                 )}
-              </button>
+              </Button>
             </div>
             {form.formState.errors.currentPassword && (
               <p className="text-sm text-red-600">
@@ -116,17 +119,20 @@ export function PasswordChangeCard({
                     : ""
                 }`}
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-auto w-auto p-0.5"
+                aria-label={showNewPassword ? "Masquer le nouveau mot de passe" : "Afficher le nouveau mot de passe"}
               >
                 {showNewPassword ? (
                   <EyeOff className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <Eye className="h-4 w-4 text-muted-foreground" />
                 )}
-              </button>
+              </Button>
             </div>
             {newPassword && (
               <div className="space-y-1 text-xs">
@@ -213,17 +219,20 @@ export function PasswordChangeCard({
                     : ""
                 }`}
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-auto w-auto p-0.5"
+                aria-label={showConfirmPassword ? "Masquer la confirmation du mot de passe" : "Afficher la confirmation du mot de passe"}
               >
                 {showConfirmPassword ? (
                   <EyeOff className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <Eye className="h-4 w-4 text-muted-foreground" />
                 )}
-              </button>
+              </Button>
             </div>
             {confirmPassword && newPassword === confirmPassword && (
               <p className="text-sm text-green-600 flex items-center gap-1">
