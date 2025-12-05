@@ -27,6 +27,7 @@ export function ContactPageClient() {
 
       <section className="bg-muted/30 py-8 sm:py-12 md:py-16 lg:py-20 w-full">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <h2 className="sr-only">Formulaire de contact et informations</h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 w-full">
             <ContactFormCard form={form} isSubmitting={isSubmitting} onSubmit={onSubmit} />
 
