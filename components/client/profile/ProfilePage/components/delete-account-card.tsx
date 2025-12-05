@@ -90,7 +90,7 @@ export function DeleteAccountCard({
                     id="deletePassword"
                     type={showDeletePassword ? "text" : "password"}
                     {...form.register("password")}
-                    className="pl-9 pr-9"
+                    className="pl-9 pr-14"
                     placeholder="Entrez votre mot de passe"
                   />
                   <Button
@@ -98,7 +98,7 @@ export function DeleteAccountCard({
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowDeletePassword(!showDeletePassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 h-auto w-auto p-0.5"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-11 w-11 p-2"
                     aria-label={showDeletePassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showDeletePassword ? (
