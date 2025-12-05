@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Car, Fuel, TrendingUp, Truck } from "lucide-react";
 import Link from "next/link";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 import { cn } from "@/lib/utils";
 
 const categories = [
