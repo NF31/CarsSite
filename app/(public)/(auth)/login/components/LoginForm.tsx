@@ -91,6 +91,7 @@ export const LoginForm = memo(function LoginForm({
           type="submit"
           className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 sm:py-4 md:py-6 text-sm sm:text-base transition-all duration-200"
           disabled={isLoading}
+          aria-label={isLoading ? "Connexion en cours" : "Se connecter"}
         >
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">

@@ -208,6 +208,7 @@ export function CancelBookingDialog({
             cancellationRequested ? "opacity-70" : "",
           )}
           aria-disabled={cancellationRequested}
+          aria-label={cancellationRequested ? "Annulation en attente" : "Annuler la réservation"}
         >
           {cancellationRequested ? (
             <>

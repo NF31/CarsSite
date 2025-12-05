@@ -82,6 +82,7 @@ export function BookingInvoiceDownload({ invoice }: BookingInvoiceDownloadProps)
         onClick={handleDownload}
         disabled={isPending}
         className="h-7 px-2 text-xs"
+        aria-label="Télécharger la facture"
         title="Télécharger la facture"
       >
         {isPending ? (

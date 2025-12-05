@@ -1,4 +1,5 @@
 import { AlertCircle, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ErrorAlertProps {
   message: string | null;
@@ -16,14 +17,16 @@ export function ErrorAlert({ message, onDismiss }: ErrorAlertProps) {
         <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
         <span className="text-xs sm:text-sm break-words">{message}</span>
       </div>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={onDismiss}
-        className="text-red-700 hover:text-red-900 transition-colors flex-shrink-0"
+        className="text-red-700 hover:text-red-900 transition-colors flex-shrink-0 h-auto w-auto p-0"
         aria-label="Fermer le message d'erreur"
       >
         <X className="h-4 w-4" />
-      </button>
+      </Button>
     </div>
   );
 }

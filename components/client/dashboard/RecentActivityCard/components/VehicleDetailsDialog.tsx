@@ -33,7 +33,7 @@ export function VehicleDetailsDialog({ booking, startDate, endDate }: VehicleDet
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="inline-flex items-center gap-1 text-xs sm:text-sm">
+        <Button variant="outline" size="sm" className="inline-flex items-center gap-1 text-xs sm:text-sm" aria-label="Voir les détails du véhicule">
           <Info className="h-3 w-3 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline">Détails véhicule</span>
           <span className="sm:hidden">Véhicule</span>

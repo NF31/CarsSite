@@ -93,17 +93,20 @@ export function DeleteAccountCard({
                     className="pl-9 pr-9"
                     placeholder="Entrez votre mot de passe"
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setShowDeletePassword(!showDeletePassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 h-auto w-auto p-0.5"
+                    aria-label={showDeletePassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showDeletePassword ? (
                       <EyeOff className="h-4 w-4 text-muted-foreground" />
                     ) : (
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
-                  </button>
+                  </Button>
                 </div>
                 {form.formState.errors.password && (
                   <p className="text-sm text-red-600">{form.formState.errors.password.message}</p>
