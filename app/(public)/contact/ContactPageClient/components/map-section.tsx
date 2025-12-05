@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 interface MapSectionProps {
   embedUrl: string;

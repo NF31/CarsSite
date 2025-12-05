@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 // Composant pour Google Maps (embed standard comme sur la page contact)
 function GoogleMapEmbed() {

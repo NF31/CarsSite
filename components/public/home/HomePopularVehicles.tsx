@@ -81,8 +81,12 @@ export async function HomePopularVehicles() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
-      {vehicles.map((vehicle) => (
-        <HomeVehicleCard key={vehicle.id} vehicle={vehicle} />
+      {vehicles.map((vehicle, index) => (
+        <HomeVehicleCard 
+          key={vehicle.id} 
+          vehicle={vehicle} 
+          priority={index === 0} // Optimiser le LCP : première image prioritaire
+        />
       ))}
     </div>
   );

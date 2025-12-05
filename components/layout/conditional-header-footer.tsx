@@ -1,8 +1,18 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Header } from "./header";
-import { Footer } from "./footer";
+import dynamic from "next/dynamic";
+
+// Lazy load Header et Footer (contiennent framer-motion) pour réduire le bundle initial
+const Header = dynamic(
+  () => import("./header").then((mod) => ({ default: mod.Header })),
+  { ssr: false }
+);
+
+const Footer = dynamic(
+  () => import("./footer").then((mod) => ({ default: mod.Footer })),
+  { ssr: false }
+);
 
 export function ConditionalHeaderFooter({
   children,

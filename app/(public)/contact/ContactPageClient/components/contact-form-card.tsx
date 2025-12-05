@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 import type { UseFormReturn } from "react-hook-form";
 import type { ContactFormInput } from "@/lib/validations/contact";
 

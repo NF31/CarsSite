@@ -1,10 +1,24 @@
 "use client";
 
-import { HeroSection } from "./components/hero-section";
-import { ContactCardsSection } from "./components/contact-cards-section";
+import dynamic from "next/dynamic";
 import { ContactFormCard } from "./components/contact-form-card";
 import { Sidebar } from "./components/sidebar";
-import { MapSection } from "./components/map-section";
+
+// Lazy load composants avec animations non critiques
+const HeroSection = dynamic(
+  () => import("./components/hero-section").then((mod) => ({ default: mod.HeroSection })),
+  { ssr: true }
+);
+
+const ContactCardsSection = dynamic(
+  () => import("./components/contact-cards-section").then((mod) => ({ default: mod.ContactCardsSection })),
+  { ssr: true }
+);
+
+const MapSection = dynamic(
+  () => import("./components/map-section").then((mod) => ({ default: mod.MapSection })),
+  { ssr: true }
+);
 import { useContactForm } from "./hooks/use-contact-form";
 import {
   contactCards,
