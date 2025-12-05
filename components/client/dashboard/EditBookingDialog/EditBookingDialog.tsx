@@ -73,7 +73,7 @@ export function EditBookingDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled} className="text-xs sm:text-sm">
+        <Button variant="outline" size="sm" disabled={disabled} className="text-xs sm:text-sm" aria-label="Modifier la réservation">
           <span className="hidden sm:inline">Modifier la réservation</span>
           <span className="sm:hidden">Modifier</span>
         </Button>

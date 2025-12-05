@@ -34,7 +34,7 @@ export function BookingDetailsDialog({ booking, servicesMap }: BookingDetailsDia
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="inline-flex items-center gap-1 text-xs sm:text-sm">
+        <Button variant="outline" size="sm" className="inline-flex items-center gap-1 text-xs sm:text-sm" aria-label="Voir les détails de la réservation">
           <Info className="h-3 w-3 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline">Détails réservation</span>
           <span className="sm:hidden">Détails</span>

@@ -113,10 +113,11 @@ export function SearchFormMobile({
           size="sm"
           onClick={onToggleDifferentReturn}
           className="text-sm h-10 text-primary w-full font-medium"
+          aria-label={formData.showDifferentReturn ? "Utiliser le même lieu pour le retour" : "Utiliser un lieu différent pour le retour"}
         >
           {formData.showDifferentReturn ? "Même lieu" : "Lieu différent"}
         </Button>
-        <Button type="submit" onClick={onSubmit} className="h-11 w-full text-sm font-semibold" size="sm">
+        <Button type="submit" onClick={onSubmit} className="h-11 w-full text-sm font-semibold" size="sm" aria-label="Rechercher des véhicules disponibles">
           Rechercher
         </Button>
       </div>

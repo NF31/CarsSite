@@ -27,7 +27,7 @@ export function UpcomingBookingsSection({
             Retrouvez vos locations confirmées. Nous vous enverrons un rappel par email avant chaque départ.
           </CardDescription>
         </div>
-        <Button variant="outline" asChild className="text-xs sm:text-sm">
+        <Button variant="outline" asChild className="text-xs sm:text-sm" aria-label="Gérer mes réservations">
           <Link href="/reservations" className="inline-flex items-center gap-1">
             <span className="hidden sm:inline">Gérer mes réservations</span>
             <span className="sm:hidden">Gérer</span>

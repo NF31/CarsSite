@@ -251,7 +251,10 @@ export function VehiclesSearchFilters({
                   : category === "utility"
                   ? "Utilitaires"
                   : "Abonnement"}
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => {
                     setCategory("all");
                     const params = new URLSearchParams(searchParams.toString());
@@ -259,16 +262,20 @@ export function VehiclesSearchFilters({
                     params.delete("page");
                     router.push(`/vehicles?${params.toString()}`);
                   }}
-                  className="ml-1 hover:text-destructive"
+                  className="ml-1 hover:text-destructive h-auto w-auto p-0"
+                  aria-label="Supprimer le filtre de catégorie"
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               </Badge>
             )}
             {locationId !== "all" && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 {locations.find((l) => l.id === locationId)?.city}
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => {
                     setLocationId("all");
                     const params = new URLSearchParams(searchParams.toString());
@@ -276,16 +283,20 @@ export function VehiclesSearchFilters({
                     params.delete("page");
                     router.push(`/vehicles?${params.toString()}`);
                   }}
-                  className="ml-1 hover:text-destructive"
+                  className="ml-1 hover:text-destructive h-auto w-auto p-0"
+                  aria-label="Supprimer le filtre de localisation"
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               </Badge>
             )}
             {startDate && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 Départ: {new Date(startDate).toLocaleDateString("fr-FR")}
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => {
                     setStartDate("");
                     const params = new URLSearchParams(searchParams.toString());
@@ -293,16 +304,20 @@ export function VehiclesSearchFilters({
                     params.delete("page");
                     router.push(`/vehicles?${params.toString()}`);
                   }}
-                  className="ml-1 hover:text-destructive"
+                  className="ml-1 hover:text-destructive h-auto w-auto p-0"
+                  aria-label="Supprimer le filtre de date de départ"
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               </Badge>
             )}
             {endDate && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 Retour: {new Date(endDate).toLocaleDateString("fr-FR")}
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => {
                     setEndDate("");
                     const params = new URLSearchParams(searchParams.toString());
@@ -310,10 +325,11 @@ export function VehiclesSearchFilters({
                     params.delete("page");
                     router.push(`/vehicles?${params.toString()}`);
                   }}
-                  className="ml-1 hover:text-destructive"
+                  className="ml-1 hover:text-destructive h-auto w-auto p-0"
+                  aria-label="Supprimer le filtre de date de retour"
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               </Badge>
             )}
           </div>

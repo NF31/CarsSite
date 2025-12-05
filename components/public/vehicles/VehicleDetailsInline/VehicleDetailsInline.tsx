@@ -55,7 +55,7 @@ export function VehicleDetailsInline(props: VehicleDetailsInlineProps) {
         >
           Détails du véhicule
         </m.h2>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" aria-label="Fermer les détails du véhicule">
           <X className="h-4 w-4" />
         </Button>
       </div>
