@@ -36,25 +36,35 @@ export function DateTimeInput({
         {dateLabel}
       </Label>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] gap-2">
-        <Input
-          id={dateId}
-          name={dateName}
-          type="date"
-          className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-slate-200 text-sm"
-          min={dateMin}
-          required={dateRequired}
-          value={dateValue}
-          onChange={(e) => onDateChange(e.target.value)}
-        />
-        <Input
-          id={timeId}
-          name={timeName}
-          type="time"
-          value={timeValue}
-          min={timeMin}
-          className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-slate-200 text-sm"
-          onChange={(e) => onTimeChange(e.target.value)}
-        />
+        <div>
+          <Label htmlFor={dateId} className="sr-only">
+            {dateLabel} - Date
+          </Label>
+          <Input
+            id={dateId}
+            name={dateName}
+            type="date"
+            className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-slate-200 text-sm"
+            min={dateMin}
+            required={dateRequired}
+            value={dateValue}
+            onChange={(e) => onDateChange(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor={timeId} className="sr-only">
+            {dateLabel} - Heure
+          </Label>
+          <Input
+            id={timeId}
+            name={timeName}
+            type="time"
+            value={timeValue}
+            min={timeMin}
+            className="h-10 sm:h-12 rounded-lg sm:rounded-xl border-slate-200 text-sm"
+            onChange={(e) => onTimeChange(e.target.value)}
+          />
+        </div>
       </div>
     </div>
   );
