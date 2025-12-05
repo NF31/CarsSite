@@ -79,14 +79,14 @@ export function PasswordChangeCard({
                 id="currentPassword"
                 type={showCurrentPassword ? "text" : "password"}
                 {...form.register("currentPassword")}
-                className="pl-9 pr-9"
+                className="pl-9 pr-14"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-auto w-auto p-0.5"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-11 w-11 p-2"
                 aria-label={showCurrentPassword ? "Masquer le mot de passe actuel" : "Afficher le mot de passe actuel"}
               >
                 {showCurrentPassword ? (
@@ -111,7 +111,7 @@ export function PasswordChangeCard({
                 id="newPassword"
                 type={showNewPassword ? "text" : "password"}
                 {...form.register("newPassword")}
-                className={`pl-9 pr-9 ${
+                className={`pl-9 pr-14 ${
                   newPassword && passwordErrors.newPassword
                     ? "border-red-500"
                     : newPassword && !passwordErrors.newPassword
@@ -124,7 +124,7 @@ export function PasswordChangeCard({
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-auto w-auto p-0.5"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-11 w-11 p-2"
                 aria-label={showNewPassword ? "Masquer le nouveau mot de passe" : "Afficher le nouveau mot de passe"}
               >
                 {showNewPassword ? (
@@ -211,7 +211,7 @@ export function PasswordChangeCard({
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 {...form.register("confirmPassword")}
-                className={`pl-9 pr-9 ${
+                className={`pl-9 pr-14 ${
                   confirmPassword && passwordErrors.confirmPassword
                     ? "border-red-500"
                     : confirmPassword && newPassword === confirmPassword
@@ -224,7 +224,7 @@ export function PasswordChangeCard({
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-auto w-auto p-0.5"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-11 w-11 p-2"
                 aria-label={showConfirmPassword ? "Masquer la confirmation du mot de passe" : "Afficher la confirmation du mot de passe"}
               >
                 {showConfirmPassword ? (
