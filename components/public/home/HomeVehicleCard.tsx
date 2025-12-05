@@ -126,9 +126,9 @@ export function HomeVehicleCard({ vehicle, startDate, endDate, startTime, endTim
         </CardHeader>
 
         <CardContent className="flex-1 p-3 sm:p-4">
-          <h3 className="text-lg sm:text-xl font-bold mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-1">
+          <div className="text-lg sm:text-xl font-bold mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-1">
             {vehicle.brand} {vehicle.model}
-          </h3>
+          </div>
           <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">{vehicle.year}</p>
 
           <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
