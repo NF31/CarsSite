@@ -48,41 +48,53 @@ export function DatesLocationsCard({ bookingData, updateBookingData }: DatesLoca
               <div>
                 <Label htmlFor="startDate">Date de départ</Label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={bookingData.startDate}
-                    onChange={(e) => updateBookingData({ startDate: e.target.value })}
-                    min={new Date().toISOString().split("T")[0]}
-                    required
-                  />
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={bookingData.startTime}
-                    onChange={(e) => updateBookingData({ startTime: e.target.value })}
-                    required
-                  />
+                  <div>
+                    <Label htmlFor="startDate" className="sr-only">Date de départ - Date</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={bookingData.startDate}
+                      onChange={(e) => updateBookingData({ startDate: e.target.value })}
+                      min={new Date().toISOString().split("T")[0]}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="startTime" className="sr-only">Date de départ - Heure</Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={bookingData.startTime}
+                      onChange={(e) => updateBookingData({ startTime: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
               <div>
                 <Label htmlFor="endDate">Date de retour</Label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={bookingData.endDate}
-                    onChange={(e) => updateBookingData({ endDate: e.target.value })}
-                    min={bookingData.startDate || new Date().toISOString().split("T")[0]}
-                    required
-                  />
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={bookingData.endTime}
-                    onChange={(e) => updateBookingData({ endTime: e.target.value })}
-                    required
-                  />
+                  <div>
+                    <Label htmlFor="endDate" className="sr-only">Date de retour - Date</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={bookingData.endDate}
+                      onChange={(e) => updateBookingData({ endDate: e.target.value })}
+                      min={bookingData.startDate || new Date().toISOString().split("T")[0]}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endTime" className="sr-only">Date de retour - Heure</Label>
+                    <Input
+                      id="endTime"
+                      type="time"
+                      value={bookingData.endTime}
+                      onChange={(e) => updateBookingData({ endTime: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
             </div>

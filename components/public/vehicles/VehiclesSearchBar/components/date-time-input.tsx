@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -30,6 +31,10 @@ export function DateTimeInput({
   inputClassName = "",
   isMobile = false,
 }: DateTimeInputProps) {
+  const baseId = useId();
+  const dateId = `${baseId}-date`;
+  const timeId = `${baseId}-time`;
+
   const baseInputStyle = isMobile
     ? {
         fontSize: "clamp(10px, 2.5vw, 13px)",
@@ -58,23 +63,35 @@ export function DateTimeInput({
     <div className={className}>
       <Label className={labelClassName}>{label}</Label>
       <div className="grid grid-cols-2 gap-1 sm:gap-1.5 w-full min-w-0">
-        <Input
-          type="date"
-          value={dateValue}
-          onChange={(e) => onDateChange(e.target.value)}
-          min={minDate}
-          required={required}
-          className={`${inputHeight} w-full min-w-0 flex-1 ${inputClassName}`}
-          style={baseInputStyle}
-        />
-        <Input
-          type="time"
-          value={timeValue}
-          onChange={(e) => onTimeChange(e.target.value)}
-          required={required}
-          className={`${inputHeight} w-full min-w-0 flex-1 ${inputClassName}`}
-          style={baseInputStyle}
-        />
+        <div className="relative">
+          <Label htmlFor={dateId} className="sr-only">
+            {label} - Date
+          </Label>
+          <Input
+            id={dateId}
+            type="date"
+            value={dateValue}
+            onChange={(e) => onDateChange(e.target.value)}
+            min={minDate}
+            required={required}
+            className={`${inputHeight} w-full min-w-0 flex-1 ${inputClassName}`}
+            style={baseInputStyle}
+          />
+        </div>
+        <div className="relative">
+          <Label htmlFor={timeId} className="sr-only">
+            {label} - Heure
+          </Label>
+          <Input
+            id={timeId}
+            type="time"
+            value={timeValue}
+            onChange={(e) => onTimeChange(e.target.value)}
+            required={required}
+            className={`${inputHeight} w-full min-w-0 flex-1 ${inputClassName}`}
+            style={baseInputStyle}
+          />
+        </div>
       </div>
     </div>
   );
