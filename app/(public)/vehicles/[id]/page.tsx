@@ -221,7 +221,7 @@ export default async function VehicleDetailsPage({
           {/* Caractéristiques */}
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-bold mb-4">Caractéristiques</h3>
+              <h2 className="text-lg font-bold mb-4">Caractéristiques</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
@@ -279,7 +279,7 @@ export default async function VehicleDetailsPage({
           {vehicle.features.length > 0 && (
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-bold mb-4">Équipements</h3>
+                <h2 className="text-lg font-bold mb-4">Équipements</h2>
                 <div className="flex flex-wrap gap-2">
                   {vehicle.features.map((feature, index) => (
                     <div key={index} className="flex items-center gap-1">
@@ -296,7 +296,7 @@ export default async function VehicleDetailsPage({
           {vehicle.description && (
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-bold mb-4">Description</h3>
+                <h2 className="text-lg font-bold mb-4">Description</h2>
                 <p className="text-muted-foreground whitespace-pre-line">
                   {vehicle.description}
                 </p>
