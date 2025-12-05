@@ -76,7 +76,7 @@ export const PasswordField = memo(function PasswordField({
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="h-auto w-auto p-0.5 text-gray-500 hover:text-gray-700"
+                    className="h-11 w-11 p-2 text-gray-500 hover:text-gray-700"
                     aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showPassword ? (

@@ -28,7 +28,7 @@ export const PasswordInput = memo(function PasswordInput({
           disabled={disabled}
           value={value}
           onChange={onChange}
-          className="pr-10 sm:pr-12 h-10 sm:h-11 text-sm sm:text-base transition-all duration-200 border-gray-300 focus:border-primary focus:ring-primary"
+          className="pr-14 sm:pr-16 h-10 sm:h-11 text-sm sm:text-base transition-all duration-200 border-gray-300 focus:border-primary focus:ring-primary"
         />
       </FormControl>
       <Button
@@ -36,7 +36,7 @@ export const PasswordInput = memo(function PasswordInput({
         variant="ghost"
         size="icon"
         onClick={onTogglePassword}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 h-auto w-auto p-0.5"
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 h-11 w-11 p-2"
         aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
       >
         {showPassword ? (
