@@ -5,6 +5,10 @@ import * as RechartsPrimitive from "recharts"
 
 import { cn } from "@/lib/utils"
 
+// Note: recharts est lazy loadé indirectement car tous les composants qui utilisent
+// chart.tsx (DashboardRevenueChart, StatisticsCharts, etc.) sont déjà lazy loadés
+// dans leurs pages respectives (app/(admin)/admin/dashboard/page.tsx, etc.)
+
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
 

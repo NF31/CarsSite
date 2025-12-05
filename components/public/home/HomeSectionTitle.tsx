@@ -1,6 +1,6 @@
 "use client";
 
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 interface HomeSectionTitleProps {
   title: string;

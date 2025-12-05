@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 const testimonials = [
   {

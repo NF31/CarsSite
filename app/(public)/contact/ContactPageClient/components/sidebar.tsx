@@ -1,4 +1,4 @@
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 import { AboutCard } from "./about-card";
 import { OpeningHoursCard } from "./opening-hours-card";
 import { FaqLinkCard } from "./faq-link-card";

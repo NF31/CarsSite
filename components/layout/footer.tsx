@@ -12,7 +12,7 @@ import {
   Linkedin,
   ArrowRight
 } from "lucide-react";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();

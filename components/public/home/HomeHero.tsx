@@ -1,7 +1,7 @@
 "use client";
 
 import { HomeSearchWidget } from "./HomeSearchWidget";
-import { m as motion } from "framer-motion";
+import { motion } from "@/components/ui/motion";
 
 export function HomeHero() {
   return (

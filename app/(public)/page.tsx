@@ -1,8 +1,21 @@
 import dynamic from "next/dynamic";
-import { HomeCategories } from "@/components/public/home/HomeCategories";
-import { HomeAdvantages } from "@/components/public/home/HomeAdvantages";
-import { HomePopularVehicles } from "@/components/public/home/HomePopularVehicles";
-import { HomeSectionTitle } from "@/components/public/home/HomeSectionTitle";
+import { HomeSectionTitleWrapper } from "@/components/public/home/HomeSectionTitleWrapper";
+
+// Lazy load composants avec animations non critiques pour améliorer les performances
+const HomeCategories = dynamic(
+  () => import("@/components/public/home/HomeCategories").then((mod) => ({ default: mod.HomeCategories })),
+  { ssr: true }
+);
+
+const HomeAdvantages = dynamic(
+  () => import("@/components/public/home/HomeAdvantages").then((mod) => ({ default: mod.HomeAdvantages })),
+  { ssr: true }
+);
+
+const HomePopularVehicles = dynamic(
+  () => import("@/components/public/home/HomePopularVehicles").then((mod) => ({ default: mod.HomePopularVehicles })),
+  { ssr: true }
+);
 
 // Lazy load HomeHero (contient Google Maps via HomeSearchWidget)
 const HomeHero = dynamic(
@@ -43,7 +56,7 @@ export default function HomePage() {
 
       {/* Section Catégories */}
       <section className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24">
-        <HomeSectionTitle
+        <HomeSectionTitleWrapper
           title="Choisissez votre catégorie"
           description="Des véhicules pour tous les besoins et tous les budgets"
         />
@@ -53,7 +66,7 @@ export default function HomePage() {
       {/* Section Avantages */}
       <section className="bg-muted/30 py-12 sm:py-16 md:py-20 lg:py-24 w-full">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <HomeSectionTitle
+          <HomeSectionTitleWrapper
             title="Pourquoi choisir CarRental ?"
             description="Des avantages qui font la différence"
           />
@@ -63,7 +76,7 @@ export default function HomePage() {
 
       {/* Section Véhicules Populaires */}
       <section className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24">
-        <HomeSectionTitle
+        <HomeSectionTitleWrapper
           title="Nos véhicules disponibles"
           description="Découvrez notre sélection de véhicules récents et bien entretenus"
         />
@@ -73,7 +86,7 @@ export default function HomePage() {
       {/* Section Google Maps pour les trajets */}
       <section className="bg-muted/30 py-12 sm:py-16 md:py-20 lg:py-24 w-full">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <HomeSectionTitle
+          <HomeSectionTitleWrapper
             title="Trouvez nos agences"
             description="Localisez nos points de location et planifiez votre trajet"
           />
