@@ -1,0 +1,31 @@
+fix(security): corriger le ReDoS brace-expansion dans la chaîne Docusaurus
+
+## Problème
+Dependabot signalait une vulnérabilité DoS dans `brace-expansion` (< 1.1.13) via la chaîne transitive du site documentation:
+`@docusaurus/core` -> `serve-handler` -> `minimatch` -> `brace-expansion`.
+
+La version résolue était `1.1.12`, vulnérable à une boucle potentiellement infinie sur une séquence à pas nul (`{1..2..0}`), pouvant provoquer un blocage CPU et une forte consommation mémoire.
+
+## Solution
+- Ajout d’un override npm pour forcer `brace-expansion` vers une version patchée.
+- Régénération du lockfile `website/package-lock.json`.
+- Vérification de l’arbre final des dépendances.
+
+## Fichiers modifiés (2 fichiers)
+1. **`website/package.json`**
+   - Ajout de l’override: `"brace-expansion": "^1.1.13"`
+   - Conservation des overrides sécurité déjà en place (`serve-handler`, `node-forge`)
+
+2. **`website/package-lock.json`**
+   - Mise à jour de résolution transitive après installation
+   - `brace-expansion` résolu en version patchée
+
+## Vérifications
+- `npm ls brace-expansion minimatch` (dans `website`) confirme:
+  - `minimatch@3.1.5`
+  - `brace-expansion@1.1.14` (corrigé)
+- `npm audit --json` ne remonte plus de vulnérabilité `brace-expansion` sur l’arbre courant.
+
+## Impact
+- ✅ Mitigation du risque de blocage process/mémoire lié aux entrées de glob malicieuses.
+- ✅ Correctif strictement limité à la chaîne dépendances du dossier `website`.
