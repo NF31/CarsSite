@@ -1,0 +1,27 @@
+fix(security): corriger le ReDoS picomatch sur website
+
+## Problème
+Dependabot signalait une vulnérabilité ReDoS dans `picomatch` (< 2.3.2) via la chaîne transitive Docusaurus (`micromatch`, `chokidar`, etc.).
+
+Dans `website`, la résolution était bloquée sur `picomatch@2.3.1`, donc vulnérable.
+
+## Solution
+- Ajout d’un override npm ciblé dans `website/package.json`:
+  - `picomatch: ^2.3.2`
+- Régénération du lockfile `website/package-lock.json`.
+
+## Fichiers modifiés (2 fichiers)
+1. **`website/package.json`**
+   - Ajout de l’override `"picomatch": "^2.3.2"` dans `overrides`
+
+2. **`website/package-lock.json`**
+   - Mise à jour de la résolution transitive
+   - `node_modules/picomatch` résolu en `2.3.2`
+
+## Vérifications
+- `npm ls picomatch micromatch` (dans `website`) confirme `picomatch@2.3.2` sur les chemins concernés.
+- `npm audit --json` ne remonte plus d’entrée `picomatch` vulnérable dans l’état courant.
+
+## Impact
+- ✅ Mitigation du risque de blocage CPU / event loop via motifs extglob malicieux.
+- ✅ Correctif limité aux dépendances `website`, sans changement fonctionnel applicatif.
