@@ -1,0 +1,27 @@
+fix(security): corriger le bypass allowedUris webpack buildHttp sur website
+
+## Problème
+Dependabot signalait une vulnérabilité dans `webpack` (>= 5.49.0 <= 5.104.0) liée à un bypass de `allowedUris` avec URL contenant `userinfo` (`@`) lorsque `experiments.buildHttp` est activé.
+
+Dans le dossier `website`, la chaîne transitive Docusaurus résolvait `webpack@5.103.0`, donc vulnérable.
+
+## Solution
+- Ajout d’un override npm ciblé dans `website/package.json`:
+  - `webpack: ^5.104.1`
+- Régénération du lockfile `website/package-lock.json`.
+
+## Fichiers modifiés (2 fichiers)
+1. **`website/package.json`**
+   - Ajout de l’override `"webpack": "^5.104.1"` dans `overrides`
+
+2. **`website/package-lock.json`**
+   - Mise à jour de la résolution transitive
+   - `webpack` résolu en version corrigée (`5.106.1`)
+
+## Vérifications
+- `npm ls webpack` (dans `website`) confirme `webpack@5.106.1` sur toute la chaîne Docusaurus.
+- `npm audit --json` ne remonte plus d’entrée `webpack` vulnérable dans l’état courant.
+
+## Impact
+- ✅ Mitigation du risque de bypass d’allow-list `buildHttp` pouvant mener à un comportement SSRF au build.
+- ✅ Correctif limité aux dépendances `website`, sans modification fonctionnelle applicative.
