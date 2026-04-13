@@ -1,0 +1,32 @@
+fix(security): corriger le bypass middleware @hono/node-server via Prisma
+
+## Problème
+Dependabot signalait une vulnérabilité dans `@hono/node-server` (< 1.19.13) pouvant permettre un bypass de middleware avec des chemins contenant des slashs répétés (`//`) dans `serveStatic`.
+
+Dans le projet, la dépendance est transitive via:
+`prisma` -> `@prisma/dev` -> `@hono/node-server`.
+
+`@prisma/dev@0.24.3` fige `@hono/node-server@1.19.11`, donc aucune mise à jour directe Prisma n’était disponible pour corriger automatiquement.
+
+## Solution
+- Ajout d’un override npm ciblé pour forcer la sous-dépendance de `@prisma/dev`:
+  - `@hono/node-server: 1.19.13`
+- Régénération du lockfile racine pour appliquer la nouvelle résolution.
+
+## Fichiers modifiés (2 fichiers)
+1. **`package.json`**
+   - Ajout d’un bloc `overrides`:
+     - `@prisma/dev` -> `@hono/node-server: 1.19.13`
+
+2. **`package-lock.json`**
+   - Mise à jour de la résolution transitive
+   - `@hono/node-server` résolu en `1.19.13`
+
+## Vérifications
+- `npm ls @hono/node-server @prisma/dev prisma` confirme:
+  - `@prisma/dev@0.24.3`
+  - `@hono/node-server@1.19.13 overridden`
+
+## Impact
+- ✅ Mitigation du risque de bypass d’autorisation sur routes statiques protégées (`serveStatic`).
+- ✅ Correctif limité à la chaîne de dépendances, sans modification logique applicative.
