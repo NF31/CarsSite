@@ -32,15 +32,16 @@ const availableCategoriesSchema = z
   .optional()
   .transform((value) => value ?? []);
 
-export const createServiceSchema = z
-  .object({
-    name: nameSchema,
-    description: descriptionSchema,
-    price: z.number().positive("Le prix doit être supérieur à 0"),
-    pricingType: pricingTypeSchema,
-    availableForCategories: availableCategoriesSchema,
-    icon: iconSchema,
-  })
+const serviceBaseSchema = z.object({
+  name: nameSchema,
+  description: descriptionSchema,
+  price: z.number().positive("Le prix doit être supérieur à 0"),
+  pricingType: pricingTypeSchema,
+  availableForCategories: availableCategoriesSchema,
+  icon: iconSchema,
+});
+
+export const createServiceSchema = serviceBaseSchema
   .superRefine((data, ctx) => {
     if (data.pricingType === "PERCENTAGE" && (data.price <= 0 || data.price > 100)) {
       ctx.addIssue({
@@ -59,9 +60,34 @@ export const createServiceSchema = z
     }
   });
 
-export const updateServiceSchema = createServiceSchema
+export const updateServiceSchema = serviceBaseSchema
   .partial()
   .superRefine((data, ctx) => {
+    if (
+      data.pricingType === "PERCENTAGE" &&
+      data.price !== undefined &&
+      (data.price <= 0 || data.price > 100)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["price"],
+        message: "Pourcentage valide entre 0 et 100",
+      });
+    }
+
+    if (
+      data.pricingType !== undefined &&
+      data.pricingType !== "PERCENTAGE" &&
+      data.price !== undefined &&
+      data.price > 10000
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["price"],
+        message: "Le prix semble trop élevé",
+      });
+    }
+
     if (data.price !== undefined && data.price <= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
