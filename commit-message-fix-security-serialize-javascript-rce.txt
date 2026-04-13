@@ -1,0 +1,28 @@
+fix(security): corriger la vulnérabilité RCE serialize-javascript sur website
+
+## Problème
+Dependabot signalait une vulnérabilité d’injection de code (RCE) dans `serialize-javascript` pour les versions `<= 7.0.2`.
+
+Dans `website`, la chaîne transitive Docusaurus résolvait `serialize-javascript@6.0.2`, donc vulnérable:
+`@docusaurus/core` -> `@docusaurus/bundler` -> `copy-webpack-plugin` / `css-minimizer-webpack-plugin` / `terser-webpack-plugin` -> `serialize-javascript`.
+
+## Solution
+- Ajout d’un override npm ciblé dans `website/package.json` pour forcer:
+  - `serialize-javascript: ^7.0.5`
+- Régénération du lockfile `website/package-lock.json`.
+
+## Fichiers modifiés (2 fichiers)
+1. **`website/package.json`**
+   - Ajout de l’override `"serialize-javascript": "^7.0.5"` dans `overrides`
+
+2. **`website/package-lock.json`**
+   - Mise à jour de la résolution transitive
+   - `node_modules/serialize-javascript` résolu en `7.0.5`
+
+## Vérifications
+- `npm ls serialize-javascript` (dans `website`) confirme `serialize-javascript@7.0.5` sur l’arbre Docusaurus.
+- `npm audit --json` ne remonte plus d’entrée `serialize-javascript` vulnérable dans l’état courant.
+
+## Impact
+- ✅ Mitigation du risque d’injection de code lié aux chemins de sérialisation vulnérables.
+- ✅ Correctif limité aux dépendances du dossier `website`, sans changement fonctionnel applicatif.
