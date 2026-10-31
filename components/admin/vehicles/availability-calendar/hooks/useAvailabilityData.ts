@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getVehicleAvailabilityAction } from "@/actions/admin/vehicles";
+import { getVehicleAvailabilityAction, type VehicleAvailabilityData } from "@/actions/admin/vehicles";
 import { startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 
 export function useAvailabilityData(vehicleId: string) {
-  const [availability, setAvailability] = useState<any>(null);
+  const [availability, setAvailability] = useState<VehicleAvailabilityData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentViewStart, setCurrentViewStart] = useState<Date | null>(null);

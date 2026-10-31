@@ -30,10 +30,6 @@ export default function SettingsPage() {
   const [promotionalEmails, setPromotionalEmails] = useState(false);
   const [marketingEmails, setMarketingEmails] = useState(false);
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
   const fetchSettings = async () => {
     try {
       const result = await getSettingsAction();
@@ -54,6 +50,10 @@ export default function SettingsPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -271,7 +271,7 @@ export default function SettingsPage() {
               <div className="space-y-0.5">
                 <Label className="text-base">Langue</Label>
                 <p className="text-sm text-muted-foreground">
-                  Langue de l'interface
+                  Langue de l&apos;interface
                 </p>
               </div>
               <Button variant="outline" size="sm" disabled>

@@ -50,8 +50,10 @@ function ConfirmAccountDeletionContent() {
       setTimeout(() => {
         router.push("/");
       }, 3000);
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la confirmation de suppression");
+    } catch (err) {
+      setError(
+        (err instanceof Error && err.message) || "Erreur lors de la confirmation de suppression"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -97,10 +99,10 @@ function ConfirmAccountDeletionContent() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Vous allez être redirigé vers la page d'accueil dans quelques instants...
+              Vous allez être redirigé vers la page d&apos;accueil dans quelques instants...
             </p>
             <Link href="/">
-              <Button className="w-full">Retour à l'accueil</Button>
+              <Button className="w-full">Retour à l&apos;accueil</Button>
             </Link>
           </CardContent>
         </Card>

@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import type { PaymentMetadata } from "../types/payment-metadata";
 
 const prisma = new PrismaClient();
 
@@ -53,7 +54,7 @@ async function updateExistingSecurityDeposits() {
       continue;
     }
 
-    const metadata = latestPayment.metadata as any;
+    const metadata = latestPayment.metadata as PaymentMetadata | null;
     const securityDepositInMetadata = metadata?.securityDeposit || 0;
 
     if (securityDepositInMetadata === 0) {
