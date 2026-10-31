@@ -218,13 +218,13 @@ export default async function BookingConfirmationPage({
               • Vous recevrez un email de confirmation avec tous les détails de votre réservation
             </p>
             <p>
-              • Veuillez vous présenter à l'agence de retrait avec votre permis de conduire et une pièce d'identité
+              • Veuillez vous présenter à l&apos;agence de retrait avec votre permis de conduire et une pièce d&apos;identité
             </p>
             <p>
               • Le paiement sera effectué à la remise du véhicule
             </p>
             <p>
-              • En cas de modification ou d'annulation, contactez-nous au plus tôt
+              • En cas de modification ou d&apos;annulation, contactez-nous au plus tôt
             </p>
           </div>
         </CardContent>
@@ -236,7 +236,7 @@ export default async function BookingConfirmationPage({
           <Link href="/vehicles">Faire une autre réservation</Link>
         </Button>
         <Button asChild>
-          <Link href="/">Retour à l'accueil</Link>
+          <Link href="/">Retour à l&apos;accueil</Link>
         </Button>
       </div>
     </div>

@@ -43,7 +43,7 @@ export const ServiceGeneralInfoCard = memo(function ServiceGeneralInfoCard({
       <CardHeader>
         <CardTitle>Informations générales</CardTitle>
         <CardDescription>
-          Décrivez le service et précisez comment il sera affiché dans l'interface de
+          Décrivez le service et précisez comment il sera affiché dans l&apos;interface de
           réservation.
         </CardDescription>
       </CardHeader>

@@ -162,7 +162,7 @@ export function BookingsPageClient({ initialLocations }: BookingsPageClientProps
             className="text-red-700 hover:text-red-900 transition-colors"
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Fermer la notification d'erreur</span>
+            <span className="sr-only">Fermer la notification d&apos;erreur</span>
           </button>
         </div>
       )}

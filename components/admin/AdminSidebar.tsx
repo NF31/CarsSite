@@ -117,7 +117,8 @@ export function AdminSidebar({ onMobileClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 
-  const SidebarContent = () => (
+  // Fonction de rendu (et non composant) : pas de remontage à chaque rendu
+  const renderSidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-2 px-6 py-4 border-b">
@@ -208,7 +209,7 @@ export function AdminSidebar({ onMobileClose }: AdminSidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-40 lg:border-r lg:bg-background">
-        <SidebarContent />
+        {renderSidebarContent()}
       </aside>
     </>
   );
@@ -219,7 +220,8 @@ export function AdminSidebarMobile() {
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
-  const SidebarContent = () => (
+  // Fonction de rendu (et non composant) : pas de remontage à chaque rendu
+  const renderSidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-2 px-6 py-4 border-b">
@@ -316,7 +318,7 @@ export function AdminSidebarMobile() {
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0 sm:w-80">
         <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
-        <SidebarContent />
+        {renderSidebarContent()}
       </SheetContent>
     </Sheet>
   );
