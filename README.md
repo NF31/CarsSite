@@ -15,7 +15,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 - **Galerie** : Photos des véhicules disponibles
 - **Avis clients** : Système d'évaluation et de commentaires
 - **Gestion de compte** : Historique des locations, factures, préférences
-- **Paiement sécurisé** : Intégration Stripe/PayPal
+- **Paiement sécurisé** : Stripe (paiement, webhooks signés, remboursements)
 
 ### 🎛️ Côté Admin
 
@@ -53,7 +53,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 
 ### Services Externes
 - **Cloudinary** - Gestion des images
-- **Stripe/PayPal** - Paiements en ligne
+- **Stripe** - Paiements en ligne et remboursements
 - **Nodemailer** - Envoi d'emails
 - **Neon** - Base de données PostgreSQL cloud
 - **Google Maps API** - Géolocalisation et itinéraires
@@ -161,8 +161,6 @@ STRIPE_KEY="pk_test_..." # Clé publique Stripe (optionnelle)
 STRIPE_SECRET="sk_test_..." # Clé secrète Stripe
 STRIPE_WEBHOOK_SECRET="whsec_..." # Secret du webhook Stripe
 STRIPE_PUBLISHABLE_KEY="pk_test_..."
-PAYPAL_CLIENT_ID="votre-paypal-id"
-PAYPAL_CLIENT_SECRET="votre-paypal-secret"
 
 # Email
 SMTP_HOST="smtp.gmail.com"
