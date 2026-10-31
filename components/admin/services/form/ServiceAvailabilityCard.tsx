@@ -58,7 +58,7 @@ export const ServiceAvailabilityCard = memo(function ServiceAvailabilityCard({
           <div>
             <p className="text-sm font-medium text-gray-900">Toutes les catégories</p>
             <p className="text-xs text-muted-foreground">
-              Si actif, le service sera proposé pour l'intégralité de la flotte.
+              Si actif, le service sera proposé pour l&apos;intégralité de la flotte.
             </p>
           </div>
           <Switch

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import type { EventDetails } from "@/components/admin/vehicles/EventDetailsDialog";
 
 export function useCalendarDialogs() {
   const [selectedDates, setSelectedDates] = useState<{ start: Date | null; end: Date | null }>({
@@ -20,7 +21,7 @@ export function useCalendarDialogs() {
     startDate: Date;
     endDate: Date;
     type: "BOOKING" | "MAINTENANCE" | "MERGED_BLOCKS";
-    details?: any;
+    details?: EventDetails;
   } | null>(null);
 
   const openBlockDialog = useCallback((start: Date, end: Date) => {
@@ -61,7 +62,7 @@ export function useCalendarDialogs() {
     startDate: Date;
     endDate: Date;
     type: "BOOKING" | "MAINTENANCE" | "MERGED_BLOCKS";
-    details?: any;
+    details?: EventDetails;
   }) => {
     setSelectedEvent(event);
     setIsEventDetailsDialogOpen(true);

@@ -228,7 +228,9 @@ async function verifyCloudinaryUrls(
           filesExist++;
           console.log(`   ✅ ${invoice.invoiceNumber}: Fichier existe sur Cloudinary (${assetInfo.publicId})`);
         }
-      } catch (apiError: any) {
+      } catch (err) {
+        // Erreur du SDK Cloudinary : { http_code, message }
+        const apiError = err as { http_code?: number; message?: string };
         if (apiError.http_code === 404 || apiError.http_code === 400) {
           filesMissing++;
           const errorMsg = apiError.message || `Fichier non trouvé (http_code: ${apiError.http_code})`;
@@ -243,12 +245,12 @@ async function verifyCloudinaryUrls(
           // Ne pas ajouter comme erreur critique, juste logger
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       invalid++;
       errors.push({
         invoiceId: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
-        error: error.message || "Erreur inconnue",
+        error: (error instanceof Error && error.message) || "Erreur inconnue",
       });
     }
   }

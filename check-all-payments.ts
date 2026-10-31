@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import type { PaymentMetadata } from "./types/payment-metadata";
 
 const prisma = new PrismaClient();
 
@@ -48,7 +49,7 @@ async function checkAllPayments() {
     console.log("");
 
     payments.forEach((payment, index) => {
-      const metadata = payment.metadata as any;
+      const metadata = payment.metadata as PaymentMetadata | null;
       const isRefund = payment.transactionId?.startsWith("re_") || payment.amount < 0;
       const isCheckoutSession = payment.transactionId?.startsWith("cs_");
       const isPaymentIntent = payment.transactionId?.startsWith("pi_");

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import type { PaymentMetadata } from "./types/payment-metadata";
 
 const prisma = new PrismaClient();
 
@@ -59,7 +60,7 @@ async function checkPayments() {
     console.log("❌ Aucun paiement trouvé pour cette réservation");
   } else {
     allPayments.forEach((payment, index) => {
-      const metadata = payment.metadata as any;
+      const metadata = payment.metadata as PaymentMetadata | null;
       const isRefund = payment.transactionId?.startsWith("re_") || payment.amount < 0;
       const isCheckoutSession = payment.transactionId?.startsWith("cs_");
       const isPaymentIntent = payment.transactionId?.startsWith("pi_");
@@ -101,7 +102,7 @@ async function checkPayments() {
   console.log(`   - Paiements PENDING: ${allPayments.filter(p => p.status === "PENDING").length}`);
   console.log(`   - Paiements FAILED: ${allPayments.filter(p => p.status === "FAILED").length}`);
   console.log(`   - Paiements de modification: ${allPayments.filter(p => {
-    const metadata = p.metadata as any;
+    const metadata = p.metadata as PaymentMetadata | null;
     return metadata?.isModificationPayment === true;
   }).length}`);
   console.log(`   - Montant total (positif): ${allPayments.filter(p => p.amount > 0).reduce((sum, p) => sum + p.amount, 0).toFixed(2)}€`);
@@ -147,7 +148,7 @@ async function checkPayments() {
     });
   } else {
     filteredPayments.forEach((payment, index) => {
-      const metadata = payment.metadata as any;
+      const metadata = payment.metadata as PaymentMetadata | null;
       console.log(`   ${index + 1}. ${payment.amount.toFixed(2)}€ - ${payment.status} - ${payment.transactionId || "N/A"} - Modification: ${metadata?.isModificationPayment ?? "N/A"}`);
     });
   }
@@ -161,7 +162,7 @@ async function checkPayments() {
     
     const matchingPayments = allPayments.filter(p => {
       const amountMatches = Math.abs(p.amount - booking.originalDepositPaid!) < 5;
-      const metadata = p.metadata as any;
+      const metadata = p.metadata as PaymentMetadata | null;
       const isNotModification = metadata?.isModificationPayment !== true;
       return amountMatches && isNotModification && p.amount > 0;
     });
@@ -184,7 +185,7 @@ async function checkPayments() {
         .sort((a, b) => a.diff - b.diff)
         .slice(0, 5)
         .forEach(({ payment, diff }) => {
-          const metadata = payment.metadata as any;
+          const metadata = payment.metadata as PaymentMetadata | null;
           console.log(`   - ${payment.amount.toFixed(2)}€ (diff: ${diff.toFixed(2)}€) - Modification: ${metadata?.isModificationPayment ?? "N/A"} - ID: ${payment.id}`);
         });
     }

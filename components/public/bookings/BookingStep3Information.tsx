@@ -269,7 +269,7 @@ export function BookingStep3Information({
                 htmlFor="acceptedTerms"
                 className="text-sm cursor-pointer flex-1"
               >
-                J'accepte les{" "}
+                J&apos;accepte les{" "}
                 <Link href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   conditions générales de location
                 </Link>{" "}

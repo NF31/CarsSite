@@ -67,7 +67,8 @@ export function DriverLicenseUpload({
 
   const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
   const lastUploadedDate = lastUploadedAt ? new Date(lastUploadedAt) : null;
-  const now = Date.now();
+  // Instant figé au montage (Date.now() n'est pas pur pendant le rendu)
+  const [now] = useState(() => Date.now());
 
   let normalizedCount = uploadCount ?? 0;
   let nextAllowedAt: Date | null = null;
