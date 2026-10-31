@@ -43,7 +43,7 @@ export function PriceSummaryCard({ priceCalculation }: PriceSummaryCardProps) {
                   <span>{priceCalculation.vehicleDeposit.toFixed(2)}€</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  ⓘ Cette caution sera bloquée lors de la confirmation et remboursée après restitution sans dégâts. Elle n'est pas incluse dans le prix de la location.
+                  ⓘ Cette caution sera bloquée lors de la confirmation et remboursée après restitution sans dégâts. Elle n&apos;est pas incluse dans le prix de la location.
                 </p>
               </div>
             )}

@@ -1,9 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-import type { ContactFormInput } from "@/lib/validations/contact";
-
-export interface ContactPageClientProps {
-  // Props vides pour l'instant, mais prêt pour extension
-}
 
 export interface ContactCard {
   icon: LucideIcon;
@@ -22,6 +17,4 @@ export interface OpeningHours {
 export interface AboutFeature {
   text: string;
 }
-
-export interface ContactFormData extends ContactFormInput {}
 

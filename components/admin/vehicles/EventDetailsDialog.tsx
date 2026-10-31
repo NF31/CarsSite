@@ -12,6 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, FileText, Edit } from "lucide-react";
 import { format } from "date-fns";
 
+export interface EventDetails {
+  reference?: string;
+  status?: string;
+  maintenanceType?: string;
+  description?: string | null;
+  blocks?: Array<{
+    id: string;
+    startDate: Date | string;
+    endDate: Date | string;
+    description?: string | null;
+  }>;
+  count?: number;
+}
+
 interface EventDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -19,19 +33,7 @@ interface EventDetailsDialogProps {
   startDate: Date;
   endDate: Date;
   type: "BOOKING" | "MAINTENANCE" | "MERGED_BLOCKS";
-  details?: {
-    reference?: string;
-    status?: string;
-    maintenanceType?: string;
-    description?: string | null;
-    blocks?: Array<{
-      id: string;
-      startDate: Date | string;
-      endDate: Date | string;
-      description?: string | null;
-    }>;
-    count?: number;
-  };
+  details?: EventDetails;
   onEditBlock?: (blockId: string, startDate: Date, endDate: Date, reason?: string | null) => void;
 }
 

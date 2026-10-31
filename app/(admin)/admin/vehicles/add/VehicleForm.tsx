@@ -34,7 +34,7 @@ interface VehicleFormProps {
 }
 
 export function VehicleForm({}: VehicleFormProps) {
-  const form = useForm<CreateVehicleInput>({
+  const form = useForm<CreateVehicleInput, unknown, CreateVehicleInput>({
     // @ts-expect-error - Type incompatibility between zodResolver and useForm
     resolver: zodResolver(createVehicleSchema),
     mode: "onChange",
@@ -81,23 +81,18 @@ export function VehicleForm({}: VehicleFormProps) {
       {success && <SuccessBanner message={success} />}
 
       <form
-        // @ts-expect-error - Type incompatibility with react-hook-form generic types
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-6"
       >
-        {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
         <BasicInfoSection
-          form={form as any}
+          form={form}
           getFieldValidation={getFieldValidation}
           getSelectValidation={getSelectValidation}
           yearOptions={yearOptions}
         />
 
-        {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
         <CharacteristicsSection
-          form={form as any}
+          form={form}
           getFieldValidation={getFieldValidation}
           getSelectValidation={getSelectValidation}
           categoryOptions={categoryOptions}
@@ -105,18 +100,12 @@ export function VehicleForm({}: VehicleFormProps) {
           fuelTypeOptions={fuelTypeOptions}
         />
 
-        {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
-        <FeaturesSection form={form as any} availableFeatures={availableFeatures} />
+        <FeaturesSection form={form} availableFeatures={availableFeatures} />
 
-        {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
-        <PricingSection form={form as any} getFieldValidation={getFieldValidation} />
+        <PricingSection form={form} getFieldValidation={getFieldValidation} />
 
-        {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
         <LocationSection
-          form={form as any}
+          form={form}
           getSelectValidation={getSelectValidation}
           locationOptions={locationOptions}
         />
@@ -128,14 +117,10 @@ export function VehicleForm({}: VehicleFormProps) {
           watch={watch}
         />
 
-        {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
-        <DescriptionSection form={form as any} getFieldValidation={getFieldValidation} />
+        <DescriptionSection form={form} getFieldValidation={getFieldValidation} />
 
-        {/* Type incompatibility with react-hook-form generic types */}
-        {/* @ts-ignore */}
         <FormActions
-          form={form as any}
+          form={form}
           isSubmitting={isSubmitting}
           imagesCount={imagesCount}
           isValid={isValid}

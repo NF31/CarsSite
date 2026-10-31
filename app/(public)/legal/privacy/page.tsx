@@ -32,7 +32,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
             <p className="text-muted-foreground leading-relaxed">
-              CarRental s'engage à protéger la confidentialité et la sécurité de vos données personnelles.
+              CarRental s&apos;engage à protéger la confidentialité et la sécurité de vos données personnelles.
               Cette politique de confidentialité explique comment nous collectons, utilisons, stockons et protégeons
               vos informations personnelles conformément au Règlement Général sur la Protection des Données (RGPD).
             </p>
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
               <li><strong>Identité :</strong> Nom, prénom, date de naissance</li>
               <li><strong>Coordonnées :</strong> Adresse email, numéro de téléphone, adresse postale</li>
-              <li><strong>Documents :</strong> Permis de conduire, pièce d'identité</li>
+              <li><strong>Documents :</strong> Permis de conduire, pièce d&apos;identité</li>
               <li><strong>Paiement :</strong> Informations de carte bancaire (via processeur de paiement sécurisé)</li>
               <li><strong>Usage :</strong> Historique des réservations, préférences</li>
             </ul>
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
               <li>Adresse IP</li>
-              <li>Type de navigateur et système d'exploitation</li>
+              <li>Type de navigateur et système d&apos;exploitation</li>
               <li>Pages visitées et durée de visite</li>
               <li>Cookies et technologies similaires</li>
             </ul>
@@ -77,9 +77,9 @@ export default function PrivacyPage() {
               <li><strong>Gestion des réservations :</strong> Création et suivi de vos réservations</li>
               <li><strong>Communication :</strong> Envoi de confirmations, rappels et notifications</li>
               <li><strong>Paiement :</strong> Traitement des transactions et facturation</li>
-              <li><strong>Amélioration des services :</strong> Analyse de l'utilisation pour améliorer notre plateforme</li>
+              <li><strong>Amélioration des services :</strong> Analyse de l&apos;utilisation pour améliorer notre plateforme</li>
               <li><strong>Obligations légales :</strong> Respect des obligations légales et réglementaires</li>
-              <li><strong>Marketing :</strong> Envoi d'offres promotionnelles (avec votre consentement)</li>
+              <li><strong>Marketing :</strong> Envoi d&apos;offres promotionnelles (avec votre consentement)</li>
             </ul>
           </section>
 
@@ -91,10 +91,10 @@ export default function PrivacyPage() {
               Conformément au RGPD, le traitement de vos données repose sur :
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-              <li><strong>Consentement :</strong> Pour les communications marketing et l'utilisation de cookies non essentiels</li>
-              <li><strong>Exécution d'un contrat :</strong> Pour la gestion de vos réservations et paiements</li>
+              <li><strong>Consentement :</strong> Pour les communications marketing et l&apos;utilisation de cookies non essentiels</li>
+              <li><strong>Exécution d&apos;un contrat :</strong> Pour la gestion de vos réservations et paiements</li>
               <li><strong>Obligation légale :</strong> Pour la conservation de documents comptables et fiscaux</li>
-              <li><strong>Intérêt légitime :</strong> Pour l'amélioration de nos services et la sécurité de la plateforme</li>
+              <li><strong>Intérêt légitime :</strong> Pour l&apos;amélioration de nos services et la sécurité de la plateforme</li>
             </ul>
           </section>
 
@@ -106,8 +106,8 @@ export default function PrivacyPage() {
               Vos données personnelles peuvent être partagées avec :
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-              <li><strong>Prestataires de services :</strong> Processeurs de paiement (Stripe, PayPal), hébergeurs, services d'email</li>
-              <li><strong>Autorités légales :</strong> En cas d'obligation légale ou de demande judiciaire</li>
+              <li><strong>Prestataires de services :</strong> Processeurs de paiement (Stripe, PayPal), hébergeurs, services d&apos;email</li>
+              <li><strong>Autorités légales :</strong> En cas d&apos;obligation légale ou de demande judiciaire</li>
               <li><strong>Partenaires de confiance :</strong> Uniquement avec votre consentement explicite</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-3">
@@ -138,11 +138,11 @@ export default function PrivacyPage() {
               Conformément au RGPD, vous disposez des droits suivants :
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-              <li><strong>Droit d'accès :</strong> Obtenir une copie de vos données personnelles</li>
+              <li><strong>Droit d&apos;accès :</strong> Obtenir une copie de vos données personnelles</li>
               <li><strong>Droit de rectification :</strong> Corriger vos données inexactes ou incomplètes</li>
-              <li><strong>Droit à l'effacement :</strong> Demander la suppression de vos données (sous certaines conditions)</li>
+              <li><strong>Droit à l&apos;effacement :</strong> Demander la suppression de vos données (sous certaines conditions)</li>
               <li><strong>Droit à la portabilité :</strong> Récupérer vos données dans un format structuré</li>
-              <li><strong>Droit d'opposition :</strong> Vous opposer au traitement de vos données pour certains motifs</li>
+              <li><strong>Droit d&apos;opposition :</strong> Vous opposer au traitement de vos données pour certains motifs</li>
               <li><strong>Droit à la limitation :</strong> Limiter le traitement de vos données</li>
               <li><strong>Droit de retirer votre consentement :</strong> À tout moment pour les traitements basés sur le consentement</li>
             </ul>
@@ -179,7 +179,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
               <li><strong>Cookies essentiels :</strong> Nécessaires au fonctionnement du site (pas de consentement requis)</li>
-              <li><strong>Cookies analytiques :</strong> Pour analyser l'utilisation du site (avec votre consentement)</li>
+              <li><strong>Cookies analytiques :</strong> Pour analyser l&apos;utilisation du site (avec votre consentement)</li>
               <li><strong>Cookies marketing :</strong> Pour personnaliser les publicités (avec votre consentement)</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-3">
@@ -192,7 +192,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">10. Transferts internationaux</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Vos données peuvent être transférées vers des pays situés en dehors de l'Union Européenne.
+              Vos données peuvent être transférées vers des pays situés en dehors de l&apos;Union Européenne.
               Dans ce cas, nous nous assurons que des garanties appropriées sont en place conformément au RGPD
               (clauses contractuelles types, Privacy Shield, etc.).
             </p>
@@ -211,7 +211,7 @@ export default function PrivacyPage() {
                   privacy@carrental.fr
                 </a>
               </li>
-              <li>Introduire une réclamation auprès de la CNIL (Commission Nationale de l'Informatique et des Libertés) :
+              <li>Introduire une réclamation auprès de la CNIL (Commission Nationale de l&apos;Informatique et des Libertés) :
                 <br />
                 <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   www.cnil.fr
@@ -245,7 +245,7 @@ export default function PrivacyPage() {
                 </a>
               </li>
               <li><strong>Téléphone :</strong> +33 1 23 45 67 89</li>
-              <li><strong>Adresse :</strong> [Adresse de l'entreprise]</li>
+              <li><strong>Adresse :</strong> [Adresse de l&apos;entreprise]</li>
               <li><strong>Délégué à la Protection des Données (DPO) :</strong> dpo@carrental.fr</li>
             </ul>
           </section>

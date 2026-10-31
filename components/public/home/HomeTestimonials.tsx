@@ -83,7 +83,7 @@ export function HomeTestimonials() {
                 ))}
               </div>
               <p className="text-sm text-muted-foreground mb-4 line-clamp-4">
-                "{testimonial.comment}"
+                &ldquo;{testimonial.comment}&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
