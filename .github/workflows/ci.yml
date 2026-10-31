@@ -9,8 +9,14 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     env:
-      # prisma generate (postinstall) lit DATABASE_URL sans s'y connecter
+      # Valeurs factices : prisma generate lit DATABASE_URL sans s'y connecter, et
+      # lib/stripe.ts et lib/cloudinary.ts lèvent une erreur au chargement si
+      # leurs variables manquent. Le build ne contacte aucun de ces services.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      STRIPE_SECRET: sk_test_ci
+      CLOUDINARY_CLOUD_NAME: ci
+      CLOUDINARY_API_KEY: ci
+      CLOUDINARY_API_SECRET: ci
     steps:
       - uses: actions/checkout@v4
 
