@@ -37,7 +37,7 @@ export const ErrorView = memo(function ErrorView({
           ) : (
             <>
               <Mail className="mr-2 h-4 w-4" />
-              Renvoyer l'email de vérification
+              Renvoyer l&apos;email de vérification
             </>
           )}
         </Button>

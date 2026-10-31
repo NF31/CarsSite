@@ -1,6 +1,10 @@
 import { useCallback } from "react";
 import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import { unblockVehicleDatesAction } from "@/actions/admin/vehicles";
+import type { EventDetails } from "@/components/admin/vehicles/EventDetailsDialog";
+
+// extendedProps posées par createCalendarEvents
+type CalendarEventProps = EventDetails & { type?: string; id: string };
 
 interface UseCalendarHandlersProps {
   openBlockDialog: (start: Date, end: Date) => void;
@@ -15,7 +19,7 @@ interface UseCalendarHandlersProps {
     startDate: Date;
     endDate: Date;
     type: "BOOKING" | "MAINTENANCE" | "MERGED_BLOCKS";
-    details?: any;
+    details?: EventDetails;
   }) => void;
   openEditDialog: () => void;
   setSelectedMaintenance: (maintenance: {
@@ -63,7 +67,7 @@ export function useCalendarHandlers({
 
   const handleEventClick = useCallback((clickInfo: EventClickArg) => {
     const event = clickInfo.event;
-    const extendedProps = event.extendedProps as any;
+    const extendedProps = event.extendedProps as CalendarEventProps;
     
     if (extendedProps.type === "MERGED_BLOCKS") {
       openEventDetailsDialog({
@@ -112,7 +116,7 @@ export function useCalendarHandlers({
     }
   }, [refreshAvailability, currentViewStart, currentViewEnd]);
 
-  const handleDatesSet = useCallback((arg: any, isRefreshingRef: React.MutableRefObject<boolean>, lastDatesRef: React.MutableRefObject<{ start: string | null; end: string | null }>, setCurrentViewStart: (date: Date) => void, setCurrentViewEnd: (date: Date) => void, refreshAvailability: (start: Date, end: Date) => Promise<void>) => {
+  const handleDatesSet = useCallback((arg: { start: Date; end: Date }, isRefreshingRef: React.MutableRefObject<boolean>, lastDatesRef: React.MutableRefObject<{ start: string | null; end: string | null }>, setCurrentViewStart: (date: Date) => void, setCurrentViewEnd: (date: Date) => void, refreshAvailability: (start: Date, end: Date) => Promise<void>) => {
     if (isRefreshingRef.current) return;
     
     const newStart = new Date(arg.start);

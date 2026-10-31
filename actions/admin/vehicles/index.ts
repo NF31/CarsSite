@@ -8,7 +8,7 @@ export { uploadImageAction, type UploadImageResult } from "./upload-image";
 export { deleteImageAction, deleteImagesAction, deleteImageByPublicIdAction, cleanupEmptyFolder, extractPublicIdFromUrl, type DeleteImageResult } from "./delete-image";
 export { moveImageAction, moveImagesAction, type MoveImageResult } from "./move-images";
 export { deleteVehicleAction, type DeleteVehicleResult } from "./delete-vehicle";
-export { getVehicleAvailabilityAction, type GetVehicleAvailabilityResult, type VehicleAvailabilityItem } from "./get-availability";
+export { getVehicleAvailabilityAction, type GetVehicleAvailabilityResult, type VehicleAvailabilityItem, type VehicleAvailabilityData, type VehicleMaintenance } from "./get-availability";
 export { blockVehicleDatesAction, unblockVehicleDatesAction, updateBlockedDatesAction, type BlockDatesResult } from "./block-dates";
 export {
   getMaintenanceDashboardAction,

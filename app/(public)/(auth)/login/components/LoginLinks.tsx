@@ -14,13 +14,13 @@ export const LoginLinks = memo(function LoginLinks() {
       </div>
       <div className="text-xs sm:text-sm">
         <span className="text-muted-foreground">
-          Vous n'avez pas de compte ?{" "}
+          Vous n&apos;avez pas de compte ?{" "}
         </span>
         <Link
           href="/register"
           className="text-primary hover:text-primary/80 font-medium transition-colors"
         >
-          S'inscrire
+          S&apos;inscrire
         </Link>
       </div>
     </div>

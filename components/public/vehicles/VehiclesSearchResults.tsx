@@ -36,7 +36,7 @@ export async function VehiclesSearchResults({
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Une erreur s'est produite lors de la recherche de véhicules. Veuillez
+          Une erreur s&apos;est produite lors de la recherche de véhicules. Veuillez
           réessayer.
         </AlertDescription>
       </Alert>

@@ -1,6 +1,8 @@
-export function mergeOverlappingBlocks(maintenances: any[]) {
-  const blockedMaintenances = maintenances.filter((m: any) => m.type === "BLOCKED");
-  const otherMaintenances = maintenances.filter((m: any) => m.type !== "BLOCKED");
+import type { VehicleMaintenance } from "@/actions/admin/vehicles";
+
+export function mergeOverlappingBlocks(maintenances: VehicleMaintenance[]) {
+  const blockedMaintenances = maintenances.filter((m) => m.type === "BLOCKED");
+  const otherMaintenances = maintenances.filter((m) => m.type !== "BLOCKED");
   
   if (blockedMaintenances.length === 0) {
     return { merged: [], others: otherMaintenances };
@@ -13,7 +15,7 @@ export function mergeOverlappingBlocks(maintenances: any[]) {
   const merged: Array<{
     startDate: Date;
     endDate: Date;
-    blocks: any[];
+    blocks: VehicleMaintenance[];
     allIds: string[];
   }> = [];
   

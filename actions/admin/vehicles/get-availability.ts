@@ -47,6 +47,9 @@ export interface GetVehicleAvailabilityResult {
   error?: string;
 }
 
+export type VehicleAvailabilityData = NonNullable<GetVehicleAvailabilityResult["data"]>;
+export type VehicleMaintenance = VehicleAvailabilityData["maintenances"][number];
+
 /**
  * Récupère la disponibilité d'un véhicule pour une période donnée
  */
