@@ -4,7 +4,7 @@ import { CalendarIcon } from "lucide-react";
 import { BlockDatesDialog } from "@/components/admin/vehicles/BlockDatesDialog";
 import { UnblockDatesDialog } from "@/components/admin/vehicles/UnblockDatesDialog";
 import { EditBlockedDatesDialog } from "@/components/admin/vehicles/EditBlockedDatesDialog";
-import { EventDetailsDialog } from "@/components/admin/vehicles/EventDetailsDialog";
+import { EventDetailsDialog, type EventDetails } from "@/components/admin/vehicles/EventDetailsDialog";
 import { ActiveBlocksList } from "./ActiveBlocksList";
 import { CalendarInstructions } from "./CalendarInstructions";
 
@@ -33,7 +33,7 @@ interface CalendarHeaderProps {
     startDate: Date;
     endDate: Date;
     type: "BOOKING" | "MAINTENANCE" | "MERGED_BLOCKS";
-    details?: Record<string, unknown>;
+    details?: EventDetails;
   } | null;
   isEventDetailsDialogOpen: boolean;
   onEventDetailsDialogChange: (open: boolean) => void;

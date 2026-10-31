@@ -1,12 +1,20 @@
 import { format } from "date-fns";
 import type { EventInput } from "@fullcalendar/core";
+import type { VehicleAvailabilityData, VehicleMaintenance } from "@/actions/admin/vehicles";
+import type { mergeOverlappingBlocks } from "./mergeBlocks";
 
-export function createCalendarEvents(availability: any, mergedBlocks: any[], otherMaintenances: any[]): EventInput[] {
+type MergedBlock = ReturnType<typeof mergeOverlappingBlocks>["merged"][number];
+
+export function createCalendarEvents(
+  availability: VehicleAvailabilityData | null,
+  mergedBlocks: MergedBlock[],
+  otherMaintenances: VehicleMaintenance[]
+): EventInput[] {
   if (!availability) return [];
 
   return [
     // Réservations
-    ...availability.bookings.map((booking: any) => {
+    ...availability.bookings.map((booking) => {
       let backgroundColor = "#dc2626";
       let borderColor = "#b91c1c";
       let className = "booking-event";
@@ -78,7 +86,7 @@ export function createCalendarEvents(availability: any, mergedBlocks: any[], oth
         extendedProps: {
           type: "MERGED_BLOCKS",
           blockIds: mergedBlock.allIds,
-          blocks: mergedBlock.blocks.map((block: any) => ({
+          blocks: mergedBlock.blocks.map((block) => ({
             id: block.id,
             startDate: block.startDate,
             endDate: block.endDate,
@@ -89,7 +97,7 @@ export function createCalendarEvents(availability: any, mergedBlocks: any[], oth
       };
     }),
     // Autres maintenances
-    ...otherMaintenances.map((maintenance: any) => {
+    ...otherMaintenances.map((maintenance) => {
       return {
         id: `maintenance-${maintenance.id}`,
         title: `Maintenance - ${maintenance.type}`,

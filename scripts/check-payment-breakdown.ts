@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import type { PaymentMetadata } from "../types/payment-metadata";
 
 const prisma = new PrismaClient();
 
@@ -74,14 +75,14 @@ async function checkPaymentBreakdown(bookingId: string) {
       console.log(`  Date: ${payment.createdAt.toLocaleString("fr-FR")}`);
 
       if (payment.metadata) {
-        const metadata = payment.metadata as any;
+        const metadata = payment.metadata as PaymentMetadata;
         console.log(`  Métadonnées:`);
         console.log(`    - Acompte: ${metadata.downPayment?.toFixed(2) || "N/A"}€`);
         console.log(`    - Caution: ${metadata.securityDeposit?.toFixed(2) || "N/A"}€`);
       }
 
       // Vérifier la cohérence
-      const metadata = payment.metadata as any;
+      const metadata = payment.metadata as PaymentMetadata | null;
       const downPaymentInMetadata = metadata?.downPayment || 0;
       const securityDepositInMetadata = metadata?.securityDeposit || 0;
       const totalInMetadata = downPaymentInMetadata + securityDepositInMetadata;

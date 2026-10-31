@@ -41,7 +41,7 @@ export const ServicesStatsCards = memo(function ServicesStatsCards({
         <CardContent>
           <div className="text-3xl font-bold text-amber-600">{summary.inactive}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            En attente de réactivation ou d'archivage
+            En attente de réactivation ou d&apos;archivage
           </p>
         </CardContent>
       </Card>
@@ -59,7 +59,7 @@ export const ServicesStatsCards = memo(function ServicesStatsCards({
               : "—"}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Calculé sur l'ensemble des services actifs et inactifs
+            Calculé sur l&apos;ensemble des services actifs et inactifs
           </p>
         </CardContent>
       </Card>
