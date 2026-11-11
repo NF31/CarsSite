@@ -30,7 +30,7 @@ NEXTAUTH_URL=http://localhost:3000 # URL de votre application
 
 ## Test en local avec Stripe CLI
 
-**⚠️ IMPORTANT** : En local, les webhooks Stripe ne fonctionnent pas automatiquement. Vous DEVEZ utiliser Stripe CLI pour les forwarder.
+**IMPORTANT**: En local, les webhooks Stripe ne fonctionnent pas automatiquement. Vous DEVEZ utiliser Stripe CLI pour les forwarder.
 
 Pour tester les webhooks en local :
 
@@ -51,7 +51,7 @@ Stripe Checkout peut être personnalisé via le Dashboard Stripe :
 - Dashboard > Settings > Branding
 - Modifiez les couleurs, le logo, etc.
 
-**📖 Guide complet** : Consultez `docs/stripe-branding-setup.md` pour les instructions détaillées.
+**Guide complet**: Consultez `docs/stripe-branding-setup.md` pour les instructions détaillées.
 
 ### Couleurs du site à configurer dans Stripe :
 

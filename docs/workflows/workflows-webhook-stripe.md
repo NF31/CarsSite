@@ -1,8 +1,8 @@
-# 📋 Workflows du Webhook Stripe - Checklist
+# Workflows du Webhook Stripe - Checklist
 
 Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tous les workflows qui DOIVENT s'exécuter :
 
-## ✅ 1. Récupération de la réservation
+## 1. Récupération de la réservation
 - [ ] Réservation trouvée dans la DB
 - [ ] Vérification que `bookingId` et `userId` correspondent
 
@@ -11,7 +11,7 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 [Stripe Webhook] ✅ Réservation trouvée
 ```
 
-## ✅ 2. Calcul du prix
+## 2. Calcul du prix
 - [ ] Calcul du prix de la réservation (véhicule + services)
 - [ ] Calcul de l'acompte (30%)
 - [ ] Calcul de la caution
@@ -21,7 +21,7 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 [Stripe Webhook] ✅ Calcul du prix réussi
 ```
 
-## ✅ 3. Détection du type de paiement
+## 3. Détection du type de paiement
 - [ ] Détection si c'est un paiement complet, acompte seul, empreinte, ou modification
 
 **Logs à vérifier :**
@@ -29,7 +29,7 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 [Stripe Webhook] 🔍 Détection du type de paiement
 ```
 
-## ✅ 4. Mise à jour de la réservation
+## 4. Mise à jour de la réservation
 - [ ] Mise à jour du statut (CONFIRMED pour paiement complet/acompte)
 - [ ] Mise à jour de `depositPaid`
 - [ ] Mise à jour de `securityDepositPaid`
@@ -40,7 +40,7 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 [Stripe Webhook] ✅ Réservation mise à jour avec succès
 ```
 
-## ✅ 5. Création automatique de la facture
+## 5. Création automatique de la facture
 **Condition :** Seulement si `status === CONFIRMED && !isModificationPayment`
 
 - [ ] Création de la facture dans la table `Invoice`
@@ -58,7 +58,7 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 [Stripe Webhook] ⚠️  Impossible de créer la facture automatiquement
 ```
 
-## ✅ 6. Création de l'enregistrement de paiement
+## 6. Création de l'enregistrement de paiement
 - [ ] Création d'un enregistrement dans la table `Payment`
 - [ ] Montant enregistré
 - [ ] Méthode : STRIPE
@@ -69,7 +69,7 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 [Stripe Webhook] ✅ Enregistrement de paiement créé dans la table Payment
 ```
 
-## ✅ 7. Mise à jour du statut des factures
+## 7. Mise à jour du statut des factures
 **Condition :** Seulement si `paymentStatus === COMPLETED && !isAuthorization`
 
 - [ ] Mise à jour du statut des factures liées à la réservation
@@ -82,7 +82,7 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 [Stripe Webhook] ✅ Statut des factures mis à jour pour la réservation
 ```
 
-## ✅ 8. Envoi de l'email de confirmation
+## 8. Envoi de l'email de confirmation
 **Condition :** Seulement si `status === CONFIRMED`
 
 ### 8.1 Génération du PDF de réservation
@@ -139,12 +139,12 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 
 ---
 
-## 🔍 Comment diagnostiquer un problème
+## Comment diagnostiquer un problème
 
 ### Email non reçu ?
 
 1. **Vérifier les logs du webhook :**
-   - Chercher `[Stripe Webhook] ✅ Email de confirmation envoyé avec succès`
+   - Chercher `[Stripe Webhook] Email de confirmation envoyé avec succès`
    - Si absent, chercher les messages d'erreur
 
 2. **Vérifier le worker email :**
@@ -189,13 +189,13 @@ Quand un paiement Stripe est confirmé (`checkout.session.completed`), voici tou
 ### Workflows non exécutés ?
 
 Vérifier dans l'ordre chronologique des logs :
-1. ✅ Réservation trouvée
-2. ✅ Calcul du prix réussi
-3. ✅ Réservation mise à jour
-4. ✅ Facture créée (si applicable)
-5. ✅ Enregistrement de paiement créé
-6. ✅ Statut des factures mis à jour
-7. ✅ Email envoyé
+1. Réservation trouvée
+2. Calcul du prix réussi
+3. Réservation mise à jour
+4. Facture créée (si applicable)
+5. Enregistrement de paiement créé
+6. Statut des factures mis à jour
+7. Email envoyé
 
 Si un workflow manque, vérifier pourquoi en regardant les logs précédents.
 

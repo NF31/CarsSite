@@ -1,12 +1,12 @@
 # Roadmap Projet - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document présente la roadmap complète du projet CarRental avec les phases de développement, les jalons et les livrables.
 
 ---
 
-## 🎯 Objectif du Projet
+## Objectif du Projet
 
 Créer une plateforme complète de location de voitures avec :
 - Interface client moderne et intuitive
@@ -18,11 +18,11 @@ Créer une plateforme complète de location de voitures avec :
 
 ---
 
-## 📅 Phases de Développement
+## Phases de Développement
 
 ### Phase 0 : Préparation (Semaine 0)
 **Durée :** 1 semaine  
-**Statut :** ✅ Terminé
+**Statut :** Terminé
 
 #### Jalons
 - [x] Documentation complète
@@ -40,7 +40,7 @@ Créer une plateforme complète de location de voitures avec :
 
 ### Phase 1 : Setup & Infrastructure (Semaine 1)
 **Durée :** 1 semaine  
-**Statut :** ✅ Terminé
+**Statut :** Terminé
 
 #### Jalons
 - [x] Configuration environnement
@@ -118,7 +118,7 @@ Créer une plateforme complète de location de voitures avec :
 
 ### Phase 3 : Interface Admin (Semaines 4-5)
 **Durée :** 2 semaines  
-**Statut :** ✅ Largement livrée *(reste le dashboard analytique)*
+**Statut :** Largement livrée *(reste le dashboard analytique)*
 
 #### Jalons
 - [ ] Dashboard admin
@@ -268,7 +268,7 @@ Créer une plateforme complète de location de voitures avec :
 
 ---
 
-## 📊 Planning Global
+## Planning Global
 
 ```
 Semaine 0  : ✅ Préparation
@@ -284,7 +284,7 @@ Semaine 8  : ⏳ Déploiement & Production
 
 ---
 
-## 🎯 Jalons Principaux
+## Jalons Principaux
 
 ### Milestone 1 : MVP Client (Fin Semaine 3)
 - Recherche véhicules
@@ -302,29 +302,29 @@ Semaine 8  : ⏳ Déploiement & Production
 
 ---
 
-## 📈 Métriques de Succès
+## Métriques de Succès
 
 ### Techniques
-- ✅ Tous les tests passent
-- ✅ Performance < 2s
-- ✅ 0 erreurs critiques
-- ✅ SEO optimisé
+- Tous les tests passent
+- Performance < 2s
+- 0 erreurs critiques
+- SEO optimisé
 
 ### Fonctionnelles
-- ✅ Réservation en 4 étapes
-- ✅ Paiement fonctionnel
-- ✅ Admin complet
-- ✅ Emails automatiques
+- Réservation en 4 étapes
+- Paiement fonctionnel
+- Admin complet
+- Emails automatiques
 
 ### Business
-- ✅ Interface professionnelle
-- ✅ UX fluide
-- ✅ Mobile responsive
-- ✅ Accessible
+- Interface professionnelle
+- UX fluide
+- Mobile responsive
+- Accessible
 
 ---
 
-## ⚠️ Risques et Mitigations
+## Risques et Mitigations
 
 ### Risques Techniques
 
@@ -352,7 +352,7 @@ Semaine 8  : ⏳ Déploiement & Production
 
 ---
 
-## 🔄 Itérations Futures (Post-MVP)
+## Itérations Futures (Post-MVP)
 
 ### Phase 7 : Améliorations (Optionnel)
 
@@ -365,7 +365,7 @@ Semaine 8  : ⏳ Déploiement & Production
 
 ---
 
-## ✅ Checklist Roadmap
+## Checklist Roadmap
 
 - [x] Phases définies
 - [x] Jalons identifiés
@@ -376,7 +376,7 @@ Semaine 8  : ⏳ Déploiement & Production
 
 ---
 
-## 📝 Notes
+## Notes
 
 - **Flexibilité** : Le planning peut être ajusté selon les besoins
 - **Priorisation** : Focus sur MVP d'abord, fonctionnalités avancées ensuite

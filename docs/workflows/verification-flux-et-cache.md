@@ -1,86 +1,86 @@
-# 🔍 Vérification des Flux et Analyse des Problèmes de Cache
+# Vérification des Flux et Analyse des Problèmes de Cache
 
-## ✅ Vérification : Les Flux Correspondent-ils au Code ?
+## Vérification : Les Flux Correspondent-ils au Code ?
 
-### 📋 Workflow Annulation - Vérification
+### Workflow Annulation - Vérification
 
-#### ✅ Étape 1 : Client Demande l'Annulation
+#### Étape 1 : Client Demande l'Annulation
 **Fichier documenté :** `docs/workflow-annulation-reservation.md`
 **Code réel :** `actions/client/bookings/cancel-booking.ts`
 
 **Vérification :**
-- ✅ Calcul du remboursement : `computeRefundRate()` existe (lignes 21-31)
-- ✅ Mise à jour DB avec `cancellationRequested: true` : ✅ (lignes 188-198)
-- ✅ Email envoyé : ✅ (lignes 211-263)
-- ✅ `revalidatePath()` appelé : ✅ (lignes 266-270)
-- ✅ `invalidateBookingCache()` appelé : ✅ (lignes 273-276)
-- ✅ `router.refresh()` dans le dialog : ✅ (`CancelBookingDialog.tsx` ligne 155)
+- Calcul du remboursement : `computeRefundRate` existe (lignes 21-31)
+- Mise à jour DB avec `cancellationRequested: true` : (lignes 188-198)
+- Email envoyé : (lignes 211-263)
+- `revalidatePath` appelé : (lignes 266-270)
+- `invalidateBookingCache` appelé : (lignes 273-276)
+- `router.refresh` dans le dialog : (`CancelBookingDialog.tsx` ligne 155)
 
-**Status : ✅ CONFORME**
+**Status : CONFORME**
 
-#### ✅ Étape 2 : Admin Accepte/Rejette
+#### Étape 2 : Admin Accepte/Rejette
 **Fichier documenté :** `docs/workflow-annulation-reservation.md`
 **Code réel :** `actions/admin/bookings/moderate-booking.ts`
 
 **Vérification :**
-- ✅ Acceptation avec remboursement : ✅ (lignes 897-915)
-- ✅ Rejet (Conserver la réservation) : ✅ (lignes 1015-1060)
-- ✅ `revalidatePath()` appelé : ✅ (lignes 1206-1211)
-- ✅ `invalidateBookingCache()` appelé : ✅ (lignes 1214-1222)
+- Acceptation avec remboursement : (lignes 897-915)
+- Rejet (Conserver la réservation) : (lignes 1015-1060)
+- `revalidatePath` appelé : (lignes 1206-1211)
+- `invalidateBookingCache` appelé : (lignes 1214-1222)
 
-**Status : ✅ CONFORME**
+**Status : CONFORME**
 
 ---
 
-### 📋 Workflow Modification Dates - Vérification
+### Workflow Modification Dates - Vérification
 
-#### ✅ Étape 1 : Client Modifie les Dates
+#### Étape 1 : Client Modifie les Dates
 **Fichier documenté :** `docs/workflow-modification-dates-complet.md`
 **Code réel :** `actions/client/bookings/update-booking.ts`
 
 **Vérification :**
-- ✅ Calcul du nouveau prix : ✅ `calculateBookingPriceAction()` (lignes 238-245)
-- ✅ Stockage dates originales : ✅ (lignes 315-319)
-- ✅ `modificationRequested: true` : ✅ (ligne 312)
-- ✅ Email envoyé : ✅ (lignes 374-415)
-- ✅ `revalidatePath()` appelé : ✅ (lignes 418-422)
-- ✅ `invalidateBookingCache()` appelé : ✅ (lignes 425-428)
-- ✅ `router.refresh()` dans le dialog : ✅ (`EditBookingDialog.tsx` ligne 201)
+- Calcul du nouveau prix : `calculateBookingPriceAction` (lignes 238-245)
+- Stockage dates originales : (lignes 315-319)
+- `modificationRequested: true` : (ligne 312)
+- Email envoyé : (lignes 374-415)
+- `revalidatePath` appelé : (lignes 418-422)
+- `invalidateBookingCache` appelé : (lignes 425-428)
+- `router.refresh` dans le dialog : (`EditBookingDialog.tsx` ligne 201)
 
-**Status : ✅ CONFORME**
+**Status : CONFORME**
 
-#### ✅ Étape 2 : Admin Valide la Modification
+#### Étape 2 : Admin Valide la Modification
 **Fichier documenté :** `docs/workflow-modification-dates-complet.md`
 **Code réel :** `actions/admin/bookings/moderate-booking.ts` → `handleModificationRequest()`
 
 **Vérification :**
-- ✅ Remboursement si différence < 0 : ✅ (lignes 187-242)
-- ✅ Session Stripe si différence > 0 : ✅ (lignes 244-297)
-- ✅ Statut PENDING si paiement nécessaire : ✅ (ligne 334)
-- ✅ Statut CONFIRMED si pas de paiement : ✅ (ligne 287)
-- ✅ `revalidatePath()` appelé : ✅ (lignes 1206-1211)
-- ✅ `invalidateBookingCache()` appelé : ✅ (lignes 1214-1222)
+- Remboursement si différence < 0 : (lignes 187-242)
+- Session Stripe si différence > 0 : (lignes 244-297)
+- Statut PENDING si paiement nécessaire : (ligne 334)
+- Statut CONFIRMED si pas de paiement : (ligne 287)
+- `revalidatePath` appelé : (lignes 1206-1211)
+- `invalidateBookingCache` appelé : (lignes 1214-1222)
 
-**Status : ✅ CONFORME**
+**Status : CONFORME**
 
-#### ⚠️ Étape 3 : Webhook Stripe (Paiement Modification)
+#### Étape 3 : Webhook Stripe (Paiement Modification)
 **Fichier documenté :** `docs/workflow-modification-dates-complet.md`
 **Code réel :** `app/api/webhooks/stripe/route.ts`
 
 **Vérification :**
-- ✅ Détection paiement modification : ✅ (lignes ~500-550)
-- ✅ Mise à jour `depositPaid` : ✅ (lignes ~600-650)
-- ✅ Statut → CONFIRMED : ✅ (ligne ~670)
-- ❌ **`revalidatePath()` NON appelé** : ❌ MANQUANT
-- ❌ **`invalidateBookingCache()` NON appelé** : ❌ MANQUANT
+- Détection paiement modification : (lignes ~500-550)
+- Mise à jour `depositPaid` : (lignes ~600-650)
+- Statut → CONFIRMED : (ligne ~670)
+- **`revalidatePath` NON appelé** : MANQUANT
+- **`invalidateBookingCache` NON appelé** : MANQUANT
 
-**Status : ⚠️ PROBLÈME DÉTECTÉ**
+**Status : PROBLÈME DÉTECTÉ**
 
 ---
 
-## 🚨 Problèmes de Cache Identifiés
+## Problèmes de Cache Identifiés
 
-### ⚠️ Problème 1 : Webhook Stripe Ne Détruit Pas le Cache
+### Problème 1 : Webhook Stripe Ne Détruit Pas le Cache
 
 **Localisation :** `app/api/webhooks/stripe/route.ts`
 
@@ -93,16 +93,16 @@ Quand le webhook Stripe met à jour une réservation (paiement supplémentaire, 
 - Le `depositPaid` peut ne pas être mis à jour dans l'interface
 
 **Solutions actuelles :**
-- `revalidatePath()` : ❌ NON appelé dans le webhook
-- `invalidateBookingCache()` : ❌ NON appelé dans le webhook
-- `router.refresh()` : ❌ Ne peut pas être appelé depuis le webhook (pas de router côté serveur)
+- `revalidatePath` : NON appelé dans le webhook
+- `invalidateBookingCache` : NON appelé dans le webhook
+- `router.refresh` : Ne peut pas être appelé depuis le webhook (pas de router côté serveur)
 
 **Solution recommandée :**
 Ajouter l'invalidation de cache dans le webhook Stripe après chaque mise à jour de réservation.
 
 ---
 
-### ⚠️ Problème 2 : Cache du Navigateur
+### Problème 2 : Cache du Navigateur
 
 **Problème potentiel :**
 Le cache du navigateur peut conserver des pages HTML ou des données API même après que le serveur ait invalidé son cache.
@@ -121,13 +121,13 @@ Le cache du navigateur peut conserver des pages HTML ou des données API même a
    - Peut servir des versions mises en cache même après invalidation serveur
 
 **Solutions actuelles :**
-- ✅ `router.refresh()` appelé dans les dialogs après succès (1 seconde de délai)
-- ❌ Pas de headers `Cache-Control` explicites pour éviter le cache navigateur
-- ❌ Pas de mécanisme de cache-busting avec versioning
+- `router.refresh` appelé dans les dialogs après succès (1 seconde de délai)
+- Pas de headers `Cache-Control` explicites pour éviter le cache navigateur
+- Pas de mécanisme de cache-busting avec versioning
 
 ---
 
-### ⚠️ Problème 3 : Timing de Refresh
+### Problème 3 : Timing de Refresh
 
 **Localisation :** `components/client/dashboard/*Dialog.tsx`
 
@@ -146,9 +146,9 @@ Les dialogs appellent `router.refresh()` avec un délai de 1 seconde après le s
 
 ---
 
-## 🔧 Corrections Recommandées
+## Corrections Recommandées
 
-### ✅ Correction 1 : Ajouter l'Invalidation de Cache dans le Webhook
+### Correction 1 : Ajouter l'Invalidation de Cache dans le Webhook
 
 **Fichier à modifier :** `app/api/webhooks/stripe/route.ts`
 
@@ -176,7 +176,7 @@ revalidatePath("/admin/dashboard");
 
 ---
 
-### ✅ Correction 2 : Headers Cache-Control
+### Correction 2 : Headers Cache-Control
 
 **Fichier à modifier :** Pages client et admin qui affichent les réservations
 
@@ -203,7 +203,7 @@ export async function GET() {
 
 ---
 
-### ✅ Correction 3 : Polling ou WebSocket (Optionnel)
+### Correction 3 : Polling ou WebSocket (Optionnel)
 
 **Pour les cas critiques :**
 - Implémenter un mécanisme de polling sur les pages de réservation
@@ -216,18 +216,18 @@ export async function GET() {
 
 ---
 
-## 📊 Résumé des Problèmes
+## Résumé des Problèmes
 
 | Problème | Localisation | Impact | Solution |
 |----------|--------------|--------|----------|
-| **Webhook sans invalidation cache** | `app/api/webhooks/stripe/route.ts` | 🔴 Élevé | Ajouter `revalidatePath()` et `invalidateBookingCache()` |
-| **Cache navigateur persistant** | Pages client/admin | 🟡 Moyen | Headers `Cache-Control`, `dynamic = 'force-dynamic'` |
-| **Timing de refresh** | Dialogs client | 🟡 Moyen | Augmenter délai ou implémenter polling |
-| **Cache Redis non invalidé** | Webhook | 🔴 Élevé | Appeler `invalidateBookingCache()` dans webhook |
+| **Webhook sans invalidation cache** | `app/api/webhooks/stripe/route.ts` | Élevé | Ajouter `revalidatePath()` et `invalidateBookingCache()` |
+| **Cache navigateur persistant** | Pages client/admin | Moyen | Headers `Cache-Control`, `dynamic = 'force-dynamic'` |
+| **Timing de refresh** | Dialogs client | Moyen | Augmenter délai ou implémenter polling |
+| **Cache Redis non invalidé** | Webhook | Élevé | Appeler `invalidateBookingCache()` dans webhook |
 
 ---
 
-## 🎯 Actions Immédiates Requises
+## Actions Immédiates Requises
 
 ### 1. Priorité HAUTE : Invalider le Cache dans le Webhook Stripe
 
@@ -263,7 +263,7 @@ export const revalidate = 0;
 
 ---
 
-## ✅ Conclusion
+## Conclusion
 
 **Les flux décrits dans les documents .md correspondent bien au code**, mais il y a un **problème critique** : le webhook Stripe ne détruit pas le cache, ce qui peut causer des **désynchronisations** entre la base de données et l'interface.
 

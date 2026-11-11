@@ -1,12 +1,12 @@
 # Spécifications Techniques - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document détaille les spécifications techniques du projet CarRental, incluant l'architecture, les technologies, les API, et les contraintes techniques.
 
 ---
 
-## 🏗️ Architecture Technique
+## Architecture Technique
 
 ### Stack Technologique
 
@@ -71,7 +71,7 @@ Ce document détaille les spécifications techniques du projet CarRental, inclua
 
 ---
 
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
 cars/
@@ -162,7 +162,7 @@ cars/
 
 ---
 
-## 🗄️ Base de Données
+## Base de Données
 
 ### Neon PostgreSQL avec Prisma
 
@@ -232,7 +232,7 @@ CREATE INDEX idx_maintenances_dates ON maintenances(start_date, end_date);
 
 ---
 
-## 🔌 API Routes
+## API Routes
 
 ### Authentification
 
@@ -361,7 +361,7 @@ Upload d'images vers Cloudinary
 
 ---
 
-## 🔐 Sécurité
+## Sécurité
 
 ### Authentification
 
@@ -392,7 +392,7 @@ Upload d'images vers Cloudinary
 
 ---
 
-## 📧 Emails
+## Emails
 
 ### Templates Email
 
@@ -414,7 +414,7 @@ Upload d'images vers Cloudinary
 
 ---
 
-## 🎨 Design System
+## Design System
 
 ### Couleurs
 
@@ -445,7 +445,7 @@ Light: #F9FAFB (Gray)
 
 ---
 
-## 📱 Responsive Design
+## Responsive Design
 
 ### Breakpoints
 
@@ -466,7 +466,7 @@ xl: 1280px  /* Large Desktop */
 
 ---
 
-## ⚡ Performance
+## Performance
 
 ### Optimisations
 
@@ -486,7 +486,7 @@ xl: 1280px  /* Large Desktop */
 
 ---
 
-## 🧪 Tests
+## Tests
 
 ### Types de Tests
 
@@ -502,7 +502,7 @@ xl: 1280px  /* Large Desktop */
 
 ---
 
-## 🚀 Déploiement
+## Déploiement
 
 ### Environnements
 
@@ -518,7 +518,7 @@ xl: 1280px  /* Large Desktop */
 
 ---
 
-## 📊 Monitoring
+## Monitoring
 
 ### Outils
 
@@ -528,7 +528,7 @@ xl: 1280px  /* Large Desktop */
 
 ---
 
-## 🔄 Versioning
+## Versioning
 
 ### Versioning API
 
@@ -537,7 +537,7 @@ xl: 1280px  /* Large Desktop */
 
 ---
 
-## 📝 Documentation
+## Documentation
 
 ### Code Documentation
 
@@ -547,7 +547,7 @@ xl: 1280px  /* Large Desktop */
 
 ---
 
-## ✅ Checklist Technique
+## Checklist Technique
 
 - [ ] Configuration Next.js 16 avec App Router
 - [ ] Prisma avec MongoDB

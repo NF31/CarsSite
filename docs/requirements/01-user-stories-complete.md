@@ -1,12 +1,12 @@
 # User Stories Complètes - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document présente toutes les User Stories du projet CarRental, organisées par acteur et par fonctionnalité.
 
 ---
 
-## 👤 User Stories - Client
+## User Stories - Client
 
 ### Recherche et Navigation
 
@@ -165,7 +165,7 @@ Ce document présente toutes les User Stories du projet CarRental, organisées p
 
 ---
 
-## 🎛️ User Stories - Administrateur
+## User Stories - Administrateur
 
 ### Dashboard
 
@@ -431,7 +431,7 @@ Ce document présente toutes les User Stories du projet CarRental, organisées p
 
 ---
 
-## 👨‍💼 User Stories - Employé
+## ‍ User Stories - Employé
 
 #### US-201 : Voir les réservations du jour
 **En tant que** employé  
@@ -470,7 +470,7 @@ Ce document présente toutes les User Stories du projet CarRental, organisées p
 
 ---
 
-## 📊 Priorités
+## Priorités
 
 ### Priorité Haute (MVP)
 - US-001, US-002, US-003, US-004, US-007, US-008
@@ -486,7 +486,7 @@ Ce document présente toutes les User Stories du projet CarRental, organisées p
 
 ---
 
-## ✅ Définition de "Terminé"
+## Définition de "Terminé"
 
 Une User Story est considérée comme terminée quand :
 - [ ] Le code est développé et testé

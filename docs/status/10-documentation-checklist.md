@@ -1,12 +1,12 @@
 # Checklist Documentation - CarRental
 
-## 📋 Vue d'ensemble
+## Vue d'ensemble
 
 Base documentaire vérifiée le 09 novembre 2025. Tous les livrables principaux et spécialisés sont à jour et alignés avec l’état réel du projet (admin opérationnel, parcours client en préparation).
 
 ---
 
-## 📚 Documents principaux (14/14)
+## Documents principaux (14/14)
 
 - [x] **README.md** – Présentation, installation, environnements, liens utiles
 - [x] **01-user-stories-complete.md** – Stories Client/Admin/Employé avec critères d’acceptation
@@ -20,12 +20,12 @@ Base documentaire vérifiée le 09 novembre 2025. Tous les livrables principaux 
 - [x] **09-admin-directory-structure.md** – Arborescence Next.js, conventions de nommage
 - [x] **10-documentation-checklist.md** – Présent document
 - [x] **11-complete-documentation-review.md** – Audit croisé & remarques
-- [x] **12-final-readiness-assessment.md** – Évaluation de préparation (admin ✅ / front public ⏳)
+- [x] **12-final-readiness-assessment.md** – Évaluation de préparation (admin / front public ⏳)
 - [x] **13-global-architecture-overview.md** – Diagrammes & flux (app, DB, services externes)
 
 ---
 
-## 📄 Documents spécialisés (10/10)
+## Documents spécialisés (10/10)
 
 - [x] **14-api-reference-complete.md** – Endpoints / server actions / payloads
 - [x] **15-implementation-examples.md** – Exemples concrets (auth, bookings, uploads)
@@ -40,7 +40,7 @@ Base documentaire vérifiée le 09 novembre 2025. Tous les livrables principaux 
 
 ---
 
-## 🔍 Vérifications par catégorie
+## Vérifications par catégorie
 
 ### Technique
 - [x] Architecture et stack décrites (Next.js 16, Prisma, Neon, Cloudinary, Nodemailer)
@@ -65,7 +65,7 @@ Base documentaire vérifiée le 09 novembre 2025. Tous les livrables principaux 
 
 ---
 
-## ✅ Checklist finale
+## Checklist finale
 
 - [x] Tous les documents requis existent et sont à jour
 - [x] Documentation alignée sur PostgreSQL / Neon / Cloudinary

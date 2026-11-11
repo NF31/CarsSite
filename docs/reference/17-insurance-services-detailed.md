@@ -1,6 +1,6 @@
 # Assurances et Services Détaillés - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document détaille tous les types d'assurances, services additionnels, et options disponibles, inspiré des meilleures pratiques du marché (SIXT, etc.).
 
@@ -11,7 +11,7 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
 
 ---
 
-## 🛡️ Assurances Détaillées
+## Assurances Détaillées
 
 ### Assurance de Base (Incluse)
 
@@ -26,9 +26,9 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
 - Bris de glace : 500€
 
 **Caractéristiques :**
-- ✅ Incluse dans le prix de base
-- ✅ Obligatoire par la loi
-- ⚠️ Franchises importantes à prévoir
+- Incluse dans le prix de base
+- Obligatoire par la loi
+- Attention : Franchises importantes à prévoir
 
 ---
 
@@ -55,9 +55,9 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
   - Luxe : 15€/jour
 
 **Avantages :**
-- ✅ Réduction des franchises
-- ✅ Protection bris de glace
-- ✅ Tranquillité d'esprit
+- Réduction des franchises
+- Protection bris de glace
+- Tranquillité d'esprit
 
 ---
 
@@ -89,10 +89,10 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
   - Luxe : 35€/jour
 
 **Avantages :**
-- ✅ Franchises minimales
-- ✅ Protection complète
-- ✅ Assistance 24/7 incluse
-- ✅ Pas de stress en cas de sinistre
+- Franchises minimales
+- Protection complète
+- Assistance 24/7 incluse
+- Pas de stress en cas de sinistre
 
 **Recommandation :** Pour les véhicules premium et les locations longues durées
 
@@ -118,16 +118,16 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
   - Luxe : 60€/jour
 
 **Avantages :**
-- ✅ Aucune franchise
-- ✅ Protection totale
-- ✅ Service premium
-- ✅ Véhicule de remplacement
+- Aucune franchise
+- Protection totale
+- Service premium
+- Véhicule de remplacement
 
 **Recommandation :** Pour les véhicules de luxe et les clients exigeants
 
 ---
 
-## 📊 Comparatif des Assurances
+## Comparatif des Assurances
 
 | Assurance | Dommages | Vol | Bris Glace | Pneus/Jantes | Prix/Jour | Recommandé pour |
 |-----------|----------|-----|------------|--------------|------------|-----------------|
@@ -138,7 +138,7 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
 
 ---
 
-## 🎁 Services Additionnels
+## Services Additionnels
 
 ### Navigation et Technologie
 
@@ -309,7 +309,7 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
 
 ---
 
-## 📋 Conditions d'Âge et Permis
+## Conditions d'Âge et Permis
 
 ### Âge Minimum
 
@@ -332,7 +332,7 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
 
 ---
 
-## 🎯 Pack Services (Promotions)
+## Pack Services (Promotions)
 
 ### Pack Weekend
 - **Durée** : 2-3 jours
@@ -372,7 +372,7 @@ Ce document détaille tous les types d'assurances, services additionnels, et opt
 
 ---
 
-## 💰 Calcul des Prix
+## Calcul des Prix
 
 ### Exemple de Calcul Complet
 
@@ -405,7 +405,7 @@ Solde : 373.80€
 
 ---
 
-## 📝 Modèle de Données Étendu
+## Modèle de Données Étendu
 
 ### Service Model avec Assurance
 
@@ -450,7 +450,7 @@ export interface Service {
 
 ---
 
-## ✅ Checklist Services
+## Checklist Services
 
 - [x] Assurances détaillées (4 niveaux)
 - [x] Services navigation
@@ -468,7 +468,7 @@ export interface Service {
 
 ---
 
-## 🎯 Recommandations d'Implémentation
+## Recommandations d'Implémentation
 
 ### Interface Client
 

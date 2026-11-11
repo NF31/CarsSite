@@ -1,6 +1,6 @@
-# 💰 Workflow de Remboursement Complet
+# Workflow de Remboursement Complet
 
-## 📋 Table des Matières
+## Table des Matières
 
 1. [Vue d'ensemble](#vue-densemble)
 2. [Types de remboursements](#types-de-remboursements)
@@ -11,21 +11,21 @@
 
 ---
 
-## 🎯 Vue d'ensemble
+## Vue d'ensemble
 
 Le système de remboursement gère automatiquement les remboursements via Stripe lors des annulations et modifications de réservation. Il prend en compte :
 
-- ✅ Les remboursements partiels ou complets
-- ✅ Les Payment Intents déjà partiellement remboursés
-- ✅ Les paiements initiaux et les paiements de modification
-- ✅ La synchronisation entre la base de données et Stripe
-- ✅ Les cas où le Payment Intent n'existe plus ou a été complètement remboursé
+- Les remboursements partiels ou complets
+- Les Payment Intents déjà partiellement remboursés
+- Les paiements initiaux et les paiements de modification
+- La synchronisation entre la base de données et Stripe
+- Les cas où le Payment Intent n'existe plus ou a été complètement remboursé
 
 **Fichier principal :** `actions/public/payments/create-refund.ts`
 
 ---
 
-## 🔄 Types de remboursements
+## Types de remboursements
 
 ### 1. Remboursement d'annulation (`reason: "cancellation"`)
 
@@ -37,7 +37,7 @@ Lorsqu'une modification de dates réduit le prix total, un remboursement de la d
 
 ---
 
-## 📍 Workflow de remboursement lors d'une annulation
+## Workflow de remboursement lors d'une annulation
 
 ### Étape 1 : Le client demande l'annulation
 
@@ -227,7 +227,7 @@ Quand Stripe confirme le remboursement :
 
 ---
 
-## 📍 Workflow de remboursement lors d'une modification
+## Workflow de remboursement lors d'une modification
 
 ### Étape 1 : Le client demande une modification de dates
 
@@ -294,7 +294,7 @@ Le processus est similaire au remboursement d'annulation, mais avec des spécifi
 
 ---
 
-## ⚠️ Gestion des erreurs et cas limites
+## Gestion des erreurs et cas limites
 
 ### 1. Payment Intent déjà complètement remboursé
 
@@ -351,7 +351,7 @@ if (input.amount > refundableAmount) {
 
 ---
 
-## 🔧 Détails techniques
+## Détails techniques
 
 ### Calcul du montant remboursable
 
@@ -429,18 +429,18 @@ Le système génère des logs détaillés à chaque étape :
 
 ---
 
-## 📊 Tableau récapitulatif des cas d'usage
+## Tableau récapitulatif des cas d'usage
 
 | Cas | Montant demandé | Montant remboursable | Résultat | Message |
 |-----|----------------|---------------------|----------|---------|
-| **Paiement initial non remboursé** | 100€ | 100€ | ✅ Remboursement complet de 100€ | Succès |
-| **Payment Intent partiellement remboursé** | 100€ | 50€ | ⚠️ Remboursement partiel de 50€ | Avertissement |
-| **Payment Intent complètement remboursé** | 100€ | 0€ | ❌ Erreur récupérable | Annulation acceptée sans remboursement |
-| **Montant demandé trop élevé** | 100€ | 50€ | ❌ Erreur | Montant dépasse le remboursable |
+| **Paiement initial non remboursé** | 100€ | 100€ | Remboursement complet de 100€ | Succès |
+| **Payment Intent partiellement remboursé** | 100€ | 50€ | Attention : Remboursement partiel de 50€ | Avertissement |
+| **Payment Intent complètement remboursé** | 100€ | 0€ | Non Erreur récupérable | Annulation acceptée sans remboursement |
+| **Montant demandé trop élevé** | 100€ | 50€ | Non Erreur | Montant dépasse le remboursable |
 
 ---
 
-## 🔐 Sécurité et validations
+## Sécurité et validations
 
 1. **Vérification du montant :** Le montant doit être > 0
 2. **Vérification du Payment Intent :** Le Payment Intent doit exister et être en statut `succeeded`
@@ -450,13 +450,13 @@ Le système génère des logs détaillés à chaque étape :
 
 ---
 
-## 📝 Notes importantes
+## Notes importantes
 
-- ✅ Les remboursements sont **irréversibles** dans Stripe
-- ✅ Les remboursements partiels sont supportés
-- ✅ Le système gère automatiquement les cas où le Payment Intent a déjà été remboursé
-- ✅ Les remboursements sont enregistrés comme des paiements négatifs dans la table `Payment`
-- ✅ Le `depositPaid` de la réservation est automatiquement mis à jour après un remboursement
+- Les remboursements sont **irréversibles** dans Stripe
+- Les remboursements partiels sont supportés
+- Le système gère automatiquement les cas où le Payment Intent a déjà été remboursé
+- Les remboursements sont enregistrés comme des paiements négatifs dans la table `Payment`
+- Le `depositPaid` de la réservation est automatiquement mis à jour après un remboursement
 
 ---
 
