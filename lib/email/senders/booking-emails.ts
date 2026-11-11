@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import type { SendMailOptions } from "nodemailer";
 import { BookingStatus } from "@/lib/types/booking-status";
 import { getBookingConfirmationEmailTemplate } from "@/lib/templates/booking-confirmation-email";
 import { getBookingUpdateEmailTemplate } from "@/lib/templates/booking-update-email";
@@ -67,7 +67,7 @@ export async function sendBookingConfirmationEmail({
     dashboardUrl,
   });
 
-  const mailOptions: nodemailer.SendMailOptions = {
+  const mailOptions: SendMailOptions = {
     from: getFromAddress(),
     to,
     subject: `Confirmation de réservation ${booking.reference}`,

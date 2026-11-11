@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import type { SendMailOptions } from "nodemailer";
 import { getInvoiceEmailTemplate } from "@/lib/templates/invoice-email";
 import { getFromAddress } from "../config";
 import { sendEmailWithQueue } from "../utils";
@@ -17,7 +17,7 @@ export async function sendInvoiceEmail({
     bookingReference,
   });
 
-  const mailOptions: nodemailer.SendMailOptions = {
+  const mailOptions: SendMailOptions = {
     from: getFromAddress(),
     to,
     subject: `Facture ${invoiceNumber} - CarRental`,
