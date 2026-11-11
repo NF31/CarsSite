@@ -16,15 +16,15 @@ Cette documentation couvre tous les aspects du projet CarRental :
 
 ### Pour les développeurs
 
-1. Consultez les [Spécifications Techniques](./02-technical-specifications.md)
-2. Explorez l'[Architecture Globale](./13-global-architecture-overview.md)
-3. Référez-vous à la [Référence API](./14-api-reference-complete.md)
+1. Consultez les [Spécifications Techniques](./specs/02-technical-specifications.md)
+2. Explorez l'[Architecture Globale](./architecture/13-global-architecture-overview.md)
+3. Référez-vous à la [Référence API](./reference/14-api-reference-complete.md)
 
 ### Pour les administrateurs
 
-1. Découvrez l'[Interface Admin](./04-admin-interface-detailed.md)
-2. Consultez les [Workflows Détaillés](./16-workflows-detailed.md)
-3. Configurez les [Services](./17-insurance-services-detailed.md)
+1. Découvrez l'[Interface Admin](./admin-interface/04-admin-interface-detailed.md)
+2. Consultez les [Workflows Détaillés](./workflows/16-workflows-detailed.md)
+3. Configurez les [Services](./reference/17-insurance-services-detailed.md)
 
 ## 📖 Navigation
 
