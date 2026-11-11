@@ -13,6 +13,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '🚀 Getting Started',
+      link: {type: 'generated-index', slug: '/getting-started'},
       items: [
         'getting-started/stripe-setup',
         'getting-started/stripe-branding-setup',
@@ -28,6 +29,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '📋 Requirements',
+      link: {type: 'generated-index', slug: '/requirements'},
       items: [
         'requirements/user-stories-complete',
       ],
@@ -37,6 +39,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '📐 Specifications',
+      link: {type: 'generated-index', slug: '/specs'},
       items: [
         'specs/technical-specifications',
       ],
@@ -46,6 +49,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '🏗️ Architecture',
+      link: {type: 'generated-index', slug: '/architecture'},
       items: [
         'architecture/global-architecture-overview',
         'architecture/admin-directory-structure',
@@ -59,6 +63,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '🎨 Design & UX',
+      link: {type: 'generated-index', slug: '/design'},
       items: [
         'design/design-system',
         'design/content-strategy',
@@ -71,6 +76,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '🎛️ Admin Interface',
+      link: {type: 'generated-index', slug: '/admin-interface'},
       items: [
         'admin-interface/admin-interface-detailed',
         'admin-interface/admin-navbar-dashboard',
@@ -81,6 +87,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '🔄 Workflows',
+      link: {type: 'generated-index', slug: '/workflows'},
       items: [
         'workflows/workflows-detailed',
         'workflows/workflow-reservation-complet',
@@ -101,6 +108,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '📖 Reference',
+      link: {type: 'generated-index', slug: '/reference'},
       items: [
         'reference/api-reference-complete',
         'reference/implementation-examples',
@@ -113,6 +121,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '🗺️ Roadmap',
+      link: {type: 'generated-index', slug: '/roadmap'},
       items: [
         'roadmap/roadmap-projet',
       ],
@@ -122,6 +131,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '✅ Project Status',
+      link: {type: 'generated-index', slug: '/status'},
       items: [
         'status/documentation-checklist',
         'status/complete-documentation-review',
