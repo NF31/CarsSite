@@ -1,6 +1,6 @@
 import { Worker, Job } from "bullmq";
 import { EmailJobData } from "../lib/email-queue";
-import nodemailer from "nodemailer";
+import nodemailer, { type SendMailOptions, type Transporter } from "nodemailer";
 import IORedis from "ioredis";
 
 /**
@@ -68,7 +68,7 @@ function getEmailCredentials() {
 }
 
 // Transporter email (créé dynamiquement à chaque utilisation pour s'assurer que les credentials sont à jour)
-function getTransporter(): nodemailer.Transporter | null {
+function getTransporter(): Transporter | null {
   const credentials = getEmailCredentials();
   
   if (!credentials.hasCredentials) {
@@ -119,7 +119,7 @@ async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
 
   try {
     // Préparer les options d'email
-    const mailOptions: nodemailer.SendMailOptions = {
+    const mailOptions: SendMailOptions = {
       from: `"CarRental" <${credentials.user}>`,
       to,
       subject,
