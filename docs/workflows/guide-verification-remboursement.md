@@ -1,12 +1,12 @@
 # Guide de vérification des remboursements
 
-## 📋 Comment vérifier qu'un remboursement a été effectué
+## Comment vérifier qu'un remboursement a été effectué
 
 ### 1. Vérification dans les logs serveur
 
 Après avoir cliqué sur "Valider" une modification, vérifiez les logs dans votre terminal :
 
-#### ✅ Logs à rechercher :
+#### Logs à rechercher :
 
 **Étape 1 : Recherche du paiement initial**
 ```
@@ -16,8 +16,8 @@ Après avoir cliqué sur "Valider" une modification, vérifiez les logs dans vot
 ```
 
 **Étape 2 : Résultat de la recherche Stripe**
-- ✅ **Succès** : `[Refund] ✅ Payment Intent initial trouvé dans Stripe`
-- ❌ **Échec** : `[Refund] ⚠️  Aucun Payment Intent initial trouvé dans Stripe`
+- **Succès** : `[Refund] Payment Intent initial trouvé dans Stripe`
+- **Échec** : `[Refund] Aucun Payment Intent initial trouvé dans Stripe`
 
 **Étape 3 : Création du remboursement**
 ```
@@ -40,9 +40,9 @@ Après avoir cliqué sur "Valider" une modification, vérifiez les logs dans vot
    - **Métadonnées** : `bookingId` ou `bookingReference` dans les métadonnées du remboursement
 
 3. Vérifiez :
-   - ✅ **Status** : `succeeded` (réussi) ou `pending` (en attente)
-   - ✅ **Amount** : doit correspondre au montant à rembourser
-   - ✅ **Metadata** : doit contenir `bookingId`, `bookingReference`, `reason`
+   - **Status** : `succeeded` (réussi) ou `pending` (en attente)
+   - **Amount** : doit correspondre au montant à rembourser
+   - **Metadata** : doit contenir `bookingId`, `bookingReference`, `reason`
 
 ### 3. Vérification dans la base de données
 
@@ -54,11 +54,11 @@ npx prisma studio
 1. Ouvrez la table `Payment`
 2. Filtrez par `bookingId` de la réservation
 3. Recherchez un paiement avec :
-   - ✅ **amount** : négatif (ex: `-684.00`)
-   - ✅ **method** : `STRIPE`
-   - ✅ **status** : `COMPLETED` ou `PENDING`
-   - ✅ **transactionId** : commence par `re_` (ID du remboursement Stripe)
-   - ✅ **metadata** : contient `stripeRefundId`, `stripePaymentIntentId`, `reason: "booking_modification"`
+   - **amount** : négatif (ex: `-684.00`)
+   - **method** : `STRIPE`
+   - **status** : `COMPLETED` ou `PENDING`
+   - **transactionId** : commence par `re_` (ID du remboursement Stripe)
+   - **metadata** : contient `stripeRefundId`, `stripePaymentIntentId`, `reason: "booking_modification"`
 
 #### Via requête SQL directe
 ```sql
@@ -114,15 +114,15 @@ Si le webhook Stripe est configuré, vous devriez voir dans les logs :
 
 ### 7. Cas d'erreur courants
 
-#### ❌ "Montant insuffisant"
+#### "Montant insuffisant"
 **Cause** : Le paiement initial n'existe ni en DB ni dans Stripe
 **Solution** : Remboursement manuel requis via Stripe Dashboard
 
-#### ❌ "Impossible de trouver le Payment Intent"
+#### "Impossible de trouver le Payment Intent"
 **Cause** : Le Payment Intent n'a pas été trouvé dans les métadonnées
 **Solution** : Vérifier les logs pour voir quelle étape a échoué
 
-#### ❌ "Payment Intent non trouvé dans Stripe"
+#### "Payment Intent non trouvé dans Stripe"
 **Cause** : Le paiement initial n'existe pas dans Stripe (peut-être supprimé)
 **Solution** : Remboursement manuel requis
 

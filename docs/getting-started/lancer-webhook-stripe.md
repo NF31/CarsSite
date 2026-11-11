@@ -1,4 +1,4 @@
-# 🚀 Comment lancer le webhook Stripe en local
+# Comment lancer le webhook Stripe en local
 
 ## Problème
 Le webhook Stripe ne se lance pas automatiquement en local. Stripe ne peut pas accéder à votre `localhost:3000` directement.

@@ -1,12 +1,12 @@
 # Schéma Prisma - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document présente le schéma Prisma complet pour Neon PostgreSQL avec toutes les tables, relations et contraintes.
 
 ---
 
-## 📦 Schéma Complet
+## Schéma Complet
 
 ```prisma
 // prisma/schema.prisma
@@ -361,7 +361,7 @@ model Setting {
 
 ---
 
-## 🔗 Relations
+## Relations
 
 ### User
 - **1:N** avec Booking (un utilisateur peut avoir plusieurs réservations)
@@ -399,7 +399,7 @@ model Setting {
 
 ---
 
-## 📊 Index PostgreSQL
+## Index PostgreSQL
 
 ### Index Créés (via Prisma @@index)
 
@@ -449,7 +449,7 @@ CREATE UNIQUE INDEX settings_key_key ON settings(key);
 
 ---
 
-## 🔄 Migrations
+## Migrations
 
 ### Commandes Prisma
 
@@ -472,7 +472,7 @@ npx prisma studio
 
 ---
 
-## 📝 Notes Importantes
+## Notes Importantes
 
 ### PostgreSQL et Prisma
 
@@ -498,7 +498,7 @@ npx prisma studio
 
 ---
 
-## ✅ Checklist Schéma
+## Checklist Schéma
 
 - [ ] Tous les modèles définis
 - [ ] Tous les enums créés

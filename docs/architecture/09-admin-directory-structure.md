@@ -1,12 +1,12 @@
 # Structure du Répertoire Admin - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document détaille la structure complète du répertoire admin avec toutes les routes, composants et fichiers.
 
 ---
 
-## 📁 Structure Complète
+## Structure Complète
 
 ```
 app/
@@ -208,7 +208,7 @@ app/
 
 ---
 
-## 🗂️ Détails par Section
+## Détails par Section
 
 ### Dashboard
 
@@ -316,7 +316,7 @@ app/
 
 ---
 
-## 🔐 Protection des Routes
+## Protection des Routes
 
 ### Proxy
 
@@ -342,7 +342,7 @@ export default function AdminLayout({ children }) {
 
 ---
 
-## 📝 Conventions de Nommage
+## Conventions de Nommage
 
 ### Fichiers
 - **Pages** : `page.tsx`
@@ -359,7 +359,7 @@ export default function AdminLayout({ children }) {
 
 ---
 
-## ✅ Checklist Structure
+## Checklist Structure
 
 - [ ] Toutes les routes créées
 - [ ] Composants organisés par section

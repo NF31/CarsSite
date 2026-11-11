@@ -1,12 +1,12 @@
 # Interface Admin Détaillée - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document détaille l'interface d'administration complète de CarRental, incluant toutes les sections, fonctionnalités et workflows.
 
 ---
 
-## 🎛️ Structure de l'Interface Admin
+## Structure de l'Interface Admin
 
 ### Navigation Principale
 
@@ -32,7 +32,7 @@ Ce document détaille l'interface d'administration complète de CarRental, inclu
 
 ---
 
-## 📊 Dashboard
+## Dashboard
 
 ### Vue d'Ensemble
 
@@ -81,7 +81,7 @@ Tableau avec :
 
 ---
 
-## 🚗 Gestion des Véhicules
+## Gestion des Véhicules
 
 ### Liste des Véhicules
 
@@ -170,7 +170,7 @@ Vue calendrier pour chaque véhicule :
 
 ---
 
-## 📅 Gestion des Réservations
+## Gestion des Réservations
 
 ### Liste des Réservations
 
@@ -270,7 +270,7 @@ Formulaire similaire au processus client, mais avec :
 
 ---
 
-## 👥 Gestion des Clients
+## Gestion des Clients
 
 ### Liste des Clients
 
@@ -328,7 +328,7 @@ Formulaire similaire au processus client, mais avec :
 
 ---
 
-## 🔧 Gestion de la Maintenance
+## Gestion de la Maintenance
 
 ### Liste des Maintenances
 
@@ -379,7 +379,7 @@ Vue détaillée de tous les entretiens d'un véhicule :
 
 ---
 
-## 🎁 Gestion des Services
+## Gestion des Services
 
 ### Liste des Services Additionnels
 
@@ -424,7 +424,7 @@ Vue détaillée de tous les entretiens d'un véhicule :
 
 ---
 
-## 📊 Statistiques
+## Statistiques
 
 ### Vue Globale
 
@@ -447,7 +447,7 @@ Vue détaillée de tous les entretiens d'un véhicule :
 
 ---
 
-## 💰 Facturation
+## Facturation
 
 ### Liste des Factures
 
@@ -469,7 +469,7 @@ Génération automatique ou manuelle avec :
 
 ---
 
-## ⚙️ Paramètres
+## Paramètres
 
 ### Informations de l'Agence
 
@@ -496,7 +496,7 @@ Génération automatique ou manuelle avec :
 
 ---
 
-## ✅ Checklist Interface Admin
+## Checklist Interface Admin
 
 - [ ] Dashboard avec métriques
 - [ ] Gestion complète des véhicules

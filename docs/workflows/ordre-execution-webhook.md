@@ -1,6 +1,6 @@
-# 🔄 Ordre d'exécution des workflows du webhook Stripe
+# Ordre d'exécution des workflows du webhook Stripe
 
-## ✅ Ordre corrigé (après la correction)
+## Ordre corrigé (après la correction)
 
 ### 1. Récupération et calcul du prix
 ```
@@ -56,7 +56,7 @@
 
 ---
 
-## 🔍 Changements effectués
+## Changements effectués
 
 ### Problème identifié :
 1. La facture était créée AVANT la correction du statut pour les modifications
@@ -64,23 +64,23 @@
 3. Même après correction du statut, la facture n'était toujours pas créée car on avait déjà passé cette étape
 
 ### Solution :
-1. ✅ Correction du statut AVANT la création de la facture
-2. ✅ Suppression de la condition `!isModificationPayment` pour la création de facture
-3. ✅ La facture est créée pour TOUTES les réservations confirmées (y compris modifications)
-4. ✅ Ajout de logs pour indiquer quand la facture n'est pas créée et pourquoi
+1. Correction du statut AVANT la création de la facture
+2. Suppression de la condition `!isModificationPayment` pour la création de facture
+3. La facture est créée pour TOUTES les réservations confirmées (y compris modifications)
+4. Ajout de logs pour indiquer quand la facture n'est pas créée et pourquoi
 
 ---
 
-## 📋 Checklist de vérification
+## Checklist de vérification
 
 Après un paiement, vérifier dans les logs :
 
-- [ ] `✅ Réservation mise à jour avec succès`
-- [ ] `✅ Statut forcé à CONFIRMED` (si modification)
-- [ ] `✅ Facture créée automatiquement` OU `⏭️ Facture non créée (statut: ...)`
-- [ ] `✅ Enregistrement de paiement créé`
-- [ ] `✅ Statut des factures mis à jour`
-- [ ] `✅ Email de confirmation envoyé avec succès`
+- [] ` Réservation mise à jour avec succès`
+- [] ` Statut forcé à CONFIRMED` (si modification)
+- [] ` Facture créée automatiquement` OU `⏭ Facture non créée (statut: ...)`
+- [] ` Enregistrement de paiement créé`
+- [] ` Statut des factures mis à jour`
+- [] ` Email de confirmation envoyé avec succès`
 
 Si un élément manque, vérifier les logs précédents pour comprendre pourquoi.
 

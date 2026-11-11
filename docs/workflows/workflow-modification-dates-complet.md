@@ -1,12 +1,12 @@
-# 📋 Workflow Complet : Modification des Dates d'une Réservation par un Client
+# Workflow Complet : Modification des Dates d'une Réservation par un Client
 
-## 🎯 Vue d'ensemble
+## Vue d'ensemble
 
 Ce document explique **étape par étape** le processus complet lorsqu'un client demande la modification des dates de sa réservation, depuis la demande initiale jusqu'à la finalisation (validation/rejet par l'admin, paiement supplémentaire si nécessaire).
 
 ---
 
-## 📍 Étape 1 : Le Client Ouvre le Dialog de Modification
+## Étape 1 : Le Client Ouvre le Dialog de Modification
 
 ### 1.1 Interface Client
 
@@ -28,7 +28,7 @@ Ce document explique **étape par étape** le processus complet lorsqu'un client
 
 ---
 
-## 📍 Étape 2 : Calcul en Temps Réel du Nouveau Prix
+## Étape 2 : Calcul en Temps Réel du Nouveau Prix
 
 ### 2.1 Quand le Client Change les Dates
 
@@ -37,15 +37,15 @@ Ce document explique **étape par étape** le processus complet lorsqu'un client
 **Actions automatiques :**
 
 1. **Validation des dates** :
-   - ✅ Vérifie que la date de fin est après la date de début
-   - ✅ Vérifie que les dates sont dans le futur
-   - ✅ Vérifie que les dates ont réellement changé
+   - Vérifie que la date de fin est après la date de début
+   - Vérifie que les dates sont dans le futur
+   - Vérifie que les dates ont réellement changé
 
 2. **Vérification de disponibilité** :
-   - ✅ Vérifie que le véhicule est disponible pour les nouvelles dates
-   - ✅ Vérifie qu'il n'y a pas de conflit avec d'autres réservations
-   - ✅ Vérifie qu'il n'y a pas de maintenance prévue
-   - ✅ Affiche un message de disponibilité (vert = disponible, orange = conflit)
+   - Vérifie que le véhicule est disponible pour les nouvelles dates
+   - Vérifie qu'il n'y a pas de conflit avec d'autres réservations
+   - Vérifie qu'il n'y a pas de maintenance prévue
+   - Affiche un message de disponibilité (vert = disponible, orange = conflit)
 
 3. **Calcul automatique du nouveau prix** :
    ```typescript
@@ -79,15 +79,15 @@ Nouveau solde restant = Nouveau prix total - Nouvel acompte
 Le client voit en temps réel :
 
 1. **Prix actuel vs Nouveau prix** :
-   - Si augmentation → Encadré orange avec "📈 Augmentation"
-   - Si réduction → Encadré vert avec "📉 Réduction"
+   - Si augmentation → Encadré orange avec " Augmentation"
+   - Si réduction → Encadré vert avec " Réduction"
 
 2. **Acompte actuel vs Nouvel acompte** :
    - Acompte actuel : X€
    - Nouvel acompte (30%) : Y€
    - **Différence d'acompte** :
      - Si positif (+X€) → Rouge, message "Paiement supplémentaire requis"
-     - Si négatif (-X€) → Vert, message "💰 Remboursement prévu"
+     - Si négatif (-X€) → Vert, message " Remboursement prévu"
 
 3. **Caution déjà payée** :
    - Si `securityDepositPaid > 0` → Affiche "ℹ️ La caution de garantie (X€) a déjà été payée et ne sera pas redemandée"
@@ -99,7 +99,7 @@ Le client voit en temps réel :
 
 ---
 
-## 📍 Étape 3 : Le Client Soumet la Demande
+## Étape 3 : Le Client Soumet la Demande
 
 ### 3.1 Validation Finale
 
@@ -108,9 +108,9 @@ Le client voit en temps réel :
 Quand le client clique sur **"Enregistrer les nouvelles dates"** :
 
 1. **Vérifications côté client** :
-   - ✅ Dates valides
-   - ✅ Véhicule disponible
-   - ✅ Aucun conflit détecté
+   - Dates valides
+   - Véhicule disponible
+   - Aucun conflit détecté
 
 2. **Envoi du formulaire** :
    - Appel à `updateClientBookingAction(formData)`
@@ -122,12 +122,12 @@ Quand le client clique sur **"Enregistrer les nouvelles dates"** :
 
 **Vérifications de sécurité :**
 
-1. ✅ **Authentification** : Client connecté
-2. ✅ **Rate limiting** : Max 5 tentatives / 10 minutes
-3. ✅ **Propriété** : Réservation appartient au client
-4. ✅ **Statut** : Réservation peut être modifiée (pas déjà commencée, pas annulée, pas terminée)
-5. ✅ **Disponibilité** : Aucun conflit avec d'autres réservations
-6. ✅ **Maintenance** : Aucune maintenance prévue sur cette période
+1. **Authentification** : Client connecté
+2. **Rate limiting** : Max 5 tentatives / 10 minutes
+3. **Propriété** : Réservation appartient au client
+4. **Statut** : Réservation peut être modifiée (pas déjà commencée, pas annulée, pas terminée)
+5. **Disponibilité** : Aucun conflit avec d'autres réservations
+6. **Maintenance** : Aucune maintenance prévue sur cette période
 
 ### 3.3 Recalcul du Prix Serveur
 
@@ -158,7 +158,7 @@ newRemainingAmount = newTotalPrice - newDownPayment
 
 ### 3.4 Stockage des Informations (SANS Actions Stripe)
 
-**⚠️ IMPORTANT :** À ce stade, **AUCUN remboursement ni paiement Stripe n'est créé**. On stocke uniquement les informations pour que l'admin puisse valider/rejeter.
+**IMPORTANT :**À ce stade, **AUCUN remboursement ni paiement Stripe n'est créé**. On stocke uniquement les informations pour que l'admin puisse valider/rejeter.
 
 **Données stockées dans la base de données :**
 
@@ -195,9 +195,9 @@ newRemainingAmount = newTotalPrice - newDownPayment
 ```
 
 **Points importants :**
-- ✅ `securityDepositPaid` est **TOUJOURS préservée** si elle a déjà été payée
-- ✅ Les dates sont **déjà mises à jour** (pas besoin de restaurer si acceptation)
-- ✅ Le statut passe à `PENDING` pour **attendre la validation admin**
+- `securityDepositPaid` est **TOUJOURS préservée** si elle a déjà été payée
+- Les dates sont **déjà mises à jour** (pas besoin de restaurer si acceptation)
+- Le statut passe à `PENDING` pour **attendre la validation admin**
 
 ### 3.5 Email Envoyé au Client
 
@@ -223,7 +223,7 @@ newRemainingAmount = newTotalPrice - newDownPayment
 
 ---
 
-## 📍 Étape 4 : L'Admin Voit la Demande
+## Étape 4 : L'Admin Voit la Demande
 
 ### 4.1 Interface Admin
 
@@ -243,12 +243,12 @@ L'admin voit :
    - **Caution** (préservée si déjà payée)
 
 3. **Deux boutons d'action :**
-   - ✅ **"Valider la modification"** → Accepte et déclenche les actions Stripe
-   - ❌ **"Refuser la modification"** → Rejette et restaure les dates originales
+   - **"Valider la modification"** → Accepte et déclenche les actions Stripe
+   - **"Refuser la modification"** → Rejette et restaure les dates originales
 
 ---
 
-## 📍 Étape 5A : L'Admin VALIDE la Modification
+## Étape 5A : L'Admin VALIDE la Modification
 
 ### 5A.1 Traitement de la Validation
 
@@ -351,8 +351,8 @@ Quand l'admin clique sur **"Valider la modification"** :
 
 **Actions :**
 
-1. **Pas de remboursement** ❌
-2. **Pas de paiement supplémentaire** ❌
+1. **Pas de remboursement**
+2. **Pas de paiement supplémentaire**
 3. **Mise à jour de la réservation** :
    ```typescript
    {
@@ -369,7 +369,7 @@ Quand l'admin clique sur **"Valider la modification"** :
 
 ---
 
-## 📍 Étape 5B : L'Admin REJETTE la Modification
+## Étape 5B : L'Admin REJETTE la Modification
 
 ### 5B.1 Traitement du Rejet
 
@@ -413,11 +413,11 @@ Quand l'admin clique sur **"Refuser la modification"** :
 
 ---
 
-## 📍 Étape 6 : Paiement Supplémentaire (si nécessaire)
+## Étape 6 : Paiement Supplémentaire (si nécessaire)
 
 ### 6.1 Accès au Paiement
 
-**⚠️ IMPORTANT :** Cette étape se produit uniquement si l'admin a validé la modification ET si un paiement supplémentaire est nécessaire.
+**IMPORTANT :**Cette étape se produit uniquement si l'admin a validé la modification ET si un paiement supplémentaire est nécessaire.
 
 **Où le client peut payer :**
 
@@ -446,17 +446,17 @@ Quand le paiement réussit :
 
 1. **Redirection vers** : `/bookings/payment/success?session_id=...`
 2. **Page de succès affiche** :
-   - ✅ "Paiement supplémentaire confirmé !"
+   - "Paiement supplémentaire confirmé !"
    - Détails de la modification
    - Comparaison des prix (avant/après)
    - Montant payé (différence d'acompte)
    - Statut : En attente de confirmation par webhook
 
-**⚠️ IMPORTANT :** À ce stade, la page de succès **NE MET PAS** le statut à CONFIRMED. Elle attend que le webhook Stripe le fasse.
+**IMPORTANT :**À ce stade, la page de succès **NE MET PAS**le statut à CONFIRMED. Elle attend que le webhook Stripe le fasse.
 
 ---
 
-## 📍 Étape 7 : Webhook Stripe (Validation du Paiement)
+## Étape 7 : Webhook Stripe (Validation du Paiement)
 
 ### 7.1 Réception du Webhook
 
@@ -531,7 +531,7 @@ prisma.payment.create({
 **Fichier :** `lib/email.ts` → `sendBookingUpdateEmail()`
 
 **Contenu :**
-- ✅ Confirmation que le paiement supplémentaire est reçu
+- Confirmation que le paiement supplémentaire est reçu
 - Détails de la modification (dates, prix)
 - Comparaison avant/après
 - Montant du paiement supplémentaire
@@ -539,7 +539,7 @@ prisma.payment.create({
 
 ---
 
-## 📊 Tableau Récapitulatif des Statuts
+## Tableau Récapitulatif des Statuts
 
 | Étape | Statut Réservation | `modificationRequested` | Actions Possibles |
 |-------|-------------------|------------------------|-------------------|
@@ -552,7 +552,7 @@ prisma.payment.create({
 
 ---
 
-## 💰 Exemples Concrets de Calcul
+## Exemples Concrets de Calcul
 
 ### Exemple 1 : Modification avec Augmentation de Prix
 
@@ -610,16 +610,16 @@ prisma.payment.create({
 - Différence d'acompte : 0€
 
 **Résultat :**
-1. ✅ **Pas de remboursement**
-2. ✅ **Pas de paiement supplémentaire**
-3. ✅ Seules les **dates changent**
+1. **Pas de remboursement**
+2. **Pas de paiement supplémentaire**
+3. Seules les **dates changent**
 4. Tous les montants restent identiques
 
 ---
 
-## 🔔 Points Importants à Retenir
+## Points Importants à Retenir
 
-### ✅ Ce qui est TOUJOURS Préservé
+### Ce qui est TOUJOURS Préservé
 
 1. **La caution** (`securityDepositPaid`) :
    - Si elle a déjà été payée, elle **n'est JAMAIS modifiée**
@@ -630,13 +630,13 @@ prisma.payment.create({
    - Les services sélectionnés restent identiques
    - Seul le prix du véhicule change selon les dates
 
-### ⚠️ Ce qui Change
+### Ce qui Change
 
 1. **Le prix total** : Recalculé selon les nouvelles dates
 2. **L'acompte** : Ajusté à 30% du nouveau prix total
 3. **Le solde restant** : Recalculé (nouveau prix - nouvel acompte)
 
-### 💡 Règles de Calcul
+### Règles de Calcul
 
 1. **Différence d'acompte positive** → Paiement supplémentaire nécessaire
    - Montant à payer : **SEULEMENT la différence**
@@ -652,7 +652,7 @@ prisma.payment.create({
 
 ---
 
-## 🔄 Flux Complet Résumé
+## Flux Complet Résumé
 
 ```
 1. Client → Clic "Modifier" → Dialog s'ouvre
@@ -669,22 +669,22 @@ prisma.payment.create({
 
 ---
 
-## 🎯 Résultat Final
+## Résultat Final
 
 Après modification des dates **validée par l'admin** :
 
-1. ✅ Les dates sont mises à jour
-2. ✅ Le prix est recalculé
-3. ✅ L'acompte est ajusté (30% du nouveau prix)
-4. ✅ La caution est préservée si déjà payée
-5. ✅ Un remboursement est créé si nécessaire (après validation admin)
-6. ✅ Un paiement supplémentaire est demandé si nécessaire (après validation admin)
-7. ✅ Un email est envoyé au client à chaque étape
-8. ✅ La réservation passe en statut `CONFIRMED` après paiement (si nécessaire)
-9. ✅ Le statut est synchronisé entre client et admin
+1. Les dates sont mises à jour
+2. Le prix est recalculé
+3. L'acompte est ajusté (30% du nouveau prix)
+4. La caution est préservée si déjà payée
+5. Un remboursement est créé si nécessaire (après validation admin)
+6. Un paiement supplémentaire est demandé si nécessaire (après validation admin)
+7. Un email est envoyé au client à chaque étape
+8. La réservation passe en statut `CONFIRMED` après paiement (si nécessaire)
+9. Le statut est synchronisé entre client et admin
 
 ---
 
-**📌 Note importante :** Le webhook Stripe est **essentiel** pour finaliser le paiement supplémentaire. Le statut ne passe à `CONFIRMED` qu'**après validation du webhook**, garantissant que le paiement est bien reçu et traité.
+**Note importante :**Le webhook Stripe est **essentiel**pour finaliser le paiement supplémentaire. Le statut ne passe à `CONFIRMED` qu'**après validation du webhook**, garantissant que le paiement est bien reçu et traité.
 
 

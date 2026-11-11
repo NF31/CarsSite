@@ -1,12 +1,12 @@
 # Référence API Complète - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document fournit une référence complète de toutes les API Routes avec exemples de code, schémas de validation, réponses et codes d'erreur.
 
 ---
 
-## 🔐 Authentification
+## Authentification
 
 ### POST /api/auth/register
 
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
 
 ---
 
-## 🚗 Véhicules
+## Véhicules
 
 ### GET /api/vehicles
 
@@ -616,7 +616,7 @@ images: [File, File, File, ...] // Minimum 5 images
 
 ---
 
-## 📅 Réservations
+## Réservations
 
 ### POST /api/bookings
 
@@ -683,7 +683,7 @@ Content-Type: application/json
 
 ---
 
-## 💳 Paiements
+## Paiements
 
 ### POST /api/payments/create-intent
 
@@ -709,7 +709,7 @@ Content-Type: application/json
 
 ---
 
-## 📤 Upload
+## Upload
 
 ### POST /api/upload
 
@@ -746,7 +746,7 @@ vehicleId?: string // Optionnel pour associer à un véhicule
 
 ---
 
-## ❌ Codes d'Erreur
+## Codes d'Erreur
 
 ### Codes HTTP
 
@@ -776,7 +776,7 @@ vehicleId?: string // Optionnel pour associer à un véhicule
 
 ---
 
-## 🔒 Sécurité
+## Sécurité
 
 ### Authentification
 
@@ -793,7 +793,7 @@ Authorization: Bearer <token>
 
 ---
 
-## 📝 Notes d'Implémentation
+## Notes d'Implémentation
 
 ### Validation
 
@@ -809,7 +809,7 @@ Logger toutes les erreurs et actions importantes pour le debugging.
 
 ---
 
-## ✅ Checklist API
+## Checklist API
 
 - [ ] Toutes les routes documentées
 - [ ] Schémas de validation définis

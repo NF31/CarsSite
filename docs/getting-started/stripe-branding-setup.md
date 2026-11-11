@@ -1,8 +1,8 @@
 # Configuration du Branding Stripe Checkout
 
-## 🎨 Personnalisation aux couleurs du site
+## Personnalisation aux couleurs du site
 
-**⚠️ IMPORTANT** : La personnalisation des couleurs de Stripe Checkout doit être configurée dans le Dashboard Stripe. L'API Stripe ne supporte pas le paramètre `appearance` pour les sessions Checkout.
+**IMPORTANT**: La personnalisation des couleurs de Stripe Checkout doit être configurée dans le Dashboard Stripe. L'API Stripe ne supporte pas le paramètre `appearance` pour les sessions Checkout.
 
 Pour personnaliser la page de paiement Stripe Checkout aux couleurs de votre site, suivez ces étapes :
 
@@ -43,7 +43,7 @@ Stripe vous permet de prévisualiser les modifications en temps réel avant de l
 
 Cliquez sur **"Save changes"** pour appliquer les modifications.
 
-## 📋 Checklist de configuration
+## Checklist de configuration
 
 - [ ] Primary Color défini à `#3B82F6`
 - [ ] Accent Color défini à `#10B981`
@@ -54,7 +54,7 @@ Cliquez sur **"Save changes"** pour appliquer les modifications.
 - [ ] Prévisualisation vérifiée
 - [ ] Modifications enregistrées
 
-## 🎯 Résultat attendu
+## Résultat attendu
 
 Après configuration, la page de paiement Stripe Checkout aura :
 - Les boutons en bleu (`#3B82F6`) correspondant à votre site
@@ -62,14 +62,14 @@ Après configuration, la page de paiement Stripe Checkout aura :
 - Votre logo visible en haut de la page
 - Une apparence cohérente avec votre site
 
-## 📝 Notes importantes
+## Notes importantes
 
 - Les modifications s'appliquent à **toutes** les sessions Checkout de votre compte
 - Les couleurs sont appliquées automatiquement à toutes les nouvelles sessions
 - Vous pouvez tester avec une session de test pour vérifier l'apparence
 - Pour des personnalisations plus avancées (polices, layout), contactez le support Stripe
 
-## 🔗 Liens utiles
+## Liens utiles
 
 - [Documentation Stripe Branding](https://stripe.com/docs/payments/checkout/branding)
 - [Dashboard Stripe Branding](https://dashboard.stripe.com/settings/branding)

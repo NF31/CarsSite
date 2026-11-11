@@ -1,12 +1,12 @@
 # Stratégie de Contenu - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document définit la stratégie de contenu pour CarRental, incluant le contenu par page, la navigation, et le SEO.
 
 ---
 
-## 🎯 Objectifs de Contenu
+## Objectifs de Contenu
 
 1. **Informer** : Présenter clairement les services
 2. **Convaincre** : Mettre en avant les avantages
@@ -15,7 +15,7 @@ Ce document définit la stratégie de contenu pour CarRental, incluant le conten
 
 ---
 
-## 📄 Contenu par Page
+## Contenu par Page
 
 ### Page d'Accueil
 
@@ -36,12 +36,12 @@ Ce document définit la stratégie de contenu pour CarRental, incluant le conten
 #### Section Avantages
 **Titre :** "Pourquoi choisir CarRental ?"
 
-- ✅ Réservation en 4 étapes
-- ✅ Paiement sécurisé
-- ✅ Véhicules récents et entretenus
-- ✅ Assistance 24/7
-- ✅ Annulation flexible
-- ✅ Prix transparents
+- Réservation en 4 étapes
+- Paiement sécurisé
+- Véhicules récents et entretenus
+- Assistance 24/7
+- Annulation flexible
+- Prix transparents
 
 #### Section Véhicules Populaires
 **Titre :** "Nos véhicules les plus populaires"
@@ -218,7 +218,7 @@ Ce document définit la stratégie de contenu pour CarRental, incluant le conten
 
 ---
 
-## 🔍 SEO
+## SEO
 
 ### Mots-clés Principaux
 
@@ -264,7 +264,7 @@ Ce document définit la stratégie de contenu pour CarRental, incluant le conten
 
 ---
 
-## 📱 Navigation
+## Navigation
 
 ### Menu Principal (Public)
 
@@ -303,7 +303,7 @@ Accueil > Réservation > Étape 2
 
 ---
 
-## 💬 Ton de Voix
+## Ton de Voix
 
 ### Principes
 
@@ -314,17 +314,17 @@ Accueil > Réservation > Étape 2
 
 ### Exemples
 
-**❌ À éviter :**
+**À éviter :**
 - "Vous êtes invité à procéder à la sélection"
 - "Veuillez compléter les champs ci-dessous"
 
-**✅ À privilégier :**
+**À privilégier :**
 - "Choisissez votre véhicule"
 - "Remplissez vos informations"
 
 ---
 
-## 📧 Emails
+## Emails
 
 ### Confirmation de Réservation
 
@@ -359,7 +359,7 @@ Accueil > Réservation > Étape 2
 
 ---
 
-## ✅ Checklist Contenu
+## Checklist Contenu
 
 - [x] Contenu par page défini
 - [x] Navigation structurée

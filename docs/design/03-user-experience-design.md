@@ -1,12 +1,12 @@
 # User Experience Design - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document détaille le design UX, les parcours utilisateurs, et les principes de design de l'application CarRental.
 
 ---
 
-## 🎯 Principes de Design
+## Principes de Design
 
 ### 1. Simplicité
 **"Un client doit pouvoir réserver un véhicule en 4 étapes maximum"**
@@ -36,7 +36,7 @@ Ce document détaille le design UX, les parcours utilisateurs, et les principes 
 
 ---
 
-## 🗺️ Parcours Utilisateur Principal
+## Parcours Utilisateur Principal
 
 ### Parcours : Réservation d'un Véhicule
 
@@ -62,23 +62,23 @@ Ce document détaille le design UX, les parcours utilisateurs, et les principes 
 
 ### Points de Friction à Éliminer
 
-- ❌ Formulaire trop long
-- ❌ Trop d'étapes
-- ❌ Prix cachés
-- ❌ Navigation confuse
-- ❌ Pas de sauvegarde de progression
+- Formulaire trop long
+- Trop d'étapes
+- Prix cachés
+- Navigation confuse
+- Pas de sauvegarde de progression
 
 ### Solutions
 
-- ✅ Formulaire en 4 étapes maximum
-- ✅ Prix visible dès le début
-- ✅ Navigation claire avec breadcrumbs
-- ✅ Sauvegarde automatique de la progression
-- ✅ Validation en temps réel
+- Formulaire en 4 étapes maximum
+- Prix visible dès le début
+- Navigation claire avec breadcrumbs
+- Sauvegarde automatique de la progression
+- Validation en temps réel
 
 ---
 
-## 📱 Wireframes Principaux
+## Wireframes Principaux
 
 ### Page d'Accueil
 
@@ -260,7 +260,7 @@ Ce document détaille le design UX, les parcours utilisateurs, et les principes 
 
 ---
 
-## 🎨 Design System
+## Design System
 
 ### Couleurs
 
@@ -351,7 +351,7 @@ Small: 0.875rem (14px) - Regular
 
 ---
 
-## 📱 Responsive Design
+## Responsive Design
 
 ### Breakpoints
 
@@ -370,7 +370,7 @@ Small: 0.875rem (14px) - Regular
 
 ---
 
-## ♿ Accessibilité
+## Accessibilité
 
 ### WCAG 2.1 AA Compliance
 
@@ -382,15 +382,15 @@ Small: 0.875rem (14px) - Regular
 
 ### Bonnes Pratiques
 
-- ✅ Labels explicites
-- ✅ Messages d'erreur clairs
-- ✅ Validation en temps réel
-- ✅ Feedback visuel
-- ✅ Pas de dépendance à la couleur seule
+- Labels explicites
+- Messages d'erreur clairs
+- Validation en temps réel
+- Feedback visuel
+- Pas de dépendance à la couleur seule
 
 ---
 
-## 🎭 États des Composants
+## États des Composants
 
 ### Boutons
 
@@ -417,7 +417,7 @@ Small: 0.875rem (14px) - Regular
 
 ---
 
-## 📊 Métriques UX
+## Métriques UX
 
 ### Objectifs
 
@@ -435,7 +435,7 @@ Small: 0.875rem (14px) - Regular
 
 ---
 
-## 🚀 Animations et Transitions
+## Animations et Transitions
 
 ### Principes
 
@@ -453,7 +453,7 @@ Small: 0.875rem (14px) - Regular
 
 ---
 
-## 📝 Copywriting
+## Copywriting
 
 ### Ton de Voix
 
@@ -464,15 +464,15 @@ Small: 0.875rem (14px) - Regular
 
 ### Exemples
 
-- ❌ "Vous êtes invité à procéder à la sélection"
-- ✅ "Choisissez votre véhicule"
+- "Vous êtes invité à procéder à la sélection"
+- "Choisissez votre véhicule"
 
-- ❌ "Veuillez compléter les champs ci-dessous"
-- ✅ "Remplissez vos informations"
+- "Veuillez compléter les champs ci-dessous"
+- "Remplissez vos informations"
 
 ---
 
-## ✅ Checklist UX
+## Checklist UX
 
 - [ ] Parcours utilisateur défini
 - [ ] Wireframes créés

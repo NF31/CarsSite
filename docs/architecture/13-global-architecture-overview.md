@@ -1,12 +1,12 @@
 # Vue d'Ensemble de l'Architecture Globale - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document présente une vue d'ensemble complète de l'architecture du projet CarRental, incluant les composants, les flux de données, et les interactions.
 
 ---
 
-## 🏗️ Architecture Générale
+## Architecture Générale
 
 ### Diagramme de Haut Niveau
 
@@ -55,7 +55,7 @@ Ce document présente une vue d'ensemble complète de l'architecture du projet C
 
 ---
 
-## 🔄 Flux de Données
+## Flux de Données
 
 ### Flux : Réservation Client
 
@@ -115,7 +115,7 @@ Ce document présente une vue d'ensemble complète de l'architecture du projet C
 
 ---
 
-## 📦 Composants Principaux
+## Composants Principaux
 
 ### Frontend
 
@@ -200,7 +200,7 @@ Ce document présente une vue d'ensemble complète de l'architecture du projet C
 
 ---
 
-## 🔐 Sécurité
+## Sécurité
 
 ### Couches de Sécurité
 
@@ -239,7 +239,7 @@ Ce document présente une vue d'ensemble complète de l'architecture du projet C
 
 ---
 
-## ⚡ Performance
+## Performance
 
 ### Optimisations
 
@@ -264,7 +264,7 @@ Ce document présente une vue d'ensemble complète de l'architecture du projet C
 
 ---
 
-## 🗄️ Base de Données
+## Base de Données
 
 ### Architecture PostgreSQL
 
@@ -291,7 +291,7 @@ Tables:
 
 ---
 
-## 🚀 Déploiement
+## Déploiement
 
 ### Architecture de Déploiement
 
@@ -320,7 +320,7 @@ Tables:
 
 ---
 
-## 📊 Monitoring
+## Monitoring
 
 ### Outils
 
@@ -337,7 +337,7 @@ Tables:
 
 ---
 
-## ✅ Résumé Architecture
+## Résumé Architecture
 
 ### Points Clés
 
@@ -359,10 +359,10 @@ Tables:
 
 ---
 
-## ✅ Conclusion
+## Conclusion
 
 L'architecture de CarRental est **moderne, scalable et sécurisée**. Elle utilise les meilleures pratiques et technologies actuelles pour créer une plateforme de location de voitures performante et maintenable.
 
-**Statut** : ✅ **Architecture prête pour le développement**
+**Statut** : **Architecture prête pour le développement**
 
 

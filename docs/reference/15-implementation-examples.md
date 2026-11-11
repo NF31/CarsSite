@@ -1,12 +1,12 @@
 # Exemples d'Implémentation - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document fournit des exemples concrets et complets d'implémentation pour les fonctionnalités clés du projet.
 
 ---
 
-## 🔐 Authentification Complète
+## Authentification Complète
 
 ### Configuration NextAuth
 
@@ -139,7 +139,7 @@ export const config = {
 
 ---
 
-## 🚗 Recherche de Véhicules avec Disponibilité
+## Recherche de Véhicules avec Disponibilité
 
 ### Hook Personnalisé
 
@@ -335,7 +335,7 @@ export function VehicleSearch() {
 
 ---
 
-## 📅 Processus de Réservation Multi-Étapes
+## Processus de Réservation Multi-Étapes
 
 ### Gestion d'État avec Context
 
@@ -643,7 +643,7 @@ export function BookingSteps() {
 
 ---
 
-## 💳 Intégration Stripe
+## Intégration Stripe
 
 ### Configuration Stripe
 
@@ -796,7 +796,7 @@ export function StripePayment(props: StripePaymentProps) {
 
 ---
 
-## 📧 Templates Email
+## Templates Email
 
 ### Configuration Email
 
@@ -882,7 +882,7 @@ export async function sendBookingConfirmation(
 
 ---
 
-## ✅ Checklist Implémentation
+## Checklist Implémentation
 
 - [x] Authentification NextAuth complète
 - [x] Middleware de protection

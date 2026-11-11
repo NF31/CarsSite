@@ -1,12 +1,12 @@
 # Modèles de Données TypeScript - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document définit tous les modèles de données TypeScript utilisés dans l'application CarRental.
 
 ---
 
-## 👤 User
+## User
 
 ```typescript
 export type UserRole = 'CLIENT' | 'ADMIN' | 'EMPLOYEE';
@@ -44,7 +44,7 @@ export interface UpdateUserInput {
 
 ---
 
-## 🚗 Vehicle
+## Vehicle
 
 ```typescript
 export type VehicleCategory = 
@@ -139,7 +139,7 @@ export interface VehicleAvailability {
 
 ---
 
-## 📅 Booking
+## Booking
 
 ```typescript
 export type BookingStatus = 
@@ -202,7 +202,7 @@ export interface BookingSummary {
 
 ---
 
-## 🎁 Service
+## Service
 
 ```typescript
 export type ServicePricingType = 'PER_DAY' | 'FIXED' | 'PERCENTAGE';
@@ -242,7 +242,7 @@ export interface UpdateServiceInput {
 
 ---
 
-## ⭐ Review
+## Review
 
 ```typescript
 export interface Review {
@@ -275,7 +275,7 @@ export interface ReviewWithUser extends Review {
 
 ---
 
-## 🔧 Maintenance
+## Maintenance
 
 ```typescript
 export type MaintenanceType = 'SERVICE' | 'REPAIR' | 'INSPECTION';
@@ -323,7 +323,7 @@ export interface UpdateMaintenanceInput {
 
 ---
 
-## 💰 Invoice
+## Invoice
 
 ```typescript
 export type InvoiceStatus = 
@@ -360,7 +360,7 @@ export interface CreateInvoiceInput {
 
 ---
 
-## 💳 Payment
+## Payment
 
 ```typescript
 export type PaymentMethod = 'STRIPE' | 'PAYPAL' | 'CASH' | 'BANK_TRANSFER';
@@ -397,7 +397,7 @@ export interface CreatePaymentInput {
 
 ---
 
-## 📍 Location
+## Location
 
 ```typescript
 export interface Location {
@@ -455,7 +455,7 @@ export interface UpdateLocationInput {
 
 ---
 
-## ⚙️ Setting
+## Setting
 
 ```typescript
 export interface Setting {
@@ -474,7 +474,7 @@ export interface UpdateSettingInput {
 
 ---
 
-## 📊 Dashboard Statistics
+## Dashboard Statistics
 
 ```typescript
 export interface DashboardStats {
@@ -507,7 +507,7 @@ export interface OccupancyChartData {
 
 ---
 
-## 🔍 Search & Filter Types
+## Search & Filter Types
 
 ```typescript
 export interface VehicleSearchFilters {
@@ -549,7 +549,7 @@ export interface PaginatedResponse<T> {
 
 ---
 
-## 📧 Email Types
+## Email Types
 
 ```typescript
 export interface EmailTemplate {
@@ -579,7 +579,7 @@ export interface CancellationEmail {
 
 ---
 
-## 🎯 Utilisation dans l'Application
+## Utilisation dans l'Application
 
 ### Exemple d'utilisation
 
@@ -608,7 +608,7 @@ export async function POST(request: Request) {
 
 ---
 
-## ✅ Checklist Modèles
+## Checklist Modèles
 
 - [ ] Tous les modèles principaux définis
 - [ ] Types d'union pour les enums

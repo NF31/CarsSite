@@ -1,12 +1,12 @@
 # Workflows Détaillés - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document détaille tous les workflows du système avec diagrammes de flux, états, transitions et règles métier.
 
 ---
 
-## 🔄 Workflow : Réservation Client
+## Workflow : Réservation Client
 
 ### Diagramme de Flux Complet
 
@@ -212,7 +212,7 @@ CONFIRMED ──[Annulation]──> CANCELLED
 
 ---
 
-## 🔄 Workflow : Gestion Admin - Véhicule
+## Workflow : Gestion Admin - Véhicule
 
 ### Ajout de Véhicule
 
@@ -321,7 +321,7 @@ CONFIRMED ──[Annulation]──> CANCELLED
 
 ---
 
-## 🔄 Workflow : Paiement Stripe (Checkout Session)
+## Workflow : Paiement Stripe (Checkout Session)
 
 ### Flux de Paiement Complet avec Webhook
 
@@ -487,7 +487,7 @@ enum PaymentStatus {
 
 ---
 
-## 🔄 Workflow : Annulation de Réservation
+## Workflow : Annulation de Réservation
 
 ### Processus d'Annulation
 
@@ -575,7 +575,7 @@ enum PaymentStatus {
 
 ---
 
-## 🔄 Workflow : Maintenance Véhicule
+## Workflow : Maintenance Véhicule
 
 ### Planification Maintenance
 
@@ -647,7 +647,7 @@ IN_PROGRESS ──[Annulation]──> CANCELLED
 
 ---
 
-## 🔄 Workflow : Modération Avis
+## Workflow : Modération Avis
 
 ### Processus de Modération
 
@@ -710,7 +710,7 @@ IN_PROGRESS ──[Annulation]──> CANCELLED
 
 ---
 
-## 📊 Règles Métier Globales
+## Règles Métier Globales
 
 ### Disponibilité Véhicule
 
@@ -745,7 +745,7 @@ IN_PROGRESS ──[Annulation]──> CANCELLED
 
 ---
 
-## ✅ Checklist Workflows
+## Checklist Workflows
 
 - [x] Workflow réservation client
 - [x] Workflow paiement Stripe

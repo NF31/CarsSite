@@ -1,37 +1,37 @@
 # Processus de Suppression de Compte - Actions Complètes
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document détaille **TOUTES** les actions qui se produisent lorsqu'un utilisateur supprime son compte, étape par étape.
 
 ---
 
-## 🔄 ÉTAPE 1 : Demande de Suppression (Page Profil)
+## ÉTAPE 1 : Demande de Suppression (Page Profil)
 
 **Fichier :** `app/(client)/profile/page.tsx`
 
 ### Actions :
-1. ✅ L'utilisateur remplit le formulaire :
+1. L'utilisateur remplit le formulaire :
    - Mot de passe actuel
    - Confirmation texte "SUPPRIMER"
-2. ✅ Validation du formulaire (Zod)
-3. ✅ Envoi de la requête `DELETE /api/profile/delete`
+2. Validation du formulaire (Zod)
+3. Envoi de la requête `DELETE /api/profile/delete`
 
 ---
 
-## 🔄 ÉTAPE 2 : Vérification et Génération du Token (API)
+## ÉTAPE 2 : Vérification et Génération du Token (API)
 
 **Fichier :** `app/api/profile/delete/route.ts`
 
 ### Actions :
-1. ✅ **Vérification de l'authentification**
+1. **Vérification de l'authentification**
    - Vérifie que l'utilisateur est connecté (`session.user.id`)
 
-2. ✅ **Validation des données**
+2. **Validation des données**
    - Parse le body avec `deleteAccountSchema`
    - Vérifie : mot de passe + texte "SUPPRIMER"
 
-3. ✅ **Récupération de l'utilisateur**
+3. **Récupération de l'utilisateur**
    ```typescript
    prisma.user.findUnique({
      where: { id: session.user.id },
@@ -39,43 +39,43 @@ Ce document détaille **TOUTES** les actions qui se produisent lorsqu'un utilisa
    })
    ```
 
-4. ✅ **Vérification du mot de passe**
+4. **Vérification du mot de passe**
    - Compare le mot de passe fourni avec le hash stocké (bcrypt)
    - Si incorrect → erreur 400
 
-5. ✅ **Génération du token de confirmation**
+5. **Génération du token de confirmation**
    - Crée un token cryptographiquement sécurisé (32 bytes)
    - Expiration : 24 heures
    - Stocké dans `verification_tokens` avec `identifier = userId`
 
-6. ✅ **Envoi de l'email de confirmation**
+6. **Envoi de l'email de confirmation**
    - Template : `lib/templates/account-deletion-email.tsx`
    - Contenu : avertissement + lien de confirmation
    - Lien : `/confirm-account-deletion?token={token}`
    - Si échec → supprime le token et retourne erreur 500
 
-7. ✅ **Retour de succès**
+7. **Retour de succès**
    - Message : "Un email de confirmation a été envoyé..."
-   - **⚠️ IMPORTANT : Le compte n'est PAS encore supprimé à ce stade**
+   - ** IMPORTANT : Le compte n'est PAS encore supprimé à ce stade**
 
 ---
 
-## 🔄 ÉTAPE 3 : Confirmation par Email (Page)
+## ÉTAPE 3 : Confirmation par Email (Page)
 
 **Fichier :** `app/(public)/confirm-account-deletion/page.tsx`
 
 ### Actions :
-1. ✅ L'utilisateur clique sur le lien dans l'email
-2. ✅ Extraction du token depuis l'URL (`?token=xxx`)
-3. ✅ Affichage de la page de confirmation avec :
+1. L'utilisateur clique sur le lien dans l'email
+2. Extraction du token depuis l'URL (`?token=xxx`)
+3. Affichage de la page de confirmation avec :
    - Avertissement sur l'irréversibilité
    - Liste des données qui seront supprimées
    - Bouton "Confirmer la suppression"
-4. ✅ Si l'utilisateur confirme → envoi de `POST /api/profile/delete/confirm`
+4. Si l'utilisateur confirme → envoi de `POST /api/profile/delete/confirm`
 
 ---
 
-## 🔄 ÉTAPE 4 : Suppression Définitive (API de Confirmation)
+## ÉTAPE 4 : Suppression Définitive (API de Confirmation)
 
 **Fichier :** `app/api/profile/delete/confirm/route.ts`
 
@@ -85,9 +85,9 @@ Ce document détaille **TOUTES** les actions qui se produisent lorsqu'un utilisa
 ```typescript
 verifyAccountDeletionToken(token)
 ```
-- ✅ Vérifie que le token existe dans la DB
-- ✅ Vérifie que le token n'a pas expiré (< 24h)
-- ✅ Si invalide → erreur 400
+- Vérifie que le token existe dans la DB
+- Vérifie que le token n'a pas expiré (< 24h)
+- Si invalide → erreur 400
 
 #### 4.2. Récupération de l'Utilisateur
 ```typescript
@@ -98,9 +98,9 @@ prisma.user.findFirst({
   }
 })
 ```
-- ✅ Récupère l'ID et l'email depuis le token
-- ✅ Vérifie que le compte existe et n'est pas déjà supprimé
-- ✅ Si déjà supprimé → erreur 404
+- Récupère l'ID et l'email depuis le token
+- Vérifie que le compte existe et n'est pas déjà supprimé
+- Si déjà supprimé → erreur 404
 
 #### 4.3. Préparation de l'Anonymisation
 ```typescript
@@ -109,8 +109,8 @@ const originalEmailHash = crypto.createHash("sha256")
   .update(user.email.toLowerCase().trim())
   .digest("hex");
 ```
-- ✅ Génère un email anonymisé unique
-- ✅ Crée un hash SHA-256 de l'email original pour traçabilité
+- Génère un email anonymisé unique
+- Crée un hash SHA-256 de l'email original pour traçabilité
 
 #### 4.4. Anonymisation des Avis (Reviews)
 ```typescript
@@ -119,8 +119,8 @@ prisma.review.updateMany({
   data: { comment: null }
 })
 ```
-- ✅ **SUPPRIME** : Commentaires personnels
-- ✅ **GARDE** : Notes (1-5), dates, véhicule (pour statistiques)
+- **SUPPRIME** : Commentaires personnels
+- **GARDE** : Notes (1-5), dates, véhicule (pour statistiques)
 
 #### 4.5. Anonymisation des Réservations (Bookings)
 ```typescript
@@ -132,8 +132,8 @@ prisma.booking.updateMany({
   }
 })
 ```
-- ✅ **SUPPRIME** : Notes personnelles, raisons d'annulation
-- ✅ **GARDE** : Dates, prix, véhicule, statut (pour comptabilité)
+- **SUPPRIME** : Notes personnelles, raisons d'annulation
+- **GARDE** : Dates, prix, véhicule, statut (pour comptabilité)
 
 #### 4.6. Suppression des Tokens de Vérification
 ```typescript
@@ -141,8 +141,8 @@ prisma.verificationToken.deleteMany({
   where: { identifier: userId }
 })
 ```
-- ✅ Supprime tous les tokens (email, reset password, etc.)
-- ✅ Données de connexion supprimées
+- Supprime tous les tokens (email, reset password, etc.)
+- Données de connexion supprimées
 
 #### 4.7. Suppression des Tentatives de Rate Limiting
 ```typescript
@@ -153,8 +153,8 @@ prisma.rateLimitAttempt.deleteMany({
   }
 })
 ```
-- ✅ Supprime l'historique de rate limiting par email
-- ✅ Données de connexion supprimées
+- Supprime l'historique de rate limiting par email
+- Données de connexion supprimées
 
 #### 4.8. Anonymisation du Compte Utilisateur
 ```typescript
@@ -181,21 +181,21 @@ SET "deletedAt" = NOW(),
     "originalEmailHash" = {hash}
 WHERE id = {userId}
 ```
-- ✅ Marque la date de suppression (`deletedAt`)
-- ✅ Stocke le hash de l'email original pour traçabilité
+- Marque la date de suppression (`deletedAt`)
+- Stocke le hash de l'email original pour traçabilité
 
 #### 4.10. Conservation des Données Comptables
-**⚠️ IMPORTANT : Ces données sont CONSERVÉES (obligations légales)**
+**IMPORTANT : Ces données sont CONSERVÉES (obligations légales)**
 
-- ✅ **Factures (Invoices)** : **GARDÉES** 10 ans
+- **Factures (Invoices)** : **GARDÉES** 10 ans
   - Contiennent : montants, dates, numéros de facture
   - Restent liées au `userId` (anonymisé)
   
-- ✅ **Paiements (Payments)** : **GARDÉS** 10 ans
+- **Paiements (Payments)** : **GARDÉS** 10 ans
   - Contiennent : montants, méthodes, statuts, transaction IDs
   - Restent liés au `userId` (anonymisé)
 
-- ✅ **Réservations (Bookings)** : **GARDÉES** (anonymisées)
+- **Réservations (Bookings)** : **GARDÉES** (anonymisées)
   - Dates, prix, véhicule conservés
   - Notes personnelles supprimées
 
@@ -203,14 +203,14 @@ WHERE id = {userId}
 ```typescript
 deleteAccountDeletionToken(token)
 ```
-- ✅ Supprime le token de confirmation après utilisation
+- Supprime le token de confirmation après utilisation
 
 #### 4.12. Déconnexion de l'Utilisateur
 ```typescript
 signOut({ redirect: false })
 ```
-- ✅ Déconnecte la session NextAuth
-- ✅ Supprime le cookie de session
+- Déconnecte la session NextAuth
+- Supprime le cookie de session
 
 #### 4.13. Retour de Succès
 ```typescript
@@ -222,9 +222,9 @@ return NextResponse.json({
 
 ---
 
-## 📊 RÉSUMÉ DES DONNÉES
+## RÉSUMÉ DES DONNÉES
 
-### ✅ **SUPPRIMÉES/ANONYMISÉES :**
+### **SUPPRIMÉES/ANONYMISÉES :**
 - Email → `deleted_xxx@deleted.local`
 - Nom → "Utilisateur supprimé"
 - Téléphone → `NULL`
@@ -236,7 +236,7 @@ return NextResponse.json({
 - Commentaires d'avis → Supprimés
 - Notes personnelles de réservations → Supprimées
 
-### ✅ **CONSERVÉES (Anonymisées) :**
+### **CONSERVÉES (Anonymisées) :**
 - ID utilisateur → **GARDÉ** (référence unique)
 - Hash email original → **GARDÉ** (traçabilité)
 - Date de suppression → **GARDÉE** (`deletedAt`)
@@ -247,34 +247,34 @@ return NextResponse.json({
 
 ---
 
-## 🔒 SÉCURITÉ ET CONFORMITÉ
+## SÉCURITÉ ET CONFORMITÉ
 
-### ✅ **Protection :**
+### **Protection :**
 - Double confirmation (mot de passe + email)
 - Token sécurisé avec expiration (24h)
 - Vérification que le compte n'est pas déjà supprimé
 - Impossible de se reconnecter après suppression
 
-### ✅ **Conformité RGPD :**
+### **Conformité RGPD :**
 - Données personnelles anonymisées
 - Hash pour traçabilité (non directement lisible)
 - Conservation des données légales (factures, paiements)
 - Soft delete (pas de suppression physique)
 
-### ✅ **Traçabilité :**
+### **Traçabilité :**
 - Hash de l'email original permet de retrouver l'identité si nécessaire
 - ID utilisateur reste constant (référence pour factures/paiements)
 - Date de suppression enregistrée
 
 ---
 
-## 🎯 RÉSULTAT FINAL
+## RÉSULTAT FINAL
 
 Après toutes ces actions :
-- ✅ Le compte est **anonymisé** et **marqué comme supprimé**
-- ✅ L'utilisateur ne peut **plus se connecter**
-- ✅ Les données personnelles sont **anonymisées**
-- ✅ Les données comptables sont **conservées** (obligations légales)
-- ✅ La traçabilité est **préservée** (hash email + ID)
-- ✅ Conformité **RGPD** respectée
+- Le compte est **anonymisé** et **marqué comme supprimé**
+- L'utilisateur ne peut **plus se connecter**
+- Les données personnelles sont **anonymisées**
+- Les données comptables sont **conservées** (obligations légales)
+- La traçabilité est **préservée** (hash email + ID)
+- Conformité **RGPD** respectée
 
