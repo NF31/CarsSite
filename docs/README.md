@@ -1,27 +1,27 @@
 # Documentation CarRental
 
-## 📚 Structure de la documentation
+## Structure de la documentation
 
 Cette documentation est organisée en catégories logiques pour faciliter la navigation et la recherche.
 
-### 📁 Organisation
+### Organisation
 
-#### 🚀 [getting-started/](getting-started/)
+#### [getting-started/](getting-started/)
 Guides de démarrage et de configuration pour les intégrations et services externes :
 - Stripe Setup & Branding
 - Google Maps Setup
 - Redis Integration & Cache Strategy
 - NextAuth Structure
 
-#### 📋 [requirements/](requirements/)
+#### [requirements/](requirements/)
 Spécifications fonctionnelles et user stories :
 - User Stories Complètes
 
-#### 📐 [specs/](specs/)
+#### [specs/](specs/)
 Spécifications techniques :
 - Spécifications Techniques
 
-#### 🏗️ [architecture/](architecture/)
+#### [architecture/](architecture/)
 Documentation technique sur l'architecture et la structure du projet :
 - Architecture Globale
 - Modèles de Données
@@ -29,19 +29,19 @@ Documentation technique sur l'architecture et la structure du projet :
 - Schéma Prisma
 - Structure des Répertoires Admin
 
-#### 🎨 [design/](design/)
+#### [design/](design/)
 Documentation sur le design et l'expérience utilisateur :
 - Design System
 - Stratégie de Contenu
 - Expérience Utilisateur
 - Analyse Concurrentielle
 
-#### 🎛️ [admin-interface/](admin-interface/)
+#### [admin-interface/](admin-interface/)
 Documentation spécifique à l'interface admin :
 - Interface Admin Détaillée
 - Navbar & Dashboard Admin
 
-#### 🔄 [workflows/](workflows/)
+#### [workflows/](workflows/)
 Documentation détaillée des workflows métier :
 - Workflows Détaillés
 - Workflow d'Annulation de Réservation
@@ -50,18 +50,18 @@ Documentation détaillée des workflows métier :
 - Explication du Calcul de Modification
 - Vérification des Flux et Cache
 
-#### 📖 [reference/](reference/)
+#### [reference/](reference/)
 Documentation de référence technique :
 - Référence API Complète
 - Exemples d'Implémentation
 - Services d'Assurance
 - Processus de Suppression de Compte
 
-#### 🗺️ [roadmap/](roadmap/)
+#### [roadmap/](roadmap/)
 Planification et évolution du projet :
 - Roadmap du Projet
 
-#### ✅ [status/](status/)
+#### [status/](status/)
 Statut, évaluations et suivis du projet :
 - Checklist de Documentation
 - Revue Complète de Documentation
@@ -69,7 +69,7 @@ Statut, évaluations et suivis du projet :
 - Statut Complet du Projet
 - Résumé des Mises à Jour de Documentation
 
-## 🔍 Navigation rapide
+## Navigation rapide
 
 ### Pour commencer
 - **Première fois ?** : [getting-started/stripe-setup.md](getting-started/stripe-setup.md)
@@ -90,13 +90,13 @@ Statut, évaluations et suivis du projet :
 - **Statut actuel** : [status/19-complete-project-status.md](status/19-complete-project-status.md)
 - **Roadmap** : [roadmap/roadmap-projet.md](roadmap/roadmap-projet.md)
 
-## 📊 Statistiques
+## Statistiques
 
 - **10 catégories** organisées
 - **36 fichiers** de documentation
 - **2 fichiers** d'introduction (intro.md, README.md)
 - **Total : 38 fichiers**
 
-## 📝 Note
+## Note
 
 Cette documentation est maintenue à jour avec le code source. Pour toute question ou suggestion d'amélioration, veuillez consulter l'équipe de développement.

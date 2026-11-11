@@ -1,12 +1,12 @@
 # Navigation Admin et Dashboard - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document détaille la navigation de l'interface admin et la structure du dashboard.
 
 ---
 
-## 🧭 Navigation Admin
+## Navigation Admin
 
 ### Structure de la Navigation
 
@@ -26,12 +26,12 @@ Ce document détaille la navigation de l'interface admin et la structure du dash
 
 **Sections :**
 
-1. **📊 Dashboard**
+1. ** Dashboard**
    - Icône : Chart Bar
    - Route : `/admin/dashboard`
    - Badge : Alertes (si applicable)
 
-2. **🚗 Véhicules**
+2. ** Véhicules**
    - Icône : Car
    - Route : `/admin/vehicles`
    - Sous-menu :
@@ -40,7 +40,7 @@ Ce document détaille la navigation de l'interface admin et la structure du dash
      - Disponibilités
      - Maintenance
 
-3. **📅 Réservations**
+3. ** Réservations**
    - Icône : Calendar
    - Route : `/admin/bookings`
    - Sous-menu :
@@ -49,34 +49,34 @@ Ce document détaille la navigation de l'interface admin et la structure du dash
      - Calendrier
      - En attente
 
-4. **👥 Clients**
+4. ** Clients**
    - Icône : Users
    - Route : `/admin/clients`
    - Badge : Nouveaux clients (si applicable)
 
-5. **🎁 Services**
+5. ** Services**
    - Icône : Gift
    - Route : `/admin/services`
 
-6. **🔧 Maintenance**
+6. ** Maintenance**
    - Icône : Wrench
    - Route : `/admin/maintenance`
    - Badge : Maintenances à prévoir
 
-7. **📊 Statistiques**
+7. ** Statistiques**
    - Icône : Chart Line
    - Route : `/admin/statistics`
 
-8. **💰 Facturation**
+8. ** Facturation**
    - Icône : Receipt
    - Route : `/admin/invoices`
 
-9. **⭐ Avis**
+9. ** Avis**
    - Icône : Star
    - Route : `/admin/reviews`
    - Badge : Avis en attente
 
-10. **⚙️ Paramètres**
+10. ** Paramètres**
     - Icône : Cog
     - Route : `/admin/settings`
     - Sous-menu :
@@ -88,13 +88,13 @@ Ce document détaille la navigation de l'interface admin et la structure du dash
 ### Navigation Mobile
 
 Menu hamburger avec :
-- Icône ☰
+- Icône
 - Overlay avec menu complet
 - Fermeture par clic extérieur
 
 ---
 
-## 📊 Dashboard Admin
+## Dashboard Admin
 
 ### Layout Général
 
@@ -283,7 +283,7 @@ Menu hamburger avec :
 
 ---
 
-## 🔔 Système de Notifications
+## Système de Notifications
 
 ### Badges sur Navigation
 
@@ -319,7 +319,7 @@ Menu hamburger avec :
 
 ---
 
-## 👤 Menu Utilisateur
+## Menu Utilisateur
 
 ### Dropdown Utilisateur
 
@@ -338,7 +338,7 @@ Menu hamburger avec :
 
 ---
 
-## 📱 Responsive Design
+## Responsive Design
 
 ### Desktop (> 1024px)
 - Navigation horizontale complète
@@ -358,7 +358,7 @@ Menu hamburger avec :
 
 ---
 
-## 🎨 Styles et Animations
+## Styles et Animations
 
 ### Transitions
 
@@ -376,7 +376,7 @@ Menu hamburger avec :
 
 ---
 
-## ✅ Checklist Navigation
+## Checklist Navigation
 
 - [ ] Navigation principale avec toutes les sections
 - [ ] Sous-menus pour sections complexes

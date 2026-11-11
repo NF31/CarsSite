@@ -1,12 +1,12 @@
-# 📋 Workflow Complet : Annulation d'une Réservation par un Client
+# Workflow Complet : Annulation d'une Réservation par un Client
 
-## 🎯 Vue d'ensemble
+## Vue d'ensemble
 
 Ce document explique **étape par étape** le processus complet lorsqu'un client demande l'annulation de sa réservation, depuis la demande initiale jusqu'à la finalisation (acceptation ou rejet par l'admin).
 
 ---
 
-## 📍 Étape 1 : Le Client Demande l'Annulation
+## Étape 1 : Le Client Demande l'Annulation
 
 ### 1.1 Interface Client
 
@@ -44,10 +44,10 @@ Le système calcule automatiquement le taux de remboursement selon le délai ava
 Quand le client confirme l'annulation :
 
 1. **Vérifications de sécurité :**
-   - ✅ Client authentifié
-   - ✅ Rate limiting (max 3 tentatives / 10 minutes)
-   - ✅ Réservation appartient au client
-   - ✅ Réservation peut être annulée (pas déjà commencée, pas déjà annulée)
+   - Client authentifié
+   - Rate limiting (max 3 tentatives / 10 minutes)
+   - Réservation appartient au client
+   - Réservation peut être annulée (pas déjà commencée, pas déjà annulée)
 
 2. **Calcul du remboursement :**
    ```typescript
@@ -81,7 +81,7 @@ Quand le client confirme l'annulation :
 
 ---
 
-## 📍 Étape 2 : L'Admin Voit la Demande
+## Étape 2 : L'Admin Voit la Demande
 
 ### 2.1 Interface Admin
 
@@ -100,12 +100,12 @@ L'admin voit :
      - Frais retenus : X€
 
 3. **Deux boutons d'action :**
-   - ✅ **"Accepter l'annulation"** → Valide l'annulation et crée le remboursement
-   - ❌ **"Conserver la réservation"** → Rejette l'annulation avec message optionnel
+   - **"Accepter l'annulation"** → Valide l'annulation et crée le remboursement
+   - **"Conserver la réservation"** → Rejette l'annulation avec message optionnel
 
 ---
 
-## 📍 Étape 3A : L'Admin ACCEPTE l'Annulation
+## Étape 3A : L'Admin ACCEPTE l'Annulation
 
 ### 3A.1 Traitement de l'Acceptation
 
@@ -167,7 +167,7 @@ Quand Stripe confirme le remboursement :
 
 ---
 
-## 📍 Étape 3B : L'Admin REJETTE l'Annulation (Conserve la Réservation)
+## Étape 3B : L'Admin REJETTE l'Annulation (Conserve la Réservation)
 
 ### 3B.1 Traitement du Rejet
 
@@ -200,7 +200,7 @@ Quand l'admin clique sur **"Conserver la réservation"** :
 
 ---
 
-## 📊 Tableau Récapitulatif des Statuts
+## Tableau Récapitulatif des Statuts
 
 | Étape | Statut Réservation | `cancellationRequested` | Actions Possibles |
 |-------|-------------------|------------------------|-------------------|
@@ -211,7 +211,7 @@ Quand l'admin clique sur **"Conserver la réservation"** :
 
 ---
 
-## 💰 Détails du Calcul de Remboursement
+## Détails du Calcul de Remboursement
 
 ### Fonction de Calcul
 
@@ -252,7 +252,7 @@ function computeRefundRate(daysBeforeStart: number): number {
 
 ---
 
-## 🔔 Notifications et Emails
+## Notifications et Emails
 
 ### Email 1 : Demande d'Annulation (Client → Client)
 
@@ -287,25 +287,25 @@ function computeRefundRate(daysBeforeStart: number): number {
 
 ---
 
-## 🛡️ Sécurité et Validations
+## Sécurité et Validations
 
 ### Validations Côté Client
 
-1. ✅ **Authentification** : Client doit être connecté
-2. ✅ **Propriété** : Client ne peut annuler que ses propres réservations
-3. ✅ **Rate Limiting** : Max 3 tentatives / 10 minutes
-4. ✅ **Statut** : Réservation doit être `PENDING` ou `CONFIRMED`
-5. ✅ **Dates** : Réservation ne doit pas avoir commencé
+1. **Authentification** : Client doit être connecté
+2. **Propriété** : Client ne peut annuler que ses propres réservations
+3. **Rate Limiting** : Max 3 tentatives / 10 minutes
+4. **Statut** : Réservation doit être `PENDING` ou `CONFIRMED`
+5. **Dates** : Réservation ne doit pas avoir commencé
 
 ### Validations Côté Admin
 
-1. ✅ **Permissions** : Seul un admin peut valider/rejeter
-2. ✅ **Contexte** : Vérifie s'il y a une modification en cours
-3. ✅ **Remboursement** : Vérifie que le paiement existe avant remboursement
+1. **Permissions** : Seul un admin peut valider/rejeter
+2. **Contexte** : Vérifie s'il y a une modification en cours
+3. **Remboursement** : Vérifie que le paiement existe avant remboursement
 
 ---
 
-## 🔄 Cas Particuliers
+## Cas Particuliers
 
 ### Cas 1 : Annulation + Modification en Cours
 
@@ -330,12 +330,12 @@ function computeRefundRate(daysBeforeStart: number): number {
 **Scénario :** Le client essaie d'annuler une réservation en cours
 
 **Comportement :**
-- ❌ Annulation refusée automatiquement
+- Annulation refusée automatiquement
 - Message : "Cette réservation est déjà en cours. Contactez le support si besoin."
 
 ---
 
-## 📝 Logs et Traçabilité
+## Logs et Traçabilité
 
 Toutes les actions importantes sont loggées :
 
@@ -347,7 +347,7 @@ Toutes les actions importantes sont loggées :
 
 ---
 
-## 🎯 Résumé du Flux Complet
+## Résumé du Flux Complet
 
 ```
 1. Client → Clic "Annuler" → Dialog s'ouvre
@@ -362,7 +362,7 @@ Toutes les actions importantes sont loggées :
 
 ---
 
-## ✅ Checklist pour l'Admin
+## Checklist pour l'Admin
 
 Quand vous traitez une demande d'annulation :
 
@@ -376,6 +376,6 @@ Quand vous traitez une demande d'annulation :
 
 ---
 
-**📌 Note importante :** Le remboursement est calculé uniquement sur l'**acompte** (30% du prix total). Le solde restant (70%) n'est jamais remboursé car il n'a pas encore été payé.
+**Note importante :**Le remboursement est calculé uniquement sur l'**acompte**(30% du prix total). Le solde restant (70%) n'est jamais remboursé car il n'a pas encore été payé.
 
 

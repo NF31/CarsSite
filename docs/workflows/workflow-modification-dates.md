@@ -6,7 +6,7 @@ Quand un utilisateur modifie les dates d'une réservation, plusieurs étapes se 
 
 ---
 
-## 📋 Étape 1 : Ouverture du Dialog de Modification
+## Étape 1 : Ouverture du Dialog de Modification
 
 **Fichier :** `components/client/dashboard/EditBookingDialog.tsx`
 
@@ -20,7 +20,7 @@ Quand un utilisateur modifie les dates d'une réservation, plusieurs étapes se 
 
 ---
 
-## 🔄 Étape 2 : Calcul en Temps Réel du Nouveau Prix
+## Étape 2 : Calcul en Temps Réel du Nouveau Prix
 
 **Fichier :** `components/client/dashboard/EditBookingDialog.tsx` (lignes 115-184)
 
@@ -58,7 +58,7 @@ Quand l'utilisateur change les dates :
 
 ---
 
-## ✅ Étape 3 : Validation et Soumission
+## Étape 3 : Validation et Soumission
 
 **Fichier :** `components/client/dashboard/EditBookingDialog.tsx` (lignes 186-231)
 
@@ -74,11 +74,11 @@ Quand l'utilisateur clique sur "Enregistrer les nouvelles dates" :
 
 ---
 
-## 🎯 Étape 4 : Traitement Serveur de la Modification (SANS Actions Stripe)
+## Étape 4 : Traitement Serveur de la Modification (SANS Actions Stripe)
 
 **Fichier :** `actions/client/bookings/update-booking.ts`
 
-**⚠️ IMPORTANT :** À cette étape, les remboursements et paiements Stripe ne sont **PAS** déclenchés. Ils le seront uniquement après validation par l'admin.
+**IMPORTANT :**À cette étape, les remboursements et paiements Stripe ne sont **PAS**déclenchés. Ils le seront uniquement après validation par l'admin.
 
 ### 4.1 Validation et Vérifications
 
@@ -128,7 +128,7 @@ calculateBookingPriceAction({
 
 ### 4.3 Stockage des Informations (PAS d'Actions Stripe)
 
-**⚠️ IMPORTANT :** Les remboursements et paiements Stripe ne sont **PAS** créés maintenant. On stocke uniquement les informations nécessaires.
+**IMPORTANT :**Les remboursements et paiements Stripe ne sont **PAS**créés maintenant. On stocke uniquement les informations nécessaires.
 
 **Ce qui est stocké :**
 - `modificationRequested: true` → Marque la réservation comme demande de modification
@@ -163,7 +163,7 @@ prisma.booking.update({
 
 ### 4.5 Pas de Paiement Immédiat
 
-**⚠️ IMPORTANT :** Aucune session de paiement Stripe n'est créée maintenant. Le paiement sera géré après validation admin.
+**IMPORTANT :**Aucune session de paiement Stripe n'est créée maintenant. Le paiement sera géré après validation admin.
 
 ### 4.6 Envoi d'Email de Notification
 
@@ -203,7 +203,7 @@ revalidatePath("/admin/bookings")
 
 ---
 
-## 🔔 Étape 5 : Notification Admin et Validation
+## Étape 5 : Notification Admin et Validation
 
 **Fichier :** `lib/admin/notifications.ts` et `actions/admin/bookings/moderate-booking.ts`
 
@@ -292,9 +292,9 @@ Quand l'admin clique sur **"Refuser"** :
 
 ---
 
-## 💳 Étape 6 : Paiement Supplémentaire (si nécessaire, après validation admin)
+## Étape 6 : Paiement Supplémentaire (si nécessaire, après validation admin)
 
-**⚠️ NOTE :** Cette étape se produit uniquement si l'admin a validé la modification ET si un paiement supplémentaire est nécessaire.
+**NOTE :**Cette étape se produit uniquement si l'admin a validé la modification ET si un paiement supplémentaire est nécessaire.
 
 **Fichier :** `actions/admin/bookings/moderate-booking.ts` → `handleModificationRequest()`
 
@@ -312,7 +312,7 @@ Quand l'admin valide une modification qui nécessite un paiement :
 
 ---
 
-## 🔔 Étape 7 : Webhook Stripe (Paiement Supplémentaire)
+## Étape 7 : Webhook Stripe (Paiement Supplémentaire)
 
 **Fichier :** `app/api/webhooks/stripe/route.ts` (lignes 122-151)
 
@@ -364,7 +364,7 @@ Quand Stripe confirme le paiement :
 
 ---
 
-## 📊 Résumé des Scénarios
+## Résumé des Scénarios
 
 ### Scénario 1 : Nouveau prix < Ancien prix (Remboursement)
 
@@ -374,15 +374,15 @@ Quand Stripe confirme le paiement :
 - Différence : -90€
 
 **Workflow :**
-1. ✅ Calcul du nouveau prix
-2. ✅ Mise à jour : `depositPaid = 210€`, `totalPrice = 700€`
-3. ✅ Stockage des dates originales et de la différence
-4. ✅ Préservation de `securityDepositPaid` si > 0
-5. ✅ Statut → `PENDING` (attente validation admin)
-6. ✅ **Notification admin** → L'admin voit la demande
-7. ✅ **Admin valide** → Création d'un remboursement Stripe de 90€
-8. ✅ Email de confirmation au client
-9. ✅ Statut → `CONFIRMED`
+1. Calcul du nouveau prix
+2. Mise à jour : `depositPaid = 210€`, `totalPrice = 700€`
+3. Stockage des dates originales et de la différence
+4. Préservation de `securityDepositPaid` si > 0
+5. Statut → `PENDING` (attente validation admin)
+6. **Notification admin** → L'admin voit la demande
+7. **Admin valide** → Création d'un remboursement Stripe de 90€
+8. Email de confirmation au client
+9. Statut → `CONFIRMED`
 
 ---
 
@@ -394,17 +394,17 @@ Quand Stripe confirme le paiement :
 - Différence : +150€
 
 **Workflow :**
-1. ✅ Calcul du nouveau prix
-2. ✅ Mise à jour : `depositPaid = 450€`, `totalPrice = 1500€`
-3. ✅ Stockage des dates originales et de la différence
-4. ✅ Préservation de `securityDepositPaid = 500€`
-5. ✅ Statut → `PENDING` (attente validation admin)
-6. ✅ **Notification admin** → L'admin voit la demande
-7. ✅ **Admin valide** → Création d'une session Stripe pour 150€ (SEULEMENT la différence)
-8. ✅ Email de confirmation au client avec URL de paiement (TODO)
-9. ✅ Statut → `PENDING` (attente paiement)
-10. ✅ Client paie sur Stripe → Webhook met à jour `depositPaid = 450€`
-11. ✅ Statut → `CONFIRMED`
+1. Calcul du nouveau prix
+2. Mise à jour : `depositPaid = 450€`, `totalPrice = 1500€`
+3. Stockage des dates originales et de la différence
+4. Préservation de `securityDepositPaid = 500€`
+5. Statut → `PENDING` (attente validation admin)
+6. **Notification admin** → L'admin voit la demande
+7. **Admin valide** → Création d'une session Stripe pour 150€ (SEULEMENT la différence)
+8. Email de confirmation au client avec URL de paiement (TODO)
+9. Statut → `PENDING` (attente paiement)
+10. Client paie sur Stripe → Webhook met à jour `depositPaid = 450€`
+11. Statut → `CONFIRMED`
 
 ---
 
@@ -416,17 +416,17 @@ Quand Stripe confirme le paiement :
 - Différence : 0€
 
 **Workflow :**
-1. ✅ Calcul du nouveau prix
-2. ✅ Mise à jour des dates uniquement
-3. ✅ Stockage des dates originales
-4. ✅ Préservation de `depositPaid` et `securityDepositPaid`
-5. ✅ Statut → `PENDING` (attente validation admin)
-6. ✅ **Notification admin** → L'admin voit la demande
-7. ✅ **Admin valide** → Pas de remboursement, pas de paiement
-8. ✅ Email de confirmation au client
-9. ✅ Statut → `CONFIRMED`
-10. ❌ Pas de remboursement
-11. ❌ Pas de paiement supplémentaire
+1. Calcul du nouveau prix
+2. Mise à jour des dates uniquement
+3. Stockage des dates originales
+4. Préservation de `depositPaid` et `securityDepositPaid`
+5. Statut → `PENDING` (attente validation admin)
+6. **Notification admin** → L'admin voit la demande
+7. **Admin valide** → Pas de remboursement, pas de paiement
+8. Email de confirmation au client
+9. Statut → `CONFIRMED`
+10. Pas de remboursement
+11. Pas de paiement supplémentaire
 
 ### Scénario 4 : Admin refuse la modification
 
@@ -435,21 +435,21 @@ Quand Stripe confirme le paiement :
 - Admin refuse
 
 **Workflow :**
-1. ✅ Calcul du nouveau prix (côté client)
-2. ✅ Mise à jour temporaire des dates
-3. ✅ Stockage des dates originales
-4. ✅ Statut → `PENDING` (attente validation admin)
-5. ✅ **Notification admin** → L'admin voit la demande
-6. ✅ **Admin refuse** → Restauration des dates originales
-7. ✅ Restauration du prix original et de l'acompte original
-8. ✅ Email de refus au client
-9. ✅ Statut → `CONFIRMED` (dates originales conservées)
-10. ❌ Pas de remboursement
-11. ❌ Pas de paiement supplémentaire
+1. Calcul du nouveau prix (côté client)
+2. Mise à jour temporaire des dates
+3. Stockage des dates originales
+4. Statut → `PENDING` (attente validation admin)
+5. **Notification admin** → L'admin voit la demande
+6. **Admin refuse** → Restauration des dates originales
+7. Restauration du prix original et de l'acompte original
+8. Email de refus au client
+9. Statut → `CONFIRMED` (dates originales conservées)
+10. Pas de remboursement
+11. Pas de paiement supplémentaire
 
 ---
 
-## 🔐 Points de Sécurité
+## Points de Sécurité
 
 1. **Rate Limiting** : Max 5 modifications / 10 minutes par utilisateur
 2. **Vérification de propriété** : L'utilisateur ne peut modifier que ses propres réservations
@@ -459,27 +459,27 @@ Quand Stripe confirme le paiement :
 
 ---
 
-## 📝 Logs et Traçabilité
+## Logs et Traçabilité
 
 Toutes les actions importantes sont loggées :
-- `[Booking Update] ✅ Remboursement créé: X€`
-- `[Booking Update] ✅ Session de paiement créée pour: X€`
-- `[Stripe Webhook] ✅ Payment processed for booking...`
-- `[Client Booking] ✅ Email de mise à jour envoyé`
+- `[Booking Update] Remboursement créé: X€`
+- `[Booking Update] Session de paiement créée pour: X€`
+- `[Stripe Webhook] Payment processed for booking...`
+- `[Client Booking] Email de mise à jour envoyé`
 
 ---
 
-## 🎯 Résultat Final
+## Résultat Final
 
 Après la modification des dates :
 
-1. ✅ Les dates sont mises à jour
-2. ✅ Le prix est recalculé
-3. ✅ L'acompte est ajusté (30% du nouveau prix)
-4. ✅ La caution est préservée si déjà payée
-5. ✅ Un remboursement est créé si nécessaire
-6. ✅ Un paiement supplémentaire est demandé si nécessaire
-7. ✅ Un email est envoyé au client
-8. ✅ La réservation passe en statut `PENDING` pour validation admin
-9. ✅ Après paiement supplémentaire (si applicable), le statut passe à `CONFIRMED`
+1. Les dates sont mises à jour
+2. Le prix est recalculé
+3. L'acompte est ajusté (30% du nouveau prix)
+4. La caution est préservée si déjà payée
+5. Un remboursement est créé si nécessaire
+6. Un paiement supplémentaire est demandé si nécessaire
+7. Un email est envoyé au client
+8. La réservation passe en statut `PENDING` pour validation admin
+9. Après paiement supplémentaire (si applicable), le statut passe à `CONFIRMED`
 

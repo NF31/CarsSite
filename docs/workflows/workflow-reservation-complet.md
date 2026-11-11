@@ -1,6 +1,6 @@
-# 🔄 WORKFLOW COMPLET D'UNE RÉSERVATION
+# WORKFLOW COMPLET D'UNE RÉSERVATION
 
-## 📋 Vue d'ensemble
+## Vue d'ensemble
 
 Voici le workflow complet depuis la création d'une réservation jusqu'à la réception de l'email avec les PDFs.
 
@@ -8,22 +8,22 @@ Voici le workflow complet depuis la création d'une réservation jusqu'à la ré
 
 ## 1️⃣ CRÉATION DE LA RÉSERVATION
 
-### 📍 Où ça se passe ?
+### Où ça se passe ?
 - **Page** : `/bookings/new`
 - **Action** : `createPublicBookingAction()` dans `actions/public/bookings/create-booking.ts`
 
-### ✅ Ce qui se passe :
+### Ce qui se passe :
 1. L'utilisateur remplit le formulaire de réservation
 2. Le système crée la réservation dans la base de données avec le statut `PENDING`
 3. Un email de confirmation de création est envoyé (statut PENDING)
 4. La réservation est visible dans les notifications admin
 
-### 📧 Email envoyé :
+### Email envoyé :
 - **Type** : Email de création de réservation (statut PENDING)
 - **Contenu** : Détails de la réservation, pas encore confirmée
-- **PDF** : ❌ Aucun PDF à ce stade
+- **PDF** : Aucun PDF à ce stade
 
-### 📊 Statut de la réservation :
+### Statut de la réservation :
 ```typescript
 status: BookingStatus.PENDING
 depositPaid: 0
@@ -35,17 +35,17 @@ remainingAmount: totalPrice
 
 ## 2️⃣ PAIEMENT (Acompte ou Paiement complet)
 
-### 📍 Où ça se passe ?
+### Où ça se passe ?
 - **Page** : `/bookings/payment`
 - **Action** : `createCheckoutSessionAction()` crée une session Stripe
 
-### ✅ Ce qui se passe :
+### Ce qui se passe :
 1. L'utilisateur clique sur "Payer"
 2. Une session Stripe Checkout est créée
 3. L'utilisateur est redirigé vers Stripe pour payer
 4. Après paiement, Stripe redirige vers `/bookings/payment/success`
 
-### 📊 Métadonnées envoyées à Stripe :
+### Métadonnées envoyées à Stripe :
 ```typescript
 metadata: {
   bookingId: "...",
@@ -59,11 +59,11 @@ metadata: {
 
 ## 3️⃣ PAGE DE SUCCÈS (Fallback si webhook lent)
 
-### 📍 Où ça se passe ?
+### Où ça se passe ?
 - **Page** : `/bookings/payment/success`
 - **Fichier** : `app/(public)/bookings/payment/success/page.tsx`
 
-### ✅ Ce qui se passe (SI le webhook n'a pas encore été traité) :
+### Ce qui se passe (SI le webhook n'a pas encore été traité) :
 
 #### A. Vérification du webhook
 ```typescript
@@ -126,11 +126,11 @@ Si le webhook n'a pas encore été traité et que la réservation est confirmée
 
 ## 4️⃣ WEBHOOK STRIPE (Workflow principal)
 
-### 📍 Où ça se passe ?
+### Où ça se passe ?
 - **Route API** : `/api/webhooks/stripe`
 - **Fichier** : `app/api/webhooks/stripe/route.ts`
 
-### ✅ Ce qui se passe (Événement `checkout.session.completed`) :
+### Ce qui se passe (Événement `checkout.session.completed`) :
 
 #### A. Vérification de la signature
 ```typescript
@@ -259,7 +259,7 @@ if (booking.status === BookingStatus.CONFIRMED) {
 
 ---
 
-## 📊 ORDRE D'EXÉCUTION COMPLET
+## ORDRE D'EXÉCUTION COMPLET
 
 ### Workflow normal (webhook fonctionne) :
 
@@ -311,7 +311,7 @@ if (booking.status === BookingStatus.CONFIRMED) {
 
 ---
 
-## ⚠️ IMPORTANT : Protection contre les doublons
+## IMPORTANT : Protection contre les doublons
 
 ### Vérification du webhook traité :
 ```typescript
@@ -340,29 +340,29 @@ if (existingPayment) {
 
 ---
 
-## 📧 EMAILS ENVOYÉS
+## EMAILS ENVOYÉS
 
 ### 1. Email de création (statut PENDING)
 - **Quand** : Immédiatement après création
 - **Contenu** : Détails de la réservation
-- **PDF** : ❌ Aucun
+- **PDF** : Aucun
 - **Queue** : Oui (BullMQ/Redis)
 
 ### 2. Email de confirmation (statut CONFIRMED)
 - **Quand** : Après paiement réussi (via webhook ou fallback)
 - **Contenu** : Détails de la réservation confirmée
-- **PDF** : ✅ 2 PDFs en pièces jointes (réservation + facture)
+- **PDF** : 2 PDFs en pièces jointes (réservation + facture)
 - **Queue** : Oui (BullMQ/Redis)
 
 ### 3. Email de mise à jour (modifications)
 - **Quand** : Après paiement supplémentaire de modification
 - **Contenu** : Détails de la modification
-- **PDF** : ❌ Aucun (la facture est envoyée séparément)
+- **PDF** : Aucun (la facture est envoyée séparément)
 - **Queue** : Oui (BullMQ/Redis)
 
 ---
 
-## 🔍 LOGS À SUIVRE
+## LOGS À SUIVRE
 
 ### Création de réservation :
 ```
@@ -393,7 +393,7 @@ if (existingPayment) {
 
 ---
 
-## ✅ CHECKLIST POUR VÉRIFIER QUE TOUT FONCTIONNE
+## CHECKLIST POUR VÉRIFIER QUE TOUT FONCTIONNE
 
 - [ ] Réservation créée avec statut PENDING
 - [ ] Email de création envoyé (PENDING)
@@ -410,7 +410,7 @@ if (existingPayment) {
 
 ---
 
-## 🚨 PROBLÈMES COURANTS
+## PROBLÈMES COURANTS
 
 ### Le webhook ne se lance pas ?
 → **Solution** : Lancer `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
@@ -424,7 +424,7 @@ if (existingPayment) {
 
 ### La facture n'est pas créée ?
 → Vérifier que le statut est bien CONFIRMED
-→ Vérifier les logs `[Stripe Webhook] 📋 Création automatique de facture`
+→ Vérifier les logs `[Stripe Webhook] Création automatique de facture`
 → Vérifier qu'il n'y a pas déjà une facture pour cette réservation
 
 ### Les PDFs ne sont pas générés ?

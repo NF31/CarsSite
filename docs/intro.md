@@ -1,8 +1,8 @@
-# Bienvenue dans la Documentation CarRental 🚗
+# Bienvenue dans la Documentation CarRental
 
 Bienvenue dans la documentation complète de **CarRental**, une plateforme moderne de location de voitures.
 
-## 📚 À propos de cette documentation
+## À propos de cette documentation
 
 Cette documentation couvre tous les aspects du projet CarRental :
 
@@ -12,7 +12,7 @@ Cette documentation couvre tous les aspects du projet CarRental :
 - **Configuration** : Guides de configuration et d'installation
 - **Design** : Design system et guidelines UX
 
-## 🚀 Démarrage rapide
+## Démarrage rapide
 
 ### Pour les développeurs
 
@@ -26,11 +26,11 @@ Cette documentation couvre tous les aspects du projet CarRental :
 2. Consultez les [Workflows Détaillés](./workflows/16-workflows-detailed.md)
 3. Configurez les [Services](./reference/17-insurance-services-detailed.md)
 
-## 📖 Navigation
+## Navigation
 
 Utilisez la sidebar à gauche pour naviguer dans les différentes sections de la documentation.
 
-## 🔍 Recherche
+## Recherche
 
 Utilisez la barre de recherche en haut pour trouver rapidement une information.
 

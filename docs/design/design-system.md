@@ -1,12 +1,12 @@
 # Design System - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document définit le design system complet de CarRental avec les composants UI, les tokens de design, et les guidelines.
 
 ---
 
-## 🎨 Tokens de Design
+## Tokens de Design
 
 ### Couleurs
 
@@ -132,7 +132,7 @@ Ce document définit le design system complet de CarRental avec les composants U
 
 ---
 
-## 🧩 Composants UI
+## Composants UI
 
 ### Button
 
@@ -291,7 +291,7 @@ Ce document définit le design system complet de CarRental avec les composants U
 
 ---
 
-## 📐 Layout
+## Layout
 
 ### Grid System
 
@@ -328,7 +328,7 @@ Ce document définit le design system complet de CarRental avec les composants U
 
 ---
 
-## 🎭 Animations
+## Animations
 
 ### Transitions
 
@@ -368,7 +368,7 @@ Ce document définit le design system complet de CarRental avec les composants U
 
 ---
 
-## 📱 Responsive Design
+## Responsive Design
 
 ### Mobile First
 
@@ -385,7 +385,7 @@ Ce document définit le design system complet de CarRental avec les composants U
 
 ---
 
-## ♿ Accessibilité
+## Accessibilité
 
 ### Contrastes
 
@@ -407,32 +407,32 @@ Ce document définit le design system complet de CarRental avec les composants U
 
 ---
 
-## ✅ Guidelines
+## Guidelines
 
 ### Utilisation des Couleurs
 
-- ✅ Utiliser les tokens de design
-- ✅ Maintenir les contrastes
-- ✅ Cohérence dans l'application
-- ❌ Ne pas créer de nouvelles couleurs
+- Utiliser les tokens de design
+- Maintenir les contrastes
+- Cohérence dans l'application
+- Ne pas créer de nouvelles couleurs
 
 ### Utilisation des Composants
 
-- ✅ Utiliser les composants du design system
-- ✅ Respecter les variantes
-- ✅ Maintenir la cohérence
-- ❌ Ne pas modifier les composants directement
+- Utiliser les composants du design system
+- Respecter les variantes
+- Maintenir la cohérence
+- Ne pas modifier les composants directement
 
 ### Typographie
 
-- ✅ Utiliser la hiérarchie définie
-- ✅ Maintenir les espacements
-- ✅ Cohérence dans les tailles
-- ❌ Ne pas mélanger les fonts
+- Utiliser la hiérarchie définie
+- Maintenir les espacements
+- Cohérence dans les tailles
+- Ne pas mélanger les fonts
 
 ---
 
-## 📚 Documentation Composants
+## Documentation Composants
 
 Chaque composant doit avoir :
 - Description
@@ -444,7 +444,7 @@ Chaque composant doit avoir :
 
 ---
 
-## ✅ Checklist Design System
+## Checklist Design System
 
 - [x] Tokens de design définis
 - [x] Composants UI de base

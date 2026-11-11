@@ -109,11 +109,11 @@ Nouveau solde = 95,00 € - 28,50 € = 66,50 €
 
 ## Points Importants
 
-✅ **La caution (800€) n'est jamais touchée** lors d'une modification
-✅ **Seul l'acompte est ajusté** (30% du nouveau prix)
-✅ **On ne refait JAMAIS payer l'acompte en entier** : on demande/se rembourse uniquement la différence
-✅ **Le remboursement se fait automatiquement** après validation admin
-✅ **Le nouveau solde est recalculé** automatiquement
+ **La caution (800€) n'est jamais touchée** lors d'une modification
+ **Seul l'acompte est ajusté** (30% du nouveau prix)
+ **On ne refait JAMAIS payer l'acompte en entier** : on demande/se rembourse uniquement la différence
+ **Le remboursement se fait automatiquement** après validation admin
+ **Le nouveau solde est recalculé** automatiquement
 
 ### Exemple : Paiement Supplémentaire (Nouveau prix > Ancien prix)
 

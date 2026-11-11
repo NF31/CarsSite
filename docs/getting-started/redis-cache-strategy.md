@@ -1,33 +1,33 @@
 # Stratégie de Cache Redis
 
-## ⚠️ Important : Cache vs Queue
+## Important : Cache vs Queue
 
 **Redis est un CACHE, pas une QUEUE** :
-- ✅ **Cache** : Stocke temporairement des données pour accès rapide
-- ❌ **Queue** : Pour les emails en arrière-plan, il faudrait un système comme **Bull/BullMQ** avec Redis
+- **Cache** : Stocke temporairement des données pour accès rapide
+- **Queue** : Pour les emails en arrière-plan, il faudrait un système comme **Bull/BullMQ** avec Redis
 
 Le cache ne se "relance" pas seul - il stocke juste des données avec expiration (TTL).
 
 ---
 
-## 📍 Où utiliser le cache (priorités)
+## Où utiliser le cache (priorités)
 
-### ✅ **Déjà implémenté**
+### **Déjà implémenté**
 
 1. **Locations** (`actions/admin/vehicles/get-locations.ts`)
-   - ✅ Cache 30 minutes
-   - ✅ Invalidation lors des modifications
+   - Cache 30 minutes
+   - Invalidation lors des modifications
 
 2. **Véhicules** (`actions/admin/vehicles/actions.ts`)
-   - ✅ Cache 5 minutes pour les listes filtrées
-   - ✅ Invalidation lors création/mise à jour
+   - Cache 5 minutes pour les listes filtrées
+   - Invalidation lors création/mise à jour
 
 3. **Rate-limiting** (toutes les actions d'auth)
-   - ✅ Utilise Redis pour limiter les tentatives
+   - Utilise Redis pour limiter les tentatives
 
 ---
 
-### 🎯 **À implémenter (priorité haute)**
+### **À implémenter (priorité haute)**
 
 #### 1. **Options de réservation** (`actions/admin/bookings/get-options.ts`)
 **Pourquoi** : Chargé à chaque ouverture du formulaire de réservation
@@ -61,7 +61,7 @@ Le cache ne se "relance" pas seul - il stocke juste des données avec expiration
 
 ---
 
-### 🔄 **À implémenter (priorité moyenne)**
+### **À implémenter (priorité moyenne)**
 
 #### 5. **Réservations récentes client** (`actions/client/bookings/get-recent.ts`)
 **Pourquoi** : Pagination, données historiques qui changent peu
@@ -88,25 +88,25 @@ Le cache ne se "relance" pas seul - il stocke juste des données avec expiration
 
 ---
 
-### ⚠️ **Ne PAS mettre en cache**
+### **Ne PAS mettre en cache**
 
 1. **Modifications de dates de réservation** (`actions/client/bookings/update-booking.ts`)
-   - ❌ Données critiques, doivent être à jour immédiatement
-   - ✅ Mais invalider le cache des réservations après modification
+   - Données critiques, doivent être à jour immédiatement
+   - Mais invalider le cache des réservations après modification
 
 2. **Envoi d'emails**
-   - ❌ Ne pas cacher (opération asynchrone)
-   - 💡 **Pour une vraie queue d'emails** : Utiliser Bull/BullMQ
+   - Ne pas cacher (opération asynchrone)
+   - **Pour une vraie queue d'emails** : Utiliser Bull/BullMQ
 
 3. **Recherches textuelles**
-   - ❌ Trop variables, cache inefficace
+   - Trop variables, cache inefficace
 
 4. **Données utilisateur sensibles**
-   - ❌ Mot de passe, tokens, etc.
+   - Mot de passe, tokens, etc.
 
 ---
 
-## 🔧 Implémentation recommandée
+## Implémentation recommandée
 
 ### Exemple : Cache des options de réservation
 
@@ -172,7 +172,7 @@ await invalidateCacheByPrefix(CACHE_PREFIXES.BOOKING);
 
 ---
 
-## 📊 TTL recommandés par type
+## TTL recommandés par type
 
 | Type de données | TTL | Raison |
 |----------------|-----|--------|
@@ -187,7 +187,7 @@ await invalidateCacheByPrefix(CACHE_PREFIXES.BOOKING);
 
 ---
 
-## 🚀 Pour une vraie queue d'emails
+## Pour une vraie queue d'emails
 
 Si tu veux une queue pour les emails (envoi en arrière-plan), utilise **BullMQ** :
 
@@ -219,5 +219,5 @@ export async function queueEmail(jobData: {
 }
 ```
 
-Mais pour l'instant, le cache suffit pour améliorer les performances ! 🎯
+Mais pour l'instant, le cache suffit pour améliorer les performances !
 

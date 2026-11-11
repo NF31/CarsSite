@@ -1,12 +1,12 @@
-# 🚗 CarRental - Plateforme de Location de Voitures
+# CarRental - Plateforme de Location de Voitures
 
-## 🎯 Description du Projet
+## Description du Projet
 
 CarRental est une plateforme web moderne de location de voitures qui permet aux clients de réserver facilement des véhicules en ligne et aux administrateurs de gérer efficacement la flotte et les réservations.
 
-## ✨ Fonctionnalités Principales
+## Fonctionnalités Principales
 
-### 👤 Côté Client
+### Côté Client
 
 - **Recherche de véhicules** : Filtres avancés (catégorie, prix, disponibilité)
 - **Réservation en ligne** : Processus simplifié en 4 étapes
@@ -17,7 +17,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 - **Gestion de compte** : Historique des locations, factures, préférences
 - **Paiement sécurisé** : Stripe (paiement, webhooks signés, remboursements)
 
-### 🎛️ Côté Admin
+### Côté Admin
 
 - **Dashboard** : Vue d'ensemble des activités et statistiques
 - **Gestion des véhicules** : Ajout, modification, suivi de la flotte
@@ -32,7 +32,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 - **Paramètres** : Configuration de l'agence, tarifs, disponibilités
 - **Facturation** : Génération de factures et reçus
 
-## 🚀 Technologies Utilisées
+## Technologies Utilisées
 
 ### Frontend
 - **Next.js 16** - Framework React avec App Router
@@ -58,9 +58,9 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 - **Neon** - Base de données PostgreSQL cloud
 - **Google Maps API** - Géolocalisation et itinéraires
 
-## 📚 Documentation Complète
+## Documentation Complète
 
-### 📋 Documents Principaux
+### Documents Principaux
 
 1. **[01-user-stories-complete.md](./01-user-stories-complete.md)** - User Stories détaillées
 2. **[02-technical-specifications.md](./02-technical-specifications.md)** - Spécifications techniques
@@ -76,7 +76,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 12. **[12-final-readiness-assessment.md](./12-final-readiness-assessment.md)** - Évaluation finale
 13. **[13-global-architecture-overview.md](./13-global-architecture-overview.md)** - Architecture globale complète
 
-### 📄 Documents Spécialisés
+### Documents Spécialisés
 
 - **[14-api-reference-complete.md](./14-api-reference-complete.md)** - Référence API complète avec exemples de code
 - **[15-implementation-examples.md](./15-implementation-examples.md)** - Exemples d'implémentation complets
@@ -90,7 +90,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 - **[design-system.md](./design-system.md)** - Design system et composants UI
 - **[roadmap-projet.md](./roadmap-projet.md)** - Roadmap complète du projet
 
-## 🎯 Fonctionnalités Clés
+## Fonctionnalités Clés
 
 ### Processus de Réservation (4 Étapes)
 
@@ -114,7 +114,7 @@ CarRental est une plateforme web moderne de location de voitures qui permet aux 
 11. **Notifications** - Emails et templates
 12. **Paramètres** - Configuration de l'agence
 
-## 🛠️ Installation et Développement
+## Installation et Développement
 
 ### Prérequis
 
@@ -192,7 +192,7 @@ npx prisma generate
 npx prisma migrate dev
 ```
 
-## 📊 Architecture de la Base de Données
+## Architecture de la Base de Données
 
 ### Tables Principales (12)
 
@@ -216,7 +216,7 @@ npx prisma migrate dev
 - **Vehicle (1) ←→ (N) Maintenance** - Un véhicule peut avoir plusieurs entretiens
 - **Location (1) ←→ (N) Vehicle** - Une agence peut avoir plusieurs véhicules
 
-## 🎨 Design et UX
+## Design et UX
 
 ### Principe Fondamental
 
@@ -236,7 +236,7 @@ npx prisma migrate dev
 3. **Réservation** - Processus simplifié
 4. **Confirmation** - Validation et rappels
 
-## 🔒 Sécurité
+## Sécurité
 
 ### Authentification
 
@@ -256,7 +256,7 @@ npx prisma migrate dev
 - **Paiements** - Conformité PCI DSS
 - **Images** - Upload sécurisé via Cloudinary
 
-## 📈 Performance
+## Performance
 
 ### Optimisations
 
@@ -271,7 +271,7 @@ npx prisma migrate dev
 - SEO - Optimisé pour les moteurs de recherche
 - Mobile - Performance optimale sur mobile
 
-## 🚀 Déploiement
+## Déploiement
 
 ### Plateformes Recommandées
 
@@ -285,7 +285,7 @@ npx prisma migrate dev
 - SSL - Certificats HTTPS
 - Monitoring - Surveillance des performances
 
-## 📞 Support et Contact
+## Support et Contact
 
 ### Documentation
 
@@ -303,4 +303,4 @@ npx prisma migrate dev
 
 ---
 
-**CarRental - La Location de Voitures Simplifiée** 🚗
+**CarRental - La Location de Voitures Simplifiée**

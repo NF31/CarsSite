@@ -1,12 +1,12 @@
 # Dictionnaire de Données - CarRental
 
-## 📋 Vue d'Ensemble
+## Vue d'Ensemble
 
 Ce document liste tous les champs de données avec leurs descriptions, types, contraintes et règles de validation.
 
 ---
 
-## 👤 User (Utilisateur)
+## User (Utilisateur)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -24,7 +24,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## 🚗 Vehicle (Véhicule)
+## Vehicle (Véhicule)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -53,7 +53,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## 📅 Booking (Réservation)
+## Booking (Réservation)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -78,7 +78,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## 🎁 Service (Service Additionnel)
+## Service (Service Additionnel)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -95,7 +95,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## ⭐ Review (Avis)
+## Review (Avis)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -111,7 +111,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## 🔧 Maintenance (Maintenance)
+## Maintenance (Maintenance)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -129,7 +129,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## 💰 Invoice (Facture)
+## Invoice (Facture)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -150,7 +150,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## 💳 Payment (Paiement)
+## Payment (Paiement)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -167,7 +167,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## 📍 Location (Agence)
+## Location (Agence)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -199,7 +199,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## ⚙️ Setting (Paramètre)
+## Setting (Paramètre)
 
 | Champ | Type | Description | Contraintes | Exemple |
 |-------|------|-------------|-------------|---------|
@@ -212,7 +212,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## 📊 Règles de Validation
+## Règles de Validation
 
 ### Dates
 - `startDate` doit être `>= aujourd'hui`
@@ -236,7 +236,7 @@ Ce document liste tous les champs de données avec leurs descriptions, types, co
 
 ---
 
-## ✅ Checklist Dictionnaire
+## Checklist Dictionnaire
 
 - [ ] Tous les champs documentés
 - [ ] Types et contraintes définis

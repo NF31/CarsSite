@@ -1,10 +1,10 @@
-# 📋 LOGS DU WORKFLOW COMPLET - GUIDE DE SUIVI
+# LOGS DU WORKFLOW COMPLET - GUIDE DE SUIVI
 
 Ce document liste TOUS les logs que vous verrez lors d'une réservation complète, du début à la fin.
 
 ---
 
-## 🎯 STRUCTURE DES LOGS
+## STRUCTURE DES LOGS
 
 Tous les logs suivent le format :
 ```
@@ -19,9 +19,9 @@ Tous les logs suivent le format :
 
 ---
 
-## 📝 WORKFLOW COMPLET - LOGS DÉTAILLÉS
+## WORKFLOW COMPLET - LOGS DÉTAILLÉS
 
-### 🟢 ÉTAPE 1 : CRÉATION RÉSERVATION
+### ÉTAPE 1 : CRÉATION RÉSERVATION
 
 ```
 [📋 WORKFLOW ÉTAPE 1] ✅ Réservation créée avec succès
@@ -37,7 +37,7 @@ Tous les logs suivent le format :
 
 ---
 
-### 🟢 ÉTAPE 2 : EMAIL DE CRÉATION
+### ÉTAPE 2 : EMAIL DE CRÉATION
 
 ```
 [📋 WORKFLOW ÉTAPE 2] 📧 Préparation de l'envoi de l'email de création
@@ -66,7 +66,7 @@ Tous les logs suivent le format :
 
 ---
 
-### 🟢 ÉTAPE 3 : CRÉATION SESSION STRIPE
+### ÉTAPE 3 : CRÉATION SESSION STRIPE
 
 ```
 [📋 WORKFLOW ÉTAPE 3] 🚀 DÉBUT - CRÉATION SESSION STRIPE
@@ -91,7 +91,7 @@ Tous les logs suivent le format :
 
 ---
 
-### 🟢 ÉTAPE 4 : WEBHOOK STRIPE
+### ÉTAPE 4 : WEBHOOK STRIPE
 
 #### 4.1 - RÉCEPTION ÉVÉNEMENT
 
@@ -347,27 +347,27 @@ Tous les logs suivent le format :
 
 ---
 
-## 🔍 COMMENT SUIVRE LE WORKFLOW
+## COMMENT SUIVRE LE WORKFLOW
 
-1. **ÉTAPE 1** : Cherchez `[📋 WORKFLOW ÉTAPE 1]` - Réservation créée
-2. **ÉTAPE 2** : Cherchez `[📋 WORKFLOW ÉTAPE 2]` - Email de création envoyé
-3. **ÉTAPE 3** : Cherchez `[📋 WORKFLOW ÉTAPE 3]` - Session Stripe créée
-4. **ÉTAPE 4** : Cherchez `[📋 WORKFLOW ÉTAPE 4]` - Webhook Stripe
+1. **ÉTAPE 1** : Cherchez `[WORKFLOW ÉTAPE 1]` - Réservation créée
+2. **ÉTAPE 2** : Cherchez `[WORKFLOW ÉTAPE 2]` - Email de création envoyé
+3. **ÉTAPE 3** : Cherchez `[WORKFLOW ÉTAPE 3]` - Session Stripe créée
+4. **ÉTAPE 4** : Cherchez `[WORKFLOW ÉTAPE 4]` - Webhook Stripe
 
 Si une étape manque, vous saurez exactement où ça bloque !
 
 ---
 
-## ⚠️ LOGS D'ERREUR
+## LOGS D'ERREUR
 
 Si une étape échoue, vous verrez :
-- `❌` au lieu de `✅`
+- `` au lieu de ``
 - Le détail de l'erreur dans les logs
 - Le `stepNumber` pour identifier rapidement où ça bloque
 
 ---
 
-## 📊 RÉSUMÉ DU WORKFLOW
+## RÉSUMÉ DU WORKFLOW
 
 ```
 ÉTAPE 1: Création réservation (PENDING)
@@ -392,19 +392,19 @@ Si une étape échoue, vous verrez :
 
 ---
 
-## ✅ VÉRIFICATION RAPIDE
+## VÉRIFICATION RAPIDE
 
 Pour vérifier que tout fonctionne, cherchez dans les logs :
 
-1. ✅ `[📋 WORKFLOW ÉTAPE 1] ✅ Réservation créée`
-2. ✅ `[📋 WORKFLOW ÉTAPE 2] ✅ Email de création envoyé`
-3. ✅ `[📋 WORKFLOW ÉTAPE 3] ✅ Session Stripe créée`
-4. ✅ `[📋 WORKFLOW ÉTAPE 4] 🔔 WEBHOOK STRIPE REÇU`
-5. ✅ `[📋 WORKFLOW ÉTAPE 4.2.4] ✅ Réservation mise à jour`
-6. ✅ `[📋 WORKFLOW ÉTAPE 4.2.5] ✅ Facture créée`
-7. ✅ `[📋 WORKFLOW ÉTAPE 4.2.6] ✅ Enregistrement de paiement créé`
-8. ✅ `[📋 WORKFLOW ÉTAPE 4.2.8.1] ✅ PDF de réservation généré`
-9. ✅ `[📋 WORKFLOW ÉTAPE 4.2.8.2] ✅ PDF de facture généré`
-10. ✅ `[📋 WORKFLOW ÉTAPE 4.2.9] ✅ Email de confirmation envoyé`
+1. `[WORKFLOW ÉTAPE 1] Réservation créée`
+2. `[WORKFLOW ÉTAPE 2] Email de création envoyé`
+3. `[WORKFLOW ÉTAPE 3] Session Stripe créée`
+4. `[WORKFLOW ÉTAPE 4] WEBHOOK STRIPE REÇU`
+5. `[WORKFLOW ÉTAPE 4.2.4] Réservation mise à jour`
+6. `[WORKFLOW ÉTAPE 4.2.5] Facture créée`
+7. `[WORKFLOW ÉTAPE 4.2.6] Enregistrement de paiement créé`
+8. `[WORKFLOW ÉTAPE 4.2.8.1] PDF de réservation généré`
+9. `[WORKFLOW ÉTAPE 4.2.8.2] PDF de facture généré`
+10. `[WORKFLOW ÉTAPE 4.2.9] Email de confirmation envoyé`
 
-Si tous ces logs sont présents avec ✅, le workflow est complet !
+Si tous ces logs sont présents avec , le workflow est complet !
